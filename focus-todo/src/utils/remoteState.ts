@@ -1,17 +1,6 @@
-import type { Project, Task, Folder, Tag, ViewType } from '../types';
+import type { AppState } from '../types';
 
-export interface RemoteAppState {
-  tasks: Task[];
-  projects: Project[];
-  folders: Folder[];
-  tags: Tag[];
-  selectedTaskId: string | null;
-  activeView: ViewType;
-  activeProjectId: string | null;
-  searchQuery: string;
-}
-
-export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
+export async function loadRemoteAppState(): Promise<AppState | null> {
   const response = await fetch('/api/state');
   if (!response.ok) {
     throw new Error(`Remote state request failed: ${response.statusText}`);
@@ -23,19 +12,10 @@ export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
     return null;
   }
 
-  return {
-    tasks: state.tasks ?? [],
-    projects: state.projects ?? [],
-    folders: state.folders ?? [],
-    tags: state.tags ?? [],
-    selectedTaskId: state.selectedTaskId ?? null,
-    activeView: state.activeView ?? 'today',
-    activeProjectId: state.activeProjectId ?? null,
-    searchQuery: state.searchQuery ?? '',
-  };
+  return state as AppState;
 }
 
-export async function saveRemoteAppState(state: RemoteAppState): Promise<void> {
+export async function saveRemoteAppState(state: Partial<AppState>): Promise<void> {
   await fetch('/api/state', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

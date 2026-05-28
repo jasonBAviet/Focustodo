@@ -39,7 +39,7 @@ const ReportPage: React.FC = () => {
         <button
           className="icon-btn"
           onClick={() => setOpenModal(null)}
-          title="Dong bao cao"
+          title="Close report"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M4 4l10 10M14 4L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>

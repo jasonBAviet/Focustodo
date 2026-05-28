@@ -19,10 +19,9 @@ import type {
   Priority,
   Subtask,
 } from '../types';
-import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
 import { loadRemoteAppState, saveRemoteAppState } from '../utils/remoteState';
-import type { RemoteAppState } from '../utils/remoteState';
+import type { AppState } from '../types';
 
 // ----------------------------------------------------------
 // Danh sách project mặc định khi localStorage còn trống
@@ -80,14 +79,14 @@ export const TaskContext = createContext<TaskContextType | null>(null);
 // Provider
 // ----------------------------------------------------------
 export function TaskProvider({ children }: { children: React.ReactNode }) {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('focus-tasks', []);
-  const [projects, setProjects] = useLocalStorage<Project[]>('focus-projects', DEFAULT_PROJECTS);
-  const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
-  const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
-  const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
-  const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
-  const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
-  const [searchQuery, setSearchQuery] = useLocalStorage<string>('focus-search', '');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<ViewType>('today');
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // --------------------------------------------------------
   // Task actions
@@ -120,7 +119,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       completedAt: null,
       updatedAt: now,
     };
-    setTasks((prev) => [...prev, newTask]);
+    setTasks((prev) => [newTask, ...prev]);
     return newTask;
   }, [setTasks]);
 
@@ -327,17 +326,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (remoteState) {
-          setTasks(remoteState.tasks);
+          setTasks(remoteState.tasks || []);
           setProjects(
-            remoteState.projects.length > 0 ? remoteState.projects : DEFAULT_PROJECTS,
+            (remoteState.projects && remoteState.projects.length > 0) ? remoteState.projects : DEFAULT_PROJECTS,
           );
           setFolders(remoteState.folders || []);
           setTags(remoteState.tags || []);
-          setSelectedTaskId(remoteState.selectedTaskId);
+          setSelectedTaskId(remoteState.selectedTaskId || null);
 
           const localActiveView = window.localStorage.getItem('focus-active-view');
           if (!localActiveView || localActiveView === 'today') {
-            setActiveView(remoteState.activeView);
+            if (remoteState.activeView) setActiveView(remoteState.activeView);
           }
 
           const localActiveProjectId = window.localStorage.getItem('focus-active-project');
@@ -368,7 +367,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!remoteSyncEnabled) return;
 
-    const currentState: RemoteAppState = {
+    const currentState: Partial<AppState> = {
       tasks,
       projects,
       folders,

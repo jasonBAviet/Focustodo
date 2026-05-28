@@ -15,15 +15,17 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {
       try {
-        const valueToStore =
-          value instanceof Function ? value(storedValue) : value;
-        setStoredValue(valueToStore);
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        setStoredValue((prevStoredValue) => {
+          const valueToStore =
+            value instanceof Function ? value(prevStoredValue) : value;
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          return valueToStore;
+        });
       } catch (error) {
         console.warn(`useLocalStorage: error writing key "${key}"`, error);
       }
     },
-    [key, storedValue]
+    [key]
   );
 
   const removeValue = useCallback(() => {

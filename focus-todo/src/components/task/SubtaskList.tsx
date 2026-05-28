@@ -43,7 +43,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
           <button
             className="subtask-delete"
             onClick={() => deleteSubtask(task.id, sub.id)}
-            title="Xoa subtask"
+            title="Delete subtask"
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -67,7 +67,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
             onChange={(e) => setNewSubtask(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={() => { if (!newSubtask.trim()) setShowInput(false); }}
-            placeholder="Ten subtask, nhan Enter de luu"
+            placeholder="Subtask name, press Enter to save"
           />
         </div>
       ) : (
@@ -78,7 +78,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          Them subtask
+          Add subtask
         </button>
       )}
 

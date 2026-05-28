@@ -12,7 +12,7 @@ import React, {
 } from 'react';
 import type { Settings, ThemeMode } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
-import useLocalStorage from '../hooks/useLocalStorage';
+import { loadRemoteAppState, saveRemoteAppState } from '../utils/remoteState';
 
 // ----------------------------------------------------------
 // Kiểu dữ liệu Context
@@ -46,10 +46,35 @@ function resolveIsDark(darkMode: ThemeMode): boolean {
 // Provider
 // ----------------------------------------------------------
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useLocalStorage<Settings>(
-    'focus-settings',
-    DEFAULT_SETTINGS,
-  );
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [remoteSyncEnabled, setRemoteSyncEnabled] = useState<boolean>(false);
+
+  // Load state từ backend
+  useEffect(() => {
+    let mounted = true;
+    async function loadSettings() {
+      try {
+        const state = await loadRemoteAppState();
+        if (mounted && state && state.settings) {
+          setSettings({ ...DEFAULT_SETTINGS, ...state.settings });
+        }
+        if (mounted) setRemoteSyncEnabled(true);
+      } catch (error) {
+        console.warn('Failed to load settings from DB:', error);
+      }
+    }
+    loadSettings();
+    return () => { mounted = false; };
+  }, []);
+
+  // Save state tới backend khi thay đổi
+  useEffect(() => {
+    if (!remoteSyncEnabled) return;
+    const timeoutId = window.setTimeout(() => {
+      saveRemoteAppState({ settings }).catch(e => console.warn('Failed to save settings to DB:', e));
+    }, 500);
+    return () => window.clearTimeout(timeoutId);
+  }, [settings, remoteSyncEnabled]);
 
   // Trạng thái UI - không cần lưu localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
@@ -100,7 +125,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     (updates: Partial<Settings>) => {
       setSettings((prev) => ({ ...prev, ...updates }));
     },
-    [setSettings],
+    [],
   );
 
   // --------------------------------------------------------

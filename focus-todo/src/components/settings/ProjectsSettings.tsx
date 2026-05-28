@@ -163,7 +163,7 @@ const ProjectsSettings: React.FC = () => {
               {/* Nut xoa voi confirm */}
               <button
                 type="button"
-                title={confirmDeleteId === project.id ? 'Nhan lai de xac nhan xoa' : 'Xoa project'}
+                title={confirmDeleteId === project.id ? 'Press again to confirm deletion' : 'Delete project'}
                 style={{
                   ...iconBtnStyle,
                   color: confirmDeleteId === project.id ? '#f25f5c' : 'var(--text-muted)',
@@ -189,7 +189,7 @@ const ProjectsSettings: React.FC = () => {
 
           {confirmDeleteId && (
             <div style={{ fontSize: 'var(--text-xs)', color: '#f4a261', marginTop: 4, padding: '0 4px' }}>
-              Nhan nut xoa lan 2 de xac nhan. Click ra ngoai de huy.
+              Press delete twice to confirm. Click outside to cancel.
             </div>
           )}
         </div>

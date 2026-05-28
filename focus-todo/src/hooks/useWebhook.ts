@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type { WebhookEvent, Task, PomodoroSession } from '../types';
-import useLocalStorage from './useLocalStorage';
 
 type WebhookEventType = WebhookEvent['eventType'];
 
@@ -92,10 +91,7 @@ function buildSlackMessage(task: Task): Record<string, unknown> {
 }
 
 function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
-  const [webhookEvents, setWebhookEvents] = useLocalStorage<WebhookEvent[]>(
-    'ftd_webhook_events',
-    []
-  );
+  const [webhookEvents, setWebhookEvents] = useState<WebhookEvent[]>([]);
 
   const buildPayload = useCallback(
     (eventType: WebhookEventType, data: Record<string, unknown>): WebhookPayload => ({

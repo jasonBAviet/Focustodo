@@ -73,10 +73,10 @@ const PomodoroRow: React.FC<{ task: Task }> = ({ task }) => {
 };
 
 const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
-  { value: 'none', label: 'Khong' },
-  { value: 'daily', label: 'Hang ngay' },
-  { value: 'weekly', label: 'Hang tuan' },
-  { value: 'monthly', label: 'Hang thang' },
+  { value: 'none', label: 'None' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
 ];
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
@@ -97,11 +97,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
   const dueDateText = task.dueDate
     ? dateUtils.isToday(task.dueDate)
-      ? 'Hom nay'
+      ? 'Today'
       : dateUtils.isTomorrow(task.dueDate)
-        ? 'Ngay mai'
+        ? 'Tomorrow'
         : dateUtils.formatShort(task.dueDate)
-    : 'Khong co';
+    : 'None';
 
   const dueDateColor = task.dueDate && dateUtils.isOverdue(task.dueDate)
     ? 'var(--priority-high)'
@@ -152,7 +152,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         label="Project"
       >
         <span style={{ color: project?.color }}>
-          {project?.name || 'Khong co project'}
+          {project?.name || 'No project'}
         </span>
       </DetailRow>
 
@@ -170,7 +170,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         >
           {task.reminder
             ? dateUtils.formatShort(task.reminder)
-            : 'Khong'}
+            : 'None'}
         </button>
         {showReminderPicker && (
           <div className="detail-date-popover">
@@ -213,7 +213,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       <div className="detail-note-section">
         <textarea
           className="detail-note"
-          placeholder="Them ghi chu..."
+          placeholder="Add a note..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={handleNoteBlur}

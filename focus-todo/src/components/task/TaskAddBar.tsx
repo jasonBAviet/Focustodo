@@ -8,10 +8,10 @@ interface TaskAddBarProps {
 }
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
-  { value: 'high', label: 'Cao', color: '#f25f5c' },
-  { value: 'medium', label: 'Trung binh', color: '#f4a261' },
-  { value: 'low', label: 'Thap', color: '#2ec4b6' },
-  { value: 'none', label: 'Khong', color: '#888' },
+  { value: 'high', label: 'High', color: '#f25f5c' },
+  { value: 'medium', label: 'Medium', color: '#f4a261' },
+  { value: 'low', label: 'Low', color: '#2ec4b6' },
+  { value: 'none', label: 'None', color: '#888' },
 ];
 
 const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
@@ -32,9 +32,9 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
     if (placeholder) return placeholder;
     if (activeView === 'project' && activeProjectId) {
       const p = projects.find((pr) => pr.id === activeProjectId);
-      return `Them task vao "${p?.name || 'Project'}", nhan [Enter] de luu`;
+      return `Add task to "${p?.name || 'Project'}", press [Enter] to save`;
     }
-    return 'Them task, nhan [Enter] de luu';
+    return 'Add task, press [Enter] to save';
   };
 
   const handleSubmit = () => {
@@ -77,7 +77,7 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
         <div className="task-add-bar__action-wrap">
           <button
             className="task-add-bar__action-btn"
-            title="So pomodoro"
+            title="Pomodoro estimate"
             onClick={() => setShowPomoMenu((v) => !v)}
             style={{ color: pomodoroEstimate > 1 ? 'var(--accent)' : 'var(--text-tertiary)' }}
           >
@@ -116,7 +116,7 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
         <div className="task-add-bar__action-wrap">
           <button
             className="task-add-bar__action-btn"
-            title="Do uu tien"
+            title="Priority"
             onClick={() => setShowPriorityMenu((v) => !v)}
             style={{ color: currentPriority?.color }}
           >

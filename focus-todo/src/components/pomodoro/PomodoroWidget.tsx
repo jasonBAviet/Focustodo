@@ -4,7 +4,7 @@
 // ============================================================
 import React, { useState, useCallback } from 'react';
 import usePomodoro from '../../hooks/usePomodoro';
-import useLocalStorage from '../../hooks/useLocalStorage';
+import { usePomodoroSessions } from '../../hooks/usePomodoroSessions';
 import { useAppContext } from '../../contexts/AppContext';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { PomodoroSession } from '../../types';
@@ -55,11 +55,11 @@ const PomodoroWidget: React.FC = () => {
   const { settings } = useAppContext();
   const { tasks, updateTask } = useTaskContext();
   const [expanded, setExpanded] = useState(false);
-  const [, setSessions] = useLocalStorage<PomodoroSession[]>('focus-pomodoro-sessions', []);
+  const [, addSession] = usePomodoroSessions();
 
   const handleSessionComplete = useCallback((session: PomodoroSession) => {
-    setSessions((prev) => [session, ...prev].slice(0, 200));
-  }, [setSessions]);
+    addSession(session);
+  }, [addSession]);
 
   // Callback cập nhật focus time cho task
   const handleFocusTimeUpdate = useCallback((taskId: string, seconds: number) => {

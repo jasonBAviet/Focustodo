@@ -84,7 +84,7 @@ const TaskPanel: React.FC = () => {
         <div className="panel-footer-actions">
           <button
             className="icon-btn"
-            title="Xoa task"
+            title="Delete task"
             onClick={handleDelete}
             style={{ color: 'var(--text-tertiary)' }}
           >

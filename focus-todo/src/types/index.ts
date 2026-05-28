@@ -182,10 +182,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
-  high: { label: 'Uu tien cao', color: '#f25f5c' },
-  medium: { label: 'Uu tien trung binh', color: '#f4a261' },
-  low: { label: 'Uu tien thap', color: '#2ec4b6' },
-  none: { label: 'Khong uu tien', color: '#888' },
+  high: { label: 'High priority', color: '#f25f5c' },
+  medium: { label: 'Medium priority', color: '#f4a261' },
+  low: { label: 'Low priority', color: '#2ec4b6' },
+  none: { label: 'No priority', color: '#888' },
 };
 
 export const PROJECT_COLORS = [
