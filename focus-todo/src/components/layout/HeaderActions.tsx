@@ -1,0 +1,87 @@
+import React from 'react';
+import { useAppContext } from '../../contexts/AppContext';
+
+const IconGroup = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+  </svg>
+);
+
+const IconSprout = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M15.43 13.5l1.63 2.5H22L12 2 2 16h4.94l1.63-2.5h6.86zM13 16v6h-2v-6h2z"/>
+  </svg>
+);
+
+const IconTrophy = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v2c0 2.21 1.79 4 4 4h1v1c0 2.21 1.79 4 4 4h2c2.21 0 4-1.79 4-4v-1h1c2.21 0 4-1.79 4-4V5c0-1.1-.9-2-2-2zm-2 4h-1V5h1v2zM7 5v2H6V5h1zm5 14H8v2h8v-2h-4z"/>
+  </svg>
+);
+
+const IconChart = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+  </svg>
+);
+
+const IconBell = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+  </svg>
+);
+
+const IconSettings = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+  </svg>
+);
+
+interface HeaderActionsProps {
+  onShowReport: () => void;
+}
+
+const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
+  const { setOpenModal } = useAppContext();
+
+  return (
+    <div className="header-actions">
+      <button className="ha-btn" title="Groups"><IconGroup /></button>
+      <button className="ha-btn" title="Forest"><IconSprout /></button>
+      <button className="ha-btn" title="Achievements"><IconTrophy /></button>
+      <button className="ha-btn" title="Report" onClick={onShowReport}><IconChart /></button>
+      <button className="ha-btn" title="Notifications"><IconBell /></button>
+      <button className="ha-btn" title="Settings" onClick={() => setOpenModal('settings')}><IconSettings /></button>
+
+      <style>{`
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          position: absolute;
+          top: 24px;
+          right: 32px;
+          z-index: 100;
+        }
+        .ha-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px;
+          border-radius: 50%;
+          transition: all var(--transition-fast);
+        }
+        .ha-btn:hover {
+          color: var(--text-primary);
+          background: var(--bg-card-hover);
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default HeaderActions;

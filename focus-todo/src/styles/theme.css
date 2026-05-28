@@ -1,0 +1,152 @@
+/* ============================================================
+   FOCUS TO-DO - THEME CSS VARIABLES
+   ============================================================ */
+
+:root {
+  /* Accent */
+  --accent: #f25f5c;
+  --accent-hover: #e04e4b;
+  --accent-soft: rgba(242, 95, 92, 0.15);
+  --accent-glow: rgba(242, 95, 92, 0.3);
+
+  /* Priority Colors */
+  --priority-high: #f25f5c;
+  --priority-medium: #f4a261;
+  --priority-low: #2ec4b6;
+
+  /* Glassmorphism Base */
+  --glass-blur: 16px;
+  --glass-border-width: 1px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 22px;
+  --text-3xl: 28px;
+  --text-4xl: 36px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.15);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.2);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+  --shadow-accent: 0 4px 20px var(--accent-glow);
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+}
+
+/* ============================================================
+   DARK MODE (default)
+   ============================================================ */
+[data-theme="dark"], :root {
+  --bg-app: #141416;
+  --bg-sidebar: #1a1a1f;
+  --bg-main: #1e1e24;
+  --bg-panel: #1a1a1f;
+  --bg-card: #252530;
+  --bg-card-hover: #2d2d3a;
+  --bg-input: #2a2a35;
+  --bg-dialog: #1e1e2a;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.14);
+
+  --text-primary: #f0f0f5;
+  --text-secondary: #9090a8;
+  --text-tertiary: #606078;
+  --text-disabled: #404055;
+  --text-on-accent: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --divider: rgba(255, 255, 255, 0.05);
+
+  --scrollbar-track: rgba(255,255,255,0.03);
+  --scrollbar-thumb: rgba(255,255,255,0.12);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.2);
+
+  --sidebar-width: 220px;
+  --panel-width: 280px;
+
+  /* Sidebar items */
+  --sidebar-item-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-item-active: rgba(242, 95, 92, 0.12);
+
+  /* Task item */
+  --task-bg: transparent;
+  --task-bg-hover: rgba(255, 255, 255, 0.03);
+  --task-bg-selected: rgba(242, 95, 92, 0.07);
+  --task-border-bottom: rgba(255,255,255,0.05);
+
+  /* Stats */
+  --stat-red: #f25f5c;
+  --stat-blue: #4cc9f0;
+}
+
+/* ============================================================
+   LIGHT MODE
+   ============================================================ */
+[data-theme="light"] {
+  --bg-app: #f5f5f7;
+  --bg-sidebar: #ffffff;
+  --bg-main: #f5f5f7;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f9fb;
+  --bg-input: #f2f2f5;
+  --bg-dialog: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-hover: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-hover: rgba(0, 0, 0, 0.14);
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a78;
+  --text-tertiary: #9090a8;
+  --text-disabled: #c0c0d0;
+  --text-on-accent: #ffffff;
+
+  --border: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --divider: rgba(0, 0, 0, 0.05);
+
+  --scrollbar-track: rgba(0,0,0,0.03);
+  --scrollbar-thumb: rgba(0,0,0,0.15);
+  --scrollbar-thumb-hover: rgba(0,0,0,0.25);
+
+  --sidebar-item-hover: rgba(0, 0, 0, 0.04);
+  --sidebar-item-active: rgba(242, 95, 92, 0.08);
+
+  --task-bg: transparent;
+  --task-bg-hover: rgba(0, 0, 0, 0.02);
+  --task-bg-selected: rgba(242, 95, 92, 0.05);
+  --task-border-bottom: rgba(0, 0, 0, 0.05);
+}
