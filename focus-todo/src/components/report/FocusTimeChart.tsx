@@ -286,13 +286,13 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
       </div>
 
       {/* Canvas area */}
-      <div style={{
-        position: 'relative',
-        background: 'rgba(255,255,255,0.03)',
-        borderRadius: 12,
-        overflow: 'hidden',
-        height: 200,
-      }}>
+        <div style={{
+          position: 'relative',
+          background: 'var(--glass-bg)',
+          borderRadius: 12,
+          overflow: 'hidden',
+          height: 200,
+        }}>
         {hasData ? (
           <>
             <canvas
@@ -328,7 +328,7 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
             height: '100%', gap: 8,
           }}>
             <span style={{ fontSize: 32 }}>📭</span>
-            <span style={{ color: '#555', fontSize: 13 }}>No Data</span>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>No Data</span>
           </div>
         )}
       </div>
@@ -338,10 +338,10 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
 
 function navBtnStyle(): React.CSSProperties {
   return {
-    background: 'rgba(255,255,255,0.07)',
+    background: 'var(--glass-bg)',
     border: 'none',
     borderRadius: 8,
-    color: '#ccc',
+    color: 'var(--text-secondary)',
     fontSize: 18,
     width: 28,
     height: 28,

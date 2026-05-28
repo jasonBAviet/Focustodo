@@ -11,10 +11,10 @@ export interface DatePickerProps {
   onClose?: () => void;
 }
 
-const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
 ];
 
 function toLocalDateString(date: Date): string {
@@ -195,7 +195,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             type="button"
             className="datepicker-nav-btn"
             onClick={prevMonth}
-            aria-label="Thang truoc"
+            aria-label="Tháng trước"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -208,7 +208,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             type="button"
             className="datepicker-nav-btn"
             onClick={nextMonth}
-            aria-label="Thang sau"
+            aria-label="Tháng sau"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -268,7 +268,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
               className="btn btn--ghost btn--sm"
               onClick={handleRemove}
             >
-              Remove
+              Xóa
             </button>
           )}
           <button
@@ -277,7 +277,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             style={{ marginLeft: 'auto' }}
             onClick={handleOk}
           >
-            OK
+            Đồng ý
           </button>
         </div>
       </div>

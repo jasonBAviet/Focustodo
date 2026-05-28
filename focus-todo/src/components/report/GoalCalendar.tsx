@@ -17,10 +17,10 @@ interface GoalCalendarProps {
 // ----------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------
-const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
 ];
 
 /** Tổng focus time (phút) của tất cả tasks được cập nhật vào ngày d */
@@ -59,9 +59,7 @@ function isTodayDate(year: number, month: number, day: number): boolean {
 
 /** Trả về số ngày (1-indexed) bắt đầu tuần của ngày 1 tháng (0=Sun..6=Sat -> 0=Mon..6=Sun) */
 function getFirstDayOfMonthOffset(year: number, month: number): number {
-  const d = new Date(year, month, 1).getDay();
-  // Chuyển Sunday=0 sang vị trí cuối (6)
-  return d === 0 ? 6 : d - 1;
+  return new Date(year, month, 1).getDay(); // 0=CN, 1=T2, ..., 6=T7
 }
 
 // ----------------------------------------------------------
@@ -117,8 +115,8 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
       borderRadius: 16,
       padding: '18px 20px',
     }}>
@@ -127,7 +125,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', marginBottom: 12,
       }}>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 14 }}>
           Focus Time Goal
         </span>
         <div style={{
@@ -159,7 +157,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
         justifyContent: 'space-between', marginBottom: 12,
       }}>
         <button onClick={() => navigate(-1)} style={navBtn()}>‹</button>
-        <span style={{ color: '#ccc', fontSize: 13, fontWeight: 600 }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>
           {MONTH_NAMES[viewMonth]} {viewYear}
         </span>
         <button onClick={() => navigate(1)} style={navBtn()}>›</button>
@@ -172,7 +170,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
       }}>
         {DAY_LABELS.map((d) => (
           <div key={d} style={{
-            textAlign: 'center', color: '#666', fontSize: 10,
+            textAlign: 'center', color: 'var(--text-secondary)', fontSize: 10,
             fontWeight: 600, letterSpacing: 0.5, padding: '2px 0',
           }}>
             {d}
@@ -212,10 +210,10 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
                   ? `${accentColor}33`
                   : 'transparent',
                 color: isGoal
-                  ? '#fff'
+                  ? 'var(--text-on-accent)'
                   : isToday
                   ? accentColor
-                  : '#bbb',
+                  : 'var(--text-secondary)',
                 border: isToday && !isGoal
                   ? `1.5px solid ${accentColor}`
                   : '1.5px solid transparent',
@@ -247,7 +245,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
 function StatChip({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      <span style={{ color: '#666', fontSize: 10, letterSpacing: 0.5 }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 10, letterSpacing: 0.5 }}>{label}</span>
       <span style={{ color, fontWeight: 700, fontSize: 15 }}>{value}</span>
     </div>
   );
@@ -261,17 +259,17 @@ function LegendItem({ color, label, filled }: { color: string; label: string; fi
         background: filled ? color : 'transparent',
         border: filled ? 'none' : `2px solid ${color}`,
       }} />
-      <span style={{ color: '#666', fontSize: 10 }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>{label}</span>
     </div>
   );
 }
 
 function navBtn(): React.CSSProperties {
   return {
-    background: 'rgba(255,255,255,0.07)',
+    background: 'var(--glass-bg)',
     border: 'none',
     borderRadius: 8,
-    color: '#ccc',
+    color: 'var(--text-secondary)',
     fontSize: 18,
     width: 28,
     height: 28,

@@ -154,17 +154,17 @@ const AppearanceSettings: React.FC = () => {
       {/* Dark Mode */}
       <div>
         <label style={{ display: 'block', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-          Dark Mode
+          Chế độ hiển thị
         </label>
         <select style={selectStyle} value={settings.darkMode} onChange={handleDarkModeChange}>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="auto">Automatic (theo he thong)</option>
+          <option value="light">Sáng</option>
+          <option value="dark">Tối</option>
+          <option value="auto">Tự động (theo hệ thống)</option>
         </select>
       </div>
 
       {/* Theme Wallpaper */}
-      <div style={sectionLabelStyle}>Theme</div>
+      <div style={sectionLabelStyle}>Chủ đề</div>
       <div style={gridStyle}>
         {WALLPAPERS.map((wp) => (
           <WallpaperCard
@@ -178,7 +178,7 @@ const AppearanceSettings: React.FC = () => {
 
       {/* Thong tin them */}
       <div style={{ marginTop: 20, fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-        Wallpaper se duoc ap dung lam nen man hinh chinh cua ung dung.
+        Hình nền sẽ được áp dụng làm nền màn hình chính của ứng dụng.
       </div>
     </div>
   );

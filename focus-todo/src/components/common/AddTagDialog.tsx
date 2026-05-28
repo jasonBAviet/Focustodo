@@ -3,23 +3,23 @@ import { useTaskContext } from '../../contexts/TaskContext';
 import { useAppContext } from '../../contexts/AppContext';
 import ColorPicker from '../common/ColorPicker';
 
-const AddProjectDialog: React.FC = () => {
-  const { addProject } = useTaskContext();
+const AddTagDialog: React.FC = () => {
+  const { addTag } = useTaskContext();
   const { openModal, setOpenModal } = useAppContext();
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#4361ee');
+  const [color, setColor] = useState('#f4a261');
 
-  const isOpen = openModal === 'add-project';
+  const isOpen = openModal === 'add-tag';
 
   const handleClose = () => {
     setOpenModal(null);
     setName('');
-    setColor('#4361ee');
+    setColor('#f4a261');
   };
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    addProject(name.trim(), color);
+    addTag(name.trim(), color);
     handleClose();
   };
 
@@ -28,11 +28,11 @@ const AddProjectDialog: React.FC = () => {
   return (
     <div className="dialog-overlay" onClick={handleClose}>
       <div className="add-project-dialog animate-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3 className="add-project-title">Add Project</h3>
+        <h3 className="add-project-title">New Tag</h3>
         <input
           autoFocus
           className="add-project-input"
-          placeholder="New project name"
+          placeholder="Tag name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') handleClose(); }}
@@ -47,4 +47,4 @@ const AddProjectDialog: React.FC = () => {
   );
 };
 
-export default AddProjectDialog;
+export default AddTagDialog;

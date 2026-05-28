@@ -113,9 +113,9 @@ const PomodoroWidget: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          background: 'rgba(30,30,35,0.92)',
+          background: 'var(--bg-card)',
           backdropFilter: 'blur(12px)',
-          border: `1.5px solid ${accentColor}44`,
+          border: `1.5px solid var(--border)`,
           borderRadius: 999,
           padding: '8px 20px',
           cursor: 'pointer',
@@ -132,10 +132,10 @@ const PomodoroWidget: React.FC = () => {
           display: 'inline-block',
         }} />
         {/* Phút còn lại */}
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 18, letterSpacing: 1 }}>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 18, letterSpacing: 1 }}>
           {formatMM(timeLeft)}
         </span>
-        <span style={{ color: '#aaa', fontSize: 12 }}>{phaseLabel}</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{phaseLabel}</span>
         {/* Play/Pause */}
         <button
           onClick={(e) => { e.stopPropagation(); if (isRunning) pause(); else start(); }}
@@ -163,9 +163,9 @@ const PomodoroWidget: React.FC = () => {
       bottom: 24,
       left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(22,22,28,0.97)',
+      background: 'var(--bg-card)',
       backdropFilter: 'blur(16px)',
-      border: `1.5px solid ${accentColor}55`,
+      border: `1.5px solid var(--border)`,
       borderRadius: 24,
       padding: '24px 32px',
       width: 320,
@@ -182,7 +182,7 @@ const PomodoroWidget: React.FC = () => {
         style={{
           position: 'absolute', top: 12, right: 14,
           background: 'transparent', border: 'none',
-          color: '#888', fontSize: 18, cursor: 'pointer', lineHeight: 1,
+          color: 'var(--text-tertiary)', fontSize: 18, cursor: 'pointer', lineHeight: 1,
         }}
       >
         ×
@@ -190,7 +190,7 @@ const PomodoroWidget: React.FC = () => {
 
       {/* Tên task */}
       <p style={{
-        color: '#ccc', fontSize: 12, textAlign: 'center',
+        color: 'var(--text-secondary)', fontSize: 12, textAlign: 'center',
         marginBottom: 4, marginTop: 0, letterSpacing: 0.5,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
@@ -231,7 +231,7 @@ const PomodoroWidget: React.FC = () => {
           marginTop: 0,
         }}>
           <span style={{
-            color: '#fff', fontWeight: 700, fontSize: 28,
+            color: 'var(--text-primary)', fontWeight: 700, fontSize: 28,
             fontVariantNumeric: 'tabular-nums', letterSpacing: 2,
           }}>
             {formatMMSS(timeLeft)}
@@ -292,7 +292,7 @@ function btnStyle(bg: string, primary = false): React.CSSProperties {
     width: primary ? 52 : 40,
     height: primary ? 52 : 40,
     fontSize: primary ? 18 : 16,
-    color: '#fff',
+    color: primary ? '#fff' : 'var(--text-primary)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',

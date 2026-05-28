@@ -55,6 +55,22 @@ export interface Project {
   color: string;
   isVisible: boolean;
   taskCount: number;
+  folderId?: string | null;
+  createdAt: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  color: string;
+  projectIds: string[];
+  createdAt: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
   createdAt: string;
 }
 
@@ -71,7 +87,7 @@ export interface PomodoroSession {
 
 export interface WebhookEvent {
   id: string;
-  eventType: 'task.created' | 'task.completed' | 'pomodoro.completed';
+  eventType: 'task.created' | 'task.completed' | 'pomodoro.completed' | 'task.reminded';
   payload: Record<string, unknown>;
   timestamp: string;
   status: 'success' | 'error';
@@ -107,6 +123,8 @@ export interface Settings {
 export interface AppState {
   tasks: Task[];
   projects: Project[];
+  folders: Folder[];
+  tags: Tag[];
   pomodoroSessions: PomodoroSession[];
   webhookEvents: WebhookEvent[];
   settings: Settings;

@@ -57,7 +57,7 @@ const StatCard: React.FC<StatCardProps> = ({ data, accentRed, accentBlue }) => {
   const color = data.color === 'red' ? accentRed : accentBlue;
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.04)',
+      background: 'var(--bg-card)',
       border: `1px solid ${color}33`,
       borderRadius: 14,
       padding: '16px 20px',
@@ -84,11 +84,11 @@ const StatCard: React.FC<StatCardProps> = ({ data, accentRed, accentBlue }) => {
         {data.icon}
       </div>
       {/* Value */}
-      <div style={{ color: '#fff', fontWeight: 700, fontSize: 26, lineHeight: 1 }}>
+      <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 26, lineHeight: 1 }}>
         {data.value}
       </div>
       {/* Label */}
-      <div style={{ color: '#999', fontSize: 11, letterSpacing: 0.5, lineHeight: 1.4 }}>
+      <div style={{ color: 'var(--text-tertiary)', fontSize: 11, letterSpacing: 0.5, lineHeight: 1.4 }}>
         {data.label}
       </div>
     </div>

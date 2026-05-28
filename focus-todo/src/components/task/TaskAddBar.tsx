@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
+import { IconPomodoro } from '../common/IconPomodoro';
 import type { Priority } from '../../types';
 
 interface TaskAddBarProps {
@@ -18,6 +19,8 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('none');
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+  const [pomodoroEstimate, setPomodoroEstimate] = useState(1);
+  const [showPomoMenu, setShowPomoMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getProjectFromView = (): string | null => {
@@ -36,9 +39,10 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    addTask(title.trim(), getProjectFromView(), priority);
+    addTask(title.trim(), getProjectFromView(), priority, pomodoroEstimate);
     setTitle('');
     setPriority('none');
+    setPomodoroEstimate(1);
     inputRef.current?.focus();
   };
 
@@ -69,6 +73,45 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
         placeholder={getPlaceholder()}
       />
       <div className="task-add-bar__actions">
+        {/* Pomodoro estimate picker */}
+        <div className="task-add-bar__action-wrap">
+          <button
+            className="task-add-bar__action-btn"
+            title="So pomodoro"
+            onClick={() => setShowPomoMenu((v) => !v)}
+            style={{ color: pomodoroEstimate > 1 ? 'var(--accent)' : 'var(--text-tertiary)' }}
+          >
+            <IconPomodoro width="14" height="14" />
+            {pomodoroEstimate > 1 && (
+              <span style={{ marginLeft: 4, fontSize: 10, fontWeight: 600 }}>{pomodoroEstimate}</span>
+            )}
+          </button>
+          {showPomoMenu && (
+            <div className="task-add-bar__menu">
+              {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  className={`task-add-bar__menu-item ${pomodoroEstimate === n ? 'active' : ''}`}
+                  onClick={() => { setPomodoroEstimate(n); setShowPomoMenu(false); }}
+                >
+                  <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    {Array.from({ length: n }).map((_, j) => (
+                      <span key={j} style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: pomodoroEstimate === n ? 'var(--accent)' : 'var(--text-tertiary)',
+                        display: 'inline-block',
+                      }} />
+                    ))}
+                  </span>
+                  <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+                    {n * 25}m
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Priority picker */}
         <div className="task-add-bar__action-wrap">
           <button

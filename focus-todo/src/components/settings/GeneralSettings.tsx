@@ -5,6 +5,7 @@
 import React, { useRef, useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useTaskContext } from '../../contexts/TaskContext';
+import type { Priority } from '../../types';
 import { exportTasks } from '../../utils/exportUtils';
 import { importFromCSV, readFileAsText } from '../../utils/importUtils';
 
@@ -47,7 +48,7 @@ const btnStyle: React.CSSProperties = {
 const btnPrimaryStyle: React.CSSProperties = {
   ...btnStyle,
   background: 'var(--accent)',
-  color: '#fff',
+  color: 'var(--text-on-accent)',
   border: '1px solid var(--accent)',
 };
 
@@ -149,6 +150,22 @@ const GeneralSettings: React.FC = () => {
   };
 
   // ----------------------------------------------------------
+  // Tao du lieu mockup
+  // ----------------------------------------------------------
+  const handleGenerateMockData = () => {
+    const projects = ['inbox', 'work', 'study', 'personal'];
+    const priorities: Priority[] = ['none', 'low', 'medium', 'high'];
+    for (let i = 1; i <= 100; i++) {
+      const title = `Task Mockup ${i}`;
+      const proj = projects[Math.floor(Math.random() * projects.length)];
+      const prio = priorities[Math.floor(Math.random() * priorities.length)];
+      const estimate = Math.floor(Math.random() * 8) + 1; // 1 den 8 pomodoro
+      addTask(title, proj, prio, estimate);
+    }
+    alert('Đã tạo thành công 100 task mockup!');
+  };
+
+  // ----------------------------------------------------------
   // Focus Goal
   // ----------------------------------------------------------
   const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,21 +178,28 @@ const GeneralSettings: React.FC = () => {
   return (
     <div>
       {/* Section Du lieu */}
-      <div style={sectionTitleStyle}>Du lieu</div>
+      <div style={sectionTitleStyle}>Dữ liệu</div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <button type="button" style={btnPrimaryStyle} onClick={handleExport}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Xuat du lieu (CSV)
+          Xuất dữ liệu (CSV)
         </button>
 
         <button type="button" style={btnStyle} onClick={handleImportClick}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 9V1M4 4l3-3 3 3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Nhap tu CSV
+          Nhập từ CSV
+        </button>
+        
+        <button type="button" style={btnStyle} onClick={handleGenerateMockData}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M12 4v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4m10 0V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2m10 0h-10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Tạo Mockup 100 Tasks
         </button>
 
         {/* Input file an */}
@@ -198,7 +222,7 @@ const GeneralSettings: React.FC = () => {
           fontSize: 'var(--text-sm)',
           marginBottom: 10,
         }}>
-          Nhap thanh cong {importState.count} task tu CSV.
+          Nhập thành công {importState.count} task từ CSV.
         </div>
       )}
       {importState.status === 'error' && (
@@ -210,22 +234,22 @@ const GeneralSettings: React.FC = () => {
           fontSize: 'var(--text-sm)',
           marginBottom: 10,
         }}>
-          Loi: {importState.message}
+          Lỗi: {importState.message}
         </div>
       )}
 
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>
-        Hien co {tasks.length} task trong he thong.
+        Hiện có {tasks.length} task trong hệ thống.
       </div>
 
       <div style={dividerStyle} />
 
       {/* Section Focus Goal */}
-      <div style={sectionTitleStyle}>Focus Goal</div>
+      <div style={sectionTitleStyle}>Mục tiêu Focus</div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <label style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flex: 1 }}>
-          Muc tieu focus hang ngay
+          Mục tiêu focus hàng ngày
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
@@ -237,18 +261,18 @@ const GeneralSettings: React.FC = () => {
             value={settings.dailyFocusGoalHours}
             onChange={handleGoalChange}
           />
-          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>gio/ngay</span>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>giờ/ngày</span>
         </div>
       </div>
 
       <div style={{ ...dividerStyle, marginTop: 20 }} />
 
       {/* Section Thong tin */}
-      <div style={sectionTitleStyle}>Thong tin ung dung</div>
+      <div style={sectionTitleStyle}>Thông tin ứng dụng</div>
 
       <div>
         <div style={infoRowStyle}>
-          <span style={{ color: 'var(--text-secondary)' }}>Phien ban</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Phiên bản</span>
           <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>1.0.0</span>
         </div>
         <div style={{ ...infoRowStyle, borderBottom: 'none' }}>

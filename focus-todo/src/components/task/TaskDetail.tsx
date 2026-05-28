@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { Task, RepeatType } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
 import SubtaskList from './SubtaskList';
+import DatePicker from '../common/DatePicker';
 
 interface TaskDetailProps {
   task: Task;
@@ -22,6 +23,7 @@ const DetailRow: React.FC<{
         display: flex; align-items: center; gap: 10px;
         padding: 10px 0; border-bottom: 1px solid var(--divider);
         font-size: var(--text-sm); min-height: 40px;
+        position: relative;
       }
       .detail-row__icon { color: var(--text-tertiary); flex-shrink: 0; width: 16px; }
       .detail-row__label { color: var(--text-secondary); flex: 1; }
@@ -41,10 +43,16 @@ const PomodoroRow: React.FC<{ task: Task }> = ({ task }) => {
     >
       <div className="pomo-row">
         {Array.from({ length: Math.max(task.pomodoroEstimate, task.pomodoroCompleted, 4) }).map((_, i) => (
-          <span
+          <svg
             key={i}
-            className={`pomo-dot ${i < task.pomodoroCompleted ? 'done' : ''}`}
-          />
+            className={`pomo-icon ${i < task.pomodoroCompleted ? 'done' : ''}`}
+            width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <path d="M12 21c5.523 0 10-4.477 10-10 0-4.7-3-8.5-7.5-9.6a4.5 4.5 0 0 0-5 0C5 2.5 2 6.3 2 11c0 5.523 4.477 10 10 10z" className="tomato-body" />
+            <path d="M12 3v4" className="tomato-stem" />
+            <path d="M9 4s1-1 3-1 3 1 3 1" className="tomato-stem" />
+          </svg>
         ))}
         <span className="pomo-label">
           {task.pomodoroCompleted}/{task.pomodoroEstimate || 0} = {(task.pomodoroEstimate || 0) * 25}m
@@ -52,11 +60,12 @@ const PomodoroRow: React.FC<{ task: Task }> = ({ task }) => {
       </div>
       <style>{`
         .pomo-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-        .pomo-dot {
-          width: 8px; height: 8px; border-radius: 50%;
-          background: var(--border-strong); flex-shrink: 0;
+        .pomo-icon {
+          color: var(--border-strong); flex-shrink: 0;
         }
-        .pomo-dot.done { background: var(--accent); }
+        .pomo-icon.done { color: var(--accent); }
+        .pomo-icon .tomato-body { fill: currentColor; stroke: none; }
+        .pomo-icon .tomato-stem { stroke: var(--bg-dialog); }
         .pomo-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-left: 4px; }
       `}</style>
     </DetailRow>
@@ -73,7 +82,10 @@ const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const { updateTask, projects } = useTaskContext();
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [note, setNote] = useState(task.note);
+
+  useEffect(() => { setNote(task.note); }, [task.id]);
 
   const project = projects.find((p) => p.id === task.projectId);
 
@@ -111,10 +123,26 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         <button
           className="detail-inline-btn"
           style={{ color: dueDateColor }}
-          onClick={() => setShowDatePicker(!showDatePicker)}
+          onClick={() => { setShowDatePicker(!showDatePicker); setShowReminderPicker(false); }}
         >
           {dueDateText}
         </button>
+        {showDatePicker && (
+          <div className="detail-date-popover">
+            <DatePicker
+              value={task.dueDate}
+              onChange={(d) => {
+                updateTask(task.id, { dueDate: d });
+                setShowDatePicker(false);
+              }}
+              onRemove={() => {
+                updateTask(task.id, { dueDate: null });
+                setShowDatePicker(false);
+              }}
+              onClose={() => setShowDatePicker(false)}
+            />
+          </div>
+        )}
       </DetailRow>
 
       <DetailRow
@@ -135,7 +163,31 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Reminder"
       >
-        <span className="detail-muted">{task.reminder || 'Khong'}</span>
+        <button
+          className="detail-inline-btn"
+          onClick={() => { setShowReminderPicker(!showReminderPicker); setShowDatePicker(false); }}
+          style={{ color: task.reminder ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+        >
+          {task.reminder
+            ? dateUtils.formatShort(task.reminder)
+            : 'Khong'}
+        </button>
+        {showReminderPicker && (
+          <div className="detail-date-popover">
+            <DatePicker
+              value={task.reminder}
+              onChange={(d) => {
+                updateTask(task.id, { reminder: d });
+                setShowReminderPicker(false);
+              }}
+              onRemove={() => {
+                updateTask(task.id, { reminder: null });
+                setShowReminderPicker(false);
+              }}
+              onClose={() => setShowReminderPicker(false)}
+            />
+          </div>
+        )}
       </DetailRow>
 
       <DetailRow
@@ -178,6 +230,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         }
         .detail-inline-btn:hover { text-decoration: underline; }
         .detail-muted { color: var(--text-tertiary); }
+        .detail-date-popover {
+          position: absolute;
+          right: 0;
+          top: calc(100% + 8px);
+          z-index: 200;
+          background: var(--bg-dialog);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-lg);
+          animation: slide-in-down 150ms ease both;
+        }
         .detail-select {
           background: none; border: none; outline: none;
           color: var(--text-primary); font-size: var(--text-sm);

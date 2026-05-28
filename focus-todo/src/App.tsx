@@ -5,20 +5,41 @@ import Sidebar from './components/layout/Sidebar';
 import TaskList from './components/task/TaskList';
 import TaskPanel from './components/layout/TaskPanel';
 import AddProjectDialog from './components/common/AddProjectDialog';
+import AddFolderDialog from './components/common/AddFolderDialog';
+import AddTagDialog from './components/common/AddTagDialog';
 import ReportPage from './components/report/ReportPage';
 import PomodoroWidget from './components/pomodoro/PomodoroWidget';
+import HeaderActions from './components/layout/HeaderActions';
+import useWebhook from './hooks/useWebhook';
+import { useReminderCheck } from './hooks/useReminderCheck';
 import './styles/index.css';
 
 // Inner app - co the truy cap vao AppContext
 const AppInner: React.FC = () => {
-  const { openModal } = useAppContext();
-  const { selectedTaskId } = useTaskContext();
+  const { openModal, settings } = useAppContext();
+  const { selectedTaskId, tasks } = useTaskContext();
   const [showReport, setShowReport] = useState(false);
+
+  // Webhook integration
+  const { onTaskReminded } = useWebhook(
+    settings.webhookUrl,
+    settings.webhookEnabled
+  );
+
+  // Reminder checker
+  useReminderCheck({
+    tasks,
+    webhookEnabled: settings.webhookEnabled,
+    onTaskReminded,
+  });
 
   const handleShowReport = () => setShowReport((v) => !v);
 
   return (
     <div className={`app-layout ${!selectedTaskId ? 'panel-hidden' : ''}`}>
+      {/* Header Actions (Top Right) */}
+      <HeaderActions onShowReport={handleShowReport} />
+
       {/* Left sidebar */}
       <Sidebar />
 
@@ -28,21 +49,6 @@ const AppInner: React.FC = () => {
           <ReportPage />
         ) : (
           <>
-            {/* Report shortcut button */}
-            <div className="report-shortcut">
-              <button
-                className="report-shortcut-btn"
-                onClick={handleShowReport}
-                title="Xem bao cao"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="10" width="3" height="4" rx="1" fill="currentColor"/>
-                  <rect x="6.5" y="7" width="3" height="7" rx="1" fill="currentColor"/>
-                  <rect x="11" y="4" width="3" height="10" rx="1" fill="currentColor"/>
-                </svg>
-                Report
-              </button>
-            </div>
             <TaskList />
           </>
         )}
@@ -53,6 +59,8 @@ const AppInner: React.FC = () => {
 
       {/* Dialogs */}
       <AddProjectDialog />
+      <AddFolderDialog />
+      <AddTagDialog />
 
       {/* Pomodoro widget */}
       <PomodoroWidget />
@@ -65,23 +73,6 @@ const AppInner: React.FC = () => {
       )}
 
       <style>{`
-        .report-shortcut {
-          display: flex; justify-content: flex-end;
-          padding: 8px 24px 0;
-        }
-        .report-shortcut-btn {
-          display: flex; align-items: center; gap: 6px;
-          background: var(--glass-bg); border: 1px solid var(--border);
-          border-radius: var(--radius-full); padding: 5px 12px;
-          color: var(--text-secondary); font-size: var(--text-xs);
-          cursor: pointer; font-family: var(--font-main);
-          transition: all var(--transition-fast);
-        }
-        .report-shortcut-btn:hover {
-          background: var(--glass-bg-hover);
-          color: var(--text-primary);
-          border-color: var(--border-strong);
-        }
       `}</style>
     </div>
   );

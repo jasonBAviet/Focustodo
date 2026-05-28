@@ -5,20 +5,31 @@ export interface CSVRow {
   ID: string;
   Title: string;
   Project: string;
+  'Project ID': string;
   Priority: string;
-  'Due Date': string;
   Status: string;
+  'Due Date': string;
+  Reminder: string;
+  Repeat: string;
+  'Repeat Custom': string;
   'Pomodoro Estimated': number;
   'Pomodoro Completed': number;
   'Focus Time (min)': number;
   Note: string;
+  Flagged: string;
+  Tags: string;
+  Subtasks: string;
   'Created At': string;
+  'Completed At': string;
+  'Updated At': string;
 }
 
 const CSV_HEADERS: (keyof CSVRow)[] = [
-  'ID', 'Title', 'Project', 'Priority', 'Due Date',
-  'Status', 'Pomodoro Estimated', 'Pomodoro Completed',
-  'Focus Time (min)', 'Note', 'Created At',
+  'ID', 'Title', 'Project', 'Project ID', 'Priority', 'Status',
+  'Due Date', 'Reminder', 'Repeat', 'Repeat Custom',
+  'Pomodoro Estimated', 'Pomodoro Completed', 'Focus Time (min)',
+  'Note', 'Flagged', 'Tags', 'Subtasks',
+  'Created At', 'Completed At', 'Updated At',
 ];
 
 function escapeCsv(value: string | number): string {
@@ -37,14 +48,25 @@ export function tasksToCSV(tasks: Task[], getProjectName: (id: string | null) =>
       ID: task.id,
       Title: task.title,
       Project: getProjectName(task.projectId),
+      'Project ID': task.projectId || '',
       Priority: task.priority,
-      'Due Date': task.dueDate ? dateUtils.format(task.dueDate) : '',
       Status: task.completed ? 'Completed' : 'Active',
+      'Due Date': task.dueDate ? dateUtils.format(task.dueDate) : '',
+      Reminder: task.reminder || '',
+      Repeat: task.repeat,
+      'Repeat Custom': task.repeatCustom || '',
       'Pomodoro Estimated': task.pomodoroEstimate,
       'Pomodoro Completed': task.pomodoroCompleted,
       'Focus Time (min)': task.totalFocusTime,
       Note: task.note,
+      Flagged: task.flagged ? 'true' : 'false',
+      Tags: task.tags.join(', '),
+      Subtasks: task.subtasks.length > 0
+        ? JSON.stringify(task.subtasks.map((s) => ({ title: s.title, completed: s.completed })))
+        : '',
       'Created At': dateUtils.format(task.createdAt),
+      'Completed At': task.completedAt ? dateUtils.format(task.completedAt) : '',
+      'Updated At': dateUtils.format(task.updatedAt),
     };
     return CSV_HEADERS.map((h) => escapeCsv(row[h])).join(',');
   });
