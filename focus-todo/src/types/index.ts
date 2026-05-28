@@ -1,0 +1,178 @@
+// ============================================================
+// FOCUS TO-DO - TYPE DEFINITIONS
+// ============================================================
+
+export type Priority = 'high' | 'medium' | 'low' | 'none';
+export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
+export type PomodoroPhase = 'idle' | 'focus' | 'short-break' | 'long-break';
+export type ThemeMode = 'light' | 'dark' | 'auto';
+export type ViewType =
+  | 'today'
+  | 'tomorrow'
+  | 'this-week'
+  | 'planned'
+  | 'events'
+  | 'completed'
+  | 'all'
+  | 'someday'
+  | 'high-priority'
+  | 'medium-priority'
+  | 'low-priority'
+  | 'project';
+
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  projectId: string | null;
+  priority: Priority;
+  dueDate: string | null;
+  reminder: string | null;
+  repeat: RepeatType;
+  repeatCustom: string | null;
+  note: string;
+  subtasks: Subtask[];
+  pomodoroEstimate: number;
+  pomodoroCompleted: number;
+  totalFocusTime: number; // in minutes
+  completed: boolean;
+  flagged: boolean;
+  tags: string[];
+  createdAt: string;
+  completedAt: string | null;
+  updatedAt: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  color: string;
+  isVisible: boolean;
+  taskCount: number;
+  createdAt: string;
+}
+
+export interface PomodoroSession {
+  id: string;
+  taskId: string | null;
+  taskTitle: string | null;
+  type: 'focus' | 'short-break' | 'long-break';
+  duration: number; // in minutes
+  startTime: string;
+  endTime: string;
+  completed: boolean;
+}
+
+export interface WebhookEvent {
+  id: string;
+  eventType: 'task.created' | 'task.completed' | 'pomodoro.completed';
+  payload: Record<string, unknown>;
+  timestamp: string;
+  status: 'success' | 'error';
+  statusCode?: number;
+  error?: string;
+}
+
+export interface Settings {
+  // Pomodoro
+  pomodoroLength: number;
+  shortBreakLength: number;
+  longBreakLength: number;
+  longBreakAfter: number;
+  autoStartNextPomodoro: boolean;
+  autoStartBreak: boolean;
+  disableBreak: boolean;
+  alarmSound: boolean;
+  // Appearance
+  darkMode: ThemeMode;
+  themeWallpaper: string;
+  accentColor: string;
+  // Webhook & API
+  webhookUrl: string;
+  webhookEnabled: boolean;
+  externalApiUrl: string;
+  externalApiEnabled: boolean;
+  // Focus Goal
+  dailyFocusGoalHours: number;
+  // Visible views in sidebar
+  visibleViews: Record<string, boolean>;
+}
+
+export interface AppState {
+  tasks: Task[];
+  projects: Project[];
+  pomodoroSessions: PomodoroSession[];
+  webhookEvents: WebhookEvent[];
+  settings: Settings;
+  selectedTaskId: string | null;
+  activeView: ViewType;
+  activeProjectId: string | null;
+  searchQuery: string;
+}
+
+export interface TaskFilter {
+  view: ViewType;
+  projectId: string | null;
+  searchQuery: string;
+}
+
+export interface ReportStats {
+  totalFocusTime: number;
+  weekFocusTime: number;
+  todayFocusTime: number;
+  totalCompleted: number;
+  weekCompleted: number;
+  todayCompleted: number;
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  pomodoroLength: 25,
+  shortBreakLength: 5,
+  longBreakLength: 15,
+  longBreakAfter: 4,
+  autoStartNextPomodoro: false,
+  autoStartBreak: false,
+  disableBreak: false,
+  alarmSound: true,
+  darkMode: 'dark',
+  themeWallpaper: 'dark-forest',
+  accentColor: '#f25f5c',
+  webhookUrl: '',
+  webhookEnabled: false,
+  externalApiUrl: '',
+  externalApiEnabled: false,
+  dailyFocusGoalHours: 3,
+  visibleViews: {
+    today: true,
+    tomorrow: true,
+    'this-week': true,
+    planned: true,
+    events: true,
+    completed: true,
+    all: false,
+    someday: false,
+    'high-priority': false,
+    'medium-priority': false,
+    'low-priority': false,
+  },
+};
+
+export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
+  high: { label: 'Uu tien cao', color: '#f25f5c' },
+  medium: { label: 'Uu tien trung binh', color: '#f4a261' },
+  low: { label: 'Uu tien thap', color: '#2ec4b6' },
+  none: { label: 'Khong uu tien', color: '#888' },
+};
+
+export const PROJECT_COLORS = [
+  '#7ec8e3', '#4361ee', '#00c5cd', '#f4a261', '#e63946',
+  '#ff006e', '#e040fb', '#7cb518', '#06d6a0', '#ff9f1c',
+  '#4cc9f0', '#7209b7', '#3a0ca3', '#f72585', '#b5e48c',
+  '#90e0ef', '#48cae4', '#023e8a', '#8d99ae', '#2b2d42',
+];
