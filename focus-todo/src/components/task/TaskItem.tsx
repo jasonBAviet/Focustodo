@@ -2,10 +2,12 @@ import React, { useCallback } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { Task } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
+import { IconPomodoro } from '../common/IconPomodoro';
 
 interface TaskItemProps {
   task: Task;
   isSelected: boolean;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 const PriorityDot: React.FC<{ priority: Task['priority'] }> = ({ priority }) => {
@@ -46,7 +48,7 @@ const CheckCircle: React.FC<{ checked: boolean; onChange: () => void }> = ({ che
   </button>
 );
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) => {
   const { completeTask, restoreTask, setSelectedTaskId } = useTaskContext();
 
   const handleToggle = useCallback(() => {
@@ -65,6 +67,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected }) => {
     ? 'overdue'
     : '';
 
+  const completedDateText = task.completed && task.completedAt
+    ? dateUtils.formatShort(task.completedAt)
+    : '';
+
   const subtasksDone = task.subtasks.filter((s) => s.completed).length;
   const hasSubtasks = task.subtasks.length > 0;
 
@@ -72,6 +78,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected }) => {
     <div
       className={`task-item ${isSelected ? 'selected' : ''} ${task.completed ? 'completed' : ''}`}
       onClick={handleSelect}
+      onContextMenu={onContextMenu}
     >
       <CheckCircle checked={task.completed} onChange={handleToggle} />
       <PriorityDot priority={task.priority} />
@@ -86,16 +93,21 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected }) => {
           )}
           {task.pomodoroEstimate > 0 && (
             <span className="task-item__pomo">
-              <span className="task-item__pomo-dot" />
+              <IconPomodoro width="14" height="14" />
               {task.pomodoroCompleted}/{task.pomodoroEstimate}
             </span>
           )}
         </div>
       </div>
 
-      {task.dueDate && (
+      {task.dueDate && !task.completed && (
         <span className={`task-item__due ${dueDateClass}`}>
           {dateUtils.formatShort(task.dueDate)}
+        </span>
+      )}
+      {task.completed && completedDateText && (
+        <span className="task-item__completed-date">
+          {completedDateText}
         </span>
       )}
 
@@ -156,13 +168,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected }) => {
           color: var(--text-tertiary);
           display: flex; align-items: center; gap: 3px;
         }
-        .task-item__pomo-dot {
-          width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
-        }
         .task-item__due {
           font-size: var(--text-xs); color: var(--text-tertiary); flex-shrink: 0;
         }
         .task-item__due.overdue { color: var(--priority-high); font-weight: 500; }
+        .task-item__completed-date {
+          font-size: var(--text-xs); color: var(--stat-blue); flex-shrink: 0;
+          background: rgba(76,201,240,0.1); padding: 2px 8px; border-radius: var(--radius-full);
+        }
       `}</style>
     </div>
   );

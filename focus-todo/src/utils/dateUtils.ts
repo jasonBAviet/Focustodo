@@ -23,7 +23,16 @@ export const dateUtils = {
   },
 
   formatShort(dateStr: string | null): string {
-    return this.format(dateStr, true);
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      const day = d.getDate();
+      const month = d.toLocaleString('en', { month: 'short' });
+      return `${day} ${month} ${d.getFullYear()}`;
+    } catch {
+      return '';
+    }
   },
 
   isToday(dateStr: string | null): boolean {

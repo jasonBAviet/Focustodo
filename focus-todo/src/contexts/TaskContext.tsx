@@ -6,17 +6,23 @@ import React, {
   createContext,
   useContext,
   useCallback,
+  useEffect,
   useMemo,
+  useState,
 } from 'react';
 import type {
   Task,
   Project,
+  Folder,
+  Tag,
   ViewType,
   Priority,
   Subtask,
 } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
+import { loadRemoteAppState, saveRemoteAppState } from '../utils/remoteState';
+import type { RemoteAppState } from '../utils/remoteState';
 
 // ----------------------------------------------------------
 // Danh sách project mặc định khi localStorage còn trống
@@ -34,6 +40,8 @@ const DEFAULT_PROJECTS: Project[] = [
 interface TaskContextType {
   tasks: Task[];
   projects: Project[];
+  folders: Folder[];
+  tags: Tag[];
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
@@ -42,14 +50,20 @@ interface TaskContextType {
   setActiveView: (view: ViewType) => void;
   setActiveProjectId: (id: string | null) => void;
   setSearchQuery: (q: string) => void;
-  addTask: (title: string, projectId?: string | null, priority?: Priority) => Task;
+  addTask: (title: string, projectId?: string | null, priority?: Priority, pomodoroEstimate?: number) => Task;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   completeTask: (id: string) => Task | null;
   restoreTask: (id: string) => void;
-  addProject: (name: string, color: string) => Project;
+  addProject: (name: string, color: string, folderId?: string | null) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+  addFolder: (name: string, color: string) => Folder;
+  updateFolder: (id: string, updates: Partial<Folder>) => void;
+  deleteFolder: (id: string) => void;
+  addTag: (name: string, color: string) => Tag;
+  updateTag: (id: string, updates: Partial<Tag>) => void;
+  deleteTag: (id: string) => void;
   addSubtask: (taskId: string, title: string) => void;
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
@@ -68,6 +82,8 @@ export const TaskContext = createContext<TaskContextType | null>(null);
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('focus-tasks', []);
   const [projects, setProjects] = useLocalStorage<Project[]>('focus-projects', DEFAULT_PROJECTS);
+  const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
+  const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
   const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
   const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
@@ -80,6 +96,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     title: string,
     projectId: string | null = null,
     priority: Priority = 'none',
+    pomodoroEstimate: number = 1,
   ): Task => {
     const now = dateUtils.now();
     const newTask: Task = {
@@ -93,7 +110,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       repeatCustom: null,
       note: '',
       subtasks: [],
-      pomodoroEstimate: 1,
+      pomodoroEstimate,
       pomodoroCompleted: 0,
       totalFocusTime: 0,
       completed: false,
@@ -202,18 +219,22 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
   // Project actions
   // --------------------------------------------------------
-  const addProject = useCallback((name: string, color: string): Project => {
+  const addProject = useCallback((name: string, color: string, folderId: string | null = null): Project => {
     const newProject: Project = {
       id: crypto.randomUUID(),
       name,
       color,
       isVisible: true,
       taskCount: 0,
+      folderId,
       createdAt: dateUtils.now(),
     };
     setProjects((prev) => [...prev, newProject]);
+    if (folderId) {
+      setFolders((prev) => prev.map(f => f.id === folderId ? { ...f, projectIds: [...f.projectIds, newProject.id] } : f));
+    }
     return newProject;
-  }, [setProjects]);
+  }, [setProjects, setFolders]);
 
   const updateProject = useCallback((id: string, updates: Partial<Project>) => {
     setProjects((prev) =>
@@ -223,13 +244,63 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProject = useCallback((id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
+    setFolders((prev) => prev.map(f => ({ ...f, projectIds: f.projectIds.filter(pid => pid !== id) })));
     // Gỡ liên kết task khỏi project bị xoá
     setTasks((prev) =>
       prev.map((t) =>
         t.projectId === id ? { ...t, projectId: null, updatedAt: dateUtils.now() } : t,
       ),
     );
-  }, [setProjects, setTasks]);
+  }, [setProjects, setFolders, setTasks]);
+
+  // --------------------------------------------------------
+  // Folder actions
+  // --------------------------------------------------------
+  const addFolder = useCallback((name: string, color: string): Folder => {
+    const newFolder: Folder = {
+      id: crypto.randomUUID(),
+      name,
+      color,
+      projectIds: [],
+      createdAt: dateUtils.now(),
+    };
+    setFolders((prev) => [...prev, newFolder]);
+    return newFolder;
+  }, [setFolders]);
+
+  const updateFolder = useCallback((id: string, updates: Partial<Folder>) => {
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+  }, [setFolders]);
+
+  const deleteFolder = useCallback((id: string) => {
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    setProjects((prev) => prev.map((p) => p.folderId === id ? { ...p, folderId: null } : p));
+  }, [setFolders, setProjects]);
+
+  // --------------------------------------------------------
+  // Tag actions
+  // --------------------------------------------------------
+  const addTag = useCallback((name: string, color: string): Tag => {
+    const newTag: Tag = {
+      id: crypto.randomUUID(),
+      name,
+      color,
+      createdAt: dateUtils.now(),
+    };
+    setTags((prev) => [...prev, newTag]);
+    return newTag;
+  }, [setTags]);
+
+  const updateTag = useCallback((id: string, updates: Partial<Tag>) => {
+    setTags((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+  }, [setTags]);
+
+  const deleteTag = useCallback((id: string) => {
+    setTags((prev) => prev.filter((t) => t.id !== id));
+    setTasks((prev) => prev.map((task) => 
+      task.tags.includes(id) ? { ...task, tags: task.tags.filter(tid => tid !== id), updatedAt: dateUtils.now() } : task
+    ));
+  }, [setTags, setTasks]);
 
   // --------------------------------------------------------
   // Lấy tên project theo id
@@ -245,6 +316,83 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
   // Logic lọc task theo view + searchQuery
   // --------------------------------------------------------
+  const [remoteSyncEnabled, setRemoteSyncEnabled] = useState<boolean>(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRemoteState() {
+      try {
+        const remoteState = await loadRemoteAppState();
+        if (!mounted) return;
+
+        if (remoteState) {
+          setTasks(remoteState.tasks);
+          setProjects(
+            remoteState.projects.length > 0 ? remoteState.projects : DEFAULT_PROJECTS,
+          );
+          setFolders(remoteState.folders || []);
+          setTags(remoteState.tags || []);
+          setSelectedTaskId(remoteState.selectedTaskId);
+
+          const localActiveView = window.localStorage.getItem('focus-active-view');
+          if (!localActiveView || localActiveView === 'today') {
+            setActiveView(remoteState.activeView);
+          }
+
+          const localActiveProjectId = window.localStorage.getItem('focus-active-project');
+          if (!localActiveProjectId || localActiveProjectId === 'null') {
+            setActiveProjectId(remoteState.activeProjectId);
+          }
+
+          const localSearchQuery = window.localStorage.getItem('focus-search');
+          if (!localSearchQuery) {
+            setSearchQuery(remoteState.searchQuery);
+          }
+        }
+
+        setRemoteSyncEnabled(true);
+      } catch (error) {
+        console.warn('Remote DB sync unavailable:', error);
+        setRemoteSyncEnabled(false);
+      }
+    }
+
+    loadRemoteState();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setActiveProjectId, setActiveView, setProjects, setFolders, setTags, setSearchQuery, setSelectedTaskId, setTasks]);
+
+  useEffect(() => {
+    if (!remoteSyncEnabled) return;
+
+    const currentState: RemoteAppState = {
+      tasks,
+      projects,
+      folders,
+      tags,
+      selectedTaskId,
+      activeView,
+      activeProjectId,
+      searchQuery,
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      saveRemoteAppState(currentState).catch((error) => {
+        console.warn('Unable to save state to remote DB:', error);
+      });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [tasks, projects, folders, tags, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
+
+  const hasValidDueDate = (task: Task) =>
+    typeof task.dueDate === 'string' && task.dueDate.trim() !== '';
+
   const getFilteredTasks = useCallback((): Task[] => {
     let filtered: Task[] = [];
 
@@ -268,8 +416,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         break;
 
       case 'planned':
-        // Tất cả task có dueDate bất kỳ, chưa hoàn thành
-        filtered = tasks.filter((t) => !t.completed && t.dueDate !== null);
+        // Tất cả task có dueDate hợp lệ, chưa hoàn thành
+        filtered = tasks.filter((t) => !t.completed && hasValidDueDate(t));
         break;
 
       case 'completed':
@@ -328,6 +476,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     () => ({
       tasks,
       projects,
+      folders,
+      tags,
       selectedTaskId,
       activeView,
       activeProjectId,
@@ -344,6 +494,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       addProject,
       updateProject,
       deleteProject,
+      addFolder,
+      updateFolder,
+      deleteFolder,
+      addTag,
+      updateTag,
+      deleteTag,
       addSubtask,
       toggleSubtask,
       deleteSubtask,
@@ -351,10 +507,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       getProjectName,
     }),
     [
-      tasks, projects, selectedTaskId, activeView, activeProjectId, searchQuery,
+      tasks, projects, folders, tags, selectedTaskId, activeView, activeProjectId, searchQuery,
       setSelectedTaskId, setActiveView, setActiveProjectId, setSearchQuery,
       addTask, updateTask, deleteTask, completeTask, restoreTask,
       addProject, updateProject, deleteProject,
+      addFolder, updateFolder, deleteFolder,
+      addTag, updateTag, deleteTag,
       addSubtask, toggleSubtask, deleteSubtask,
       getFilteredTasks, getProjectName,
     ],
