@@ -282,8 +282,11 @@ app.get('/api/state', async (req, res) => {
 // Reconciliation helper: upsert payload rows, delete the rest
 // ============================================================
 async function reconcileTable(client, table, rows, columns, toValues) {
+  // Khoá hàng theo thứ tự id cố định để hai transaction đồng thời không
+  // deadlock (cùng thứ tự lock).
+  const sortedRows = [...rows].sort((a, b) => String(a.id).localeCompare(String(b.id)));
   // Upsert every row in the payload
-  for (const row of rows) {
+  for (const row of sortedRows) {
     const cols = columns;
     const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
     const updates = cols
@@ -296,23 +299,38 @@ async function reconcileTable(client, table, rows, columns, toValues) {
       toValues(row),
     );
   }
-  // Delete rows no longer present in the payload
+  // Delete rows no longer present in the payload.
   const ids = rows.map((r) => r.id);
   if (ids.length > 0) {
-    await client.query(
-      `DELETE FROM ${table} WHERE id <> ALL($1::text[])`,
-      [ids],
-    );
+    // SAFETY: chặn xoá thảm hoạ - nếu payload sẽ xoá >=90% bảng đang có
+    // >=20 dòng thì nhiều khả năng client gửi state cũ/lỗi -> bỏ qua delete.
+    const existing = await client.query(`SELECT count(*)::int AS n FROM ${table}`);
+    const total = existing.rows[0].n;
+    if (total >= 20 && ids.length < total * 0.1) {
+      console.warn(`[safety] Skip mass-delete on "${table}": payload ${ids.length} vs existing ${total}.`);
+    } else {
+      await client.query(
+        `DELETE FROM ${table} WHERE id <> ALL($1::text[])`,
+        [ids],
+      );
+    }
   } else {
-    await client.query(`DELETE FROM ${table}`);
+    // SAFETY: không xoá sạch một bảng đang có dữ liệu khi payload rỗng.
+    // Payload rỗng thường là do client chưa load xong (state trống) -> nếu
+    // xoá hết sẽ mất dữ liệu (đã từng xảy ra do crash loop). Bỏ qua delete.
+    const existing = await client.query(`SELECT count(*)::int AS n FROM ${table}`);
+    if (existing.rows[0].n > 0) {
+      console.warn(`[safety] Skip wiping non-empty table "${table}" with empty payload.`);
+    }
   }
 }
 
 // ============================================================
 // POST /api/state - persist full state transactionally
 // ============================================================
-app.post('/api/state', async (req, res) => {
-  const incoming = req.body.state ?? req.body;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function persistState(incoming) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -436,13 +454,30 @@ app.post('/api/state', async (req, res) => {
     );
 
     await client.query('COMMIT');
-    res.json({ status: 'ok' });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
-    console.error('Failed to save remote state:', error);
-    res.status(500).json({ error: 'Failed to save remote state' });
+    throw error;
   } finally {
     client.release();
+  }
+}
+
+app.post('/api/state', async (req, res) => {
+  const incoming = req.body.state ?? req.body;
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await persistState(incoming);
+      return res.json({ status: 'ok' });
+    } catch (error) {
+      // 40P01 = deadlock_detected -> thử lại với độ trễ ngẫu nhiên
+      if (error.code === '40P01' && attempt < maxAttempts) {
+        await sleep(50 + Math.random() * 100);
+        continue;
+      }
+      console.error('Failed to save remote state:', error);
+      return res.status(500).json({ error: 'Failed to save remote state' });
+    }
   }
 });
 

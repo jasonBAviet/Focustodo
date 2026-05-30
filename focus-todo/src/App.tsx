@@ -54,7 +54,7 @@ const AppInner: React.FC = () => {
       {/* Main content */}
       <main className="main-content">
         {showReport ? (
-          <ReportPage />
+          <ReportPage onClose={handleShowReport} />
         ) : (
           <>
             <TaskList />

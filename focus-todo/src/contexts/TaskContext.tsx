@@ -11,6 +11,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type {
@@ -153,25 +154,21 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, [setTasks, setSelectedTaskId]);
 
   const completeTask = useCallback((id: string): Task | null => {
-    let completed: Task | null = null;
-    setTasks((prev) => {
-      const updated = prev.map((t) => {
-        if (t.id === id) {
-          completed = {
-            ...t,
-            completed: true,
-            completedAt: dateUtils.now(),
-            updatedAt: dateUtils.now(),
-          };
-          return completed;
-        }
-        return t;
-      });
-      return updated;
-    });
-    if (completed) onTaskCompleted(completed);
+    // Tính task hoàn thành từ state hiện tại (không phụ thuộc updater chạy
+    // đồng bộ) để webhook task.completed luôn bắn đúng.
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return null;
+    const now = dateUtils.now();
+    const completed: Task = {
+      ...target,
+      completed: true,
+      completedAt: now,
+      updatedAt: now,
+    };
+    setTasks((prev) => prev.map((t) => (t.id === id ? completed : t)));
+    onTaskCompleted(completed);
     return completed;
-  }, [setTasks, onTaskCompleted]);
+  }, [tasks, setTasks, onTaskCompleted]);
 
   const restoreTask = useCallback((id: string) => {
     setTasks((prev) =>
@@ -344,6 +341,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // Đồng bộ với DB (nguồn dữ liệu chính)
   // --------------------------------------------------------
   const [remoteSyncEnabled, setRemoteSyncEnabled] = useState<boolean>(false);
+  const lastSavedStateRef = useRef<string>('');
 
   useEffect(() => {
     let mounted = true;
@@ -368,9 +366,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
             updateSettings(remoteState.settings);
           }
 
-          setActiveView(remoteState.activeView);
-          setActiveProjectId(remoteState.activeProjectId);
-          setSearchQuery(remoteState.searchQuery);
+          // Không ghi đè state UI (activeView, activeProjectId, searchQuery) từ DB
+          // Điều này giúp bảo toàn URL routing hiện tại và không làm hỏng Deep Linking.
+          // setActiveView(remoteState.activeView);
+          // setActiveProjectId(remoteState.activeProjectId);
+          // setSearchQuery(remoteState.searchQuery);
         }
 
         setRemoteSyncEnabled(true);
@@ -408,7 +408,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       searchQuery,
     };
 
+    const stateStr = JSON.stringify(currentState);
+    if (stateStr === lastSavedStateRef.current) {
+      return; // State hasn't changed, skip auto-save
+    }
+
     const timeoutId = window.setTimeout(() => {
+      lastSavedStateRef.current = stateStr;
       saveRemoteAppState(currentState).catch((error) => {
         console.warn('Unable to save state to remote DB:', error);
       });

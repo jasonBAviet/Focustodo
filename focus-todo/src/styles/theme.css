@@ -23,9 +23,13 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Typography */
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  /* Typography - Apple macOS system font stack */
+  --font-main: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Menlo', 'Monaco', 'Cascadia Code',
+    'JetBrains Mono', monospace;
+  /* Tinh chỉnh chữ kiểu Apple: chống răng cưa + giãn chữ nhẹ */
+  --letter-spacing-tight: -0.01em;
   --text-xs: 11px;
   --text-sm: 12px;
   --text-base: 13px;

@@ -1,7 +1,6 @@
 /* ============================================================
    FOCUS TO-DO - BASE & LAYOUT STYLES
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import './theme.css';
 @import './animations.css';
 
@@ -25,6 +24,12 @@ body {
   line-height: 1.5;
   overflow: hidden;
   height: 100vh;
+  /* Render chữ mượt kiểu macOS */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: var(--letter-spacing-tight);
+  font-feature-settings: 'kern' 1, 'liga' 1;
   transition: background var(--transition-slow), color var(--transition-slow);
 }
 

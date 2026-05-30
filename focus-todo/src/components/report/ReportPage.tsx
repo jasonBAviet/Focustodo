@@ -14,8 +14,12 @@ const PERIODS: { value: ChartPeriod; label: string }[] = [
   { value: 'yearly', label: 'Year' },
 ];
 
-const ReportPage: React.FC = () => {
-  const { setOpenModal, settings } = useAppContext();
+interface ReportPageProps {
+  onClose?: () => void;
+}
+
+const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
+  const { settings } = useAppContext();
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily');
   const [chartDate, setChartDate] = useState(new Date());
 
@@ -39,8 +43,8 @@ const ReportPage: React.FC = () => {
         <h1 className="report-title">Report</h1>
         <button
           className="icon-btn"
-          onClick={() => setOpenModal(null)}
-          title="Dong bao cao"
+          onClick={() => onClose?.()}
+          title="Đóng báo cáo"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M4 4l10 10M14 4L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
