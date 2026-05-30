@@ -1,6 +1,5 @@
 import React from 'react';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import type { PomodoroSession } from '../../types';
+import { useTaskContext } from '../../contexts/TaskContext';
 
 const PHASE_CONFIG: Record<string, { label: string; color: string }> = {
   focus: { label: 'Focus', color: '#f25f5c' },
@@ -19,9 +18,9 @@ function formatDate(iso: string): string {
 }
 
 const PomodoroRecords: React.FC = () => {
-  const [sessions] = useLocalStorage<PomodoroSession[]>('focus-pomodoro-sessions', []);
+  const { pomodoroSessions } = useTaskContext();
 
-  const recentSessions = sessions.slice(0, 50);
+  const recentSessions = pomodoroSessions.slice(0, 50);
 
   if (recentSessions.length === 0) {
     return (

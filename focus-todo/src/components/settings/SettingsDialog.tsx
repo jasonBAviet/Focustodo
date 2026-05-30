@@ -10,6 +10,7 @@ import PomodoroTimerSettings from './PomodoroTimerSettings';
 import ProjectsSettings from './ProjectsSettings';
 import WebhookSettings from './WebhookSettings';
 import GeneralSettings from './GeneralSettings';
+import AccountSettings from './AccountSettings';
 
 // ----------------------------------------------------------
 // Kieu du lieu Tab
@@ -75,19 +76,6 @@ const TABS: TabItem[] = [
   { id: 'appearance',label: 'Appearance',     icon: <IconAppearance /> },
   { id: 'webhook',   label: 'Webhook',        icon: <IconWebhook /> },
 ];
-
-// ----------------------------------------------------------
-// Tab Account - placeholder don gian
-// ----------------------------------------------------------
-const AccountSettings: React.FC = () => (
-  <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', padding: '8px 0' }}>
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Focus To-Do</div>
-      <div>Phien ban: 1.0.0</div>
-    </div>
-    <div style={{ color: 'var(--text-muted)' }}>Tinh nang Account se co trong phien ban tiep theo.</div>
-  </div>
-);
 
 // ----------------------------------------------------------
 // Render noi dung tuong ung voi tab

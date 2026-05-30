@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TaskProvider, useTaskContext } from './contexts/TaskContext';
 import { AppProvider, useAppContext } from './contexts/AppContext';
+import { WebhookProvider, useWebhookContext } from './contexts/WebhookContext';
 import Sidebar from './components/layout/Sidebar';
 import TaskList from './components/task/TaskList';
 import TaskPanel from './components/layout/TaskPanel';
@@ -10,27 +11,34 @@ import AddTagDialog from './components/common/AddTagDialog';
 import ReportPage from './components/report/ReportPage';
 import PomodoroWidget from './components/pomodoro/PomodoroWidget';
 import HeaderActions from './components/layout/HeaderActions';
-import useWebhook from './hooks/useWebhook';
 import { useReminderCheck } from './hooks/useReminderCheck';
+import { useAppRouter } from './hooks/useAppRouter';
 import './styles/index.css';
 
 // Inner app - co the truy cap vao AppContext
 const AppInner: React.FC = () => {
   const { openModal, settings } = useAppContext();
-  const { selectedTaskId, tasks } = useTaskContext();
+  const { selectedTaskId, tasks, activeView, activeProjectId, setActiveView, setActiveProjectId } = useTaskContext();
   const [showReport, setShowReport] = useState(false);
 
-  // Webhook integration
-  const { onTaskReminded } = useWebhook(
-    settings.webhookUrl,
-    settings.webhookEnabled
-  );
+  // Webhook integration (shared event log via WebhookProvider)
+  const { onTaskReminded } = useWebhookContext();
 
   // Reminder checker
   useReminderCheck({
     tasks,
     webhookEnabled: settings.webhookEnabled,
     onTaskReminded,
+  });
+
+  // URL Sub Routing sync
+  useAppRouter({
+    activeView,
+    activeProjectId,
+    showReport,
+    setActiveView,
+    setActiveProjectId,
+    setShowReport
   });
 
   const handleShowReport = () => setShowReport((v) => !v);
@@ -85,9 +93,11 @@ const SettingsDialogLazy = React.lazy(
 
 const App: React.FC = () => (
   <AppProvider>
-    <TaskProvider>
-      <AppInner />
-    </TaskProvider>
+    <WebhookProvider>
+      <TaskProvider>
+        <AppInner />
+      </TaskProvider>
+    </WebhookProvider>
   </AppProvider>
 );
 

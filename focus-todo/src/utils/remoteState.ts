@@ -1,10 +1,12 @@
-import type { Project, Task, Folder, Tag, ViewType } from '../types';
+import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession } from '../types';
 
 export interface RemoteAppState {
   tasks: Task[];
   projects: Project[];
   folders: Folder[];
   tags: Tag[];
+  settings: Settings | null;
+  pomodoroSessions: PomodoroSession[];
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
@@ -28,6 +30,8 @@ export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
     projects: state.projects ?? [],
     folders: state.folders ?? [],
     tags: state.tags ?? [],
+    settings: state.settings ?? null,
+    pomodoroSessions: state.pomodoroSessions ?? [],
     selectedTaskId: state.selectedTaskId ?? null,
     activeView: state.activeView ?? 'today',
     activeProjectId: state.activeProjectId ?? null,

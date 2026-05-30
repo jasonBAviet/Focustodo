@@ -107,19 +107,21 @@ const StatCards: React.FC<StatCardsProps> = ({
   accentRed = '#f25f5c',
   accentBlue = '#4cc9f0',
 }) => {
-  const { tasks } = useTaskContext();
+  const { tasks, pomodoroSessions } = useTaskContext();
 
   const stats = useMemo(() => {
-    // ---- Focus Time (phút) ----
-    const totalFocusTime = tasks.reduce((acc, t) => acc + (t.totalFocusTime ?? 0), 0);
+    // ---- Focus Time (phút) - tính từ pomodoro session thật ----
+    const focusSessions = pomodoroSessions.filter((s) => s.type === 'focus');
 
-    const weekFocusTime = tasks
-      .filter((t) => isInWeek(t.updatedAt) || isInWeek(t.completedAt))
-      .reduce((acc, t) => acc + (t.totalFocusTime ?? 0), 0);
+    const totalFocusTime = focusSessions.reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
-    const todayFocusTime = tasks
-      .filter((t) => isToday(t.updatedAt) || isToday(t.completedAt))
-      .reduce((acc, t) => acc + (t.totalFocusTime ?? 0), 0);
+    const weekFocusTime = focusSessions
+      .filter((s) => isInWeek(s.startTime))
+      .reduce((acc, s) => acc + (s.duration ?? 0), 0);
+
+    const todayFocusTime = focusSessions
+      .filter((s) => isToday(s.startTime))
+      .reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
     // ---- Completed tasks ----
     const totalCompleted = tasks.filter((t) => t.completed).length;
@@ -140,7 +142,7 @@ const StatCards: React.FC<StatCardsProps> = ({
       weekCompleted,
       todayCompleted,
     };
-  }, [tasks]);
+  }, [tasks, pomodoroSessions]);
 
   // Định dạng phút -> h hoặc h m
   function fmtMin(minutes: number): string {

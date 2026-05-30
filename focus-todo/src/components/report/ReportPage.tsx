@@ -5,6 +5,7 @@ import FocusTimeChart from './FocusTimeChart';
 import type { ChartPeriod } from './FocusTimeChart';
 import GoalCalendar from './GoalCalendar';
 import PomodoroRecords from './PomodoroRecords';
+import ProjectTimeDistribution from './ProjectTimeDistribution';
 
 const PERIODS: { value: ChartPeriod; label: string }[] = [
   { value: 'daily', label: 'Day' },
@@ -60,13 +61,7 @@ const ReportPage: React.FC = () => {
           </div>
           <div className="report-card">
             <h3 className="report-card-title">Project Time Distribution</h3>
-            <div className="report-empty">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="4" width="32" height="32" rx="4" stroke="var(--border-strong)" strokeWidth="1.5"/>
-                <path d="M12 20h4v8h-4zM18 14h4v14h-4zM24 17h4v11h-4z" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>No Data</span>
-            </div>
+            <ProjectTimeDistribution />
           </div>
         </div>
 

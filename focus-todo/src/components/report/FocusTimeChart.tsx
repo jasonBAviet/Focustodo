@@ -5,7 +5,7 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import { dateUtils } from '../../utils/dateUtils';
-import type { Task } from '../../types';
+import type { PomodoroSession } from '../../types';
 
 // ----------------------------------------------------------
 // Types
@@ -25,24 +25,25 @@ interface BarData {
 }
 
 // ----------------------------------------------------------
-// Helpers tính dữ liệu theo period
+// Helpers tính dữ liệu theo period (từ pomodoro session thật)
+// Chỉ tính session focus, gom theo startTime, cộng duration (phút).
 // ----------------------------------------------------------
-function buildDailyData(tasks: Task[], date: Date): BarData[] {
+function buildDailyData(sessions: PomodoroSession[], date: Date): BarData[] {
   const bars: BarData[] = Array.from({ length: 24 }, (_, h) => ({
     label: `${h}h`,
     minutes: 0,
   }));
-  tasks.forEach((t) => {
-    if (!t.updatedAt) return;
-    const d = new Date(t.updatedAt);
+  sessions.forEach((s) => {
+    if (!s.startTime) return;
+    const d = new Date(s.startTime);
     if (dateUtils.isSameDay(d.toISOString(), date.toISOString())) {
-      bars[d.getHours()].minutes += t.totalFocusTime ?? 0;
+      bars[d.getHours()].minutes += s.duration ?? 0;
     }
   });
   return bars;
 }
 
-function buildWeeklyData(tasks: Task[], date: Date): BarData[] {
+function buildWeeklyData(sessions: PomodoroSession[], date: Date): BarData[] {
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const bars: BarData[] = DAYS.map((l) => ({ label: l, minutes: 0 }));
   const startOfWeek = new Date(date);
@@ -51,62 +52,62 @@ function buildWeeklyData(tasks: Task[], date: Date): BarData[] {
   startOfWeek.setDate(date.getDate() + diff);
   startOfWeek.setHours(0, 0, 0, 0);
 
-  tasks.forEach((t) => {
-    if (!t.updatedAt) return;
-    const d = new Date(t.updatedAt);
+  sessions.forEach((s) => {
+    if (!s.startTime) return;
+    const d = new Date(s.startTime);
     const diffDays = Math.floor(
       (d.getTime() - startOfWeek.getTime()) / 86400000,
     );
     if (diffDays >= 0 && diffDays < 7) {
-      bars[diffDays].minutes += t.totalFocusTime ?? 0;
+      bars[diffDays].minutes += s.duration ?? 0;
     }
   });
   return bars;
 }
 
-function buildMonthlyData(tasks: Task[], date: Date): BarData[] {
+function buildMonthlyData(sessions: PomodoroSession[], date: Date): BarData[] {
   const daysInMonth = dateUtils.getDaysInMonth(date.getFullYear(), date.getMonth());
   const bars: BarData[] = Array.from({ length: daysInMonth }, (_, i) => ({
     label: String(i + 1),
     minutes: 0,
   }));
-  tasks.forEach((t) => {
-    if (!t.updatedAt) return;
-    const d = new Date(t.updatedAt);
+  sessions.forEach((s) => {
+    if (!s.startTime) return;
+    const d = new Date(s.startTime);
     if (
       d.getFullYear() === date.getFullYear() &&
       d.getMonth() === date.getMonth()
     ) {
-      bars[d.getDate() - 1].minutes += t.totalFocusTime ?? 0;
+      bars[d.getDate() - 1].minutes += s.duration ?? 0;
     }
   });
   return bars;
 }
 
-function buildYearlyData(tasks: Task[], date: Date): BarData[] {
+function buildYearlyData(sessions: PomodoroSession[], date: Date): BarData[] {
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const bars: BarData[] = MONTHS.map((l) => ({ label: l, minutes: 0 }));
-  tasks.forEach((t) => {
-    if (!t.updatedAt) return;
-    const d = new Date(t.updatedAt);
+  sessions.forEach((s) => {
+    if (!s.startTime) return;
+    const d = new Date(s.startTime);
     if (d.getFullYear() === date.getFullYear()) {
-      bars[d.getMonth()].minutes += t.totalFocusTime ?? 0;
+      bars[d.getMonth()].minutes += s.duration ?? 0;
     }
   });
   return bars;
 }
 
 function buildBarData(
-  tasks: Task[],
+  sessions: PomodoroSession[],
   period: ChartPeriod,
   currentDate: Date,
 ): BarData[] {
   switch (period) {
-    case 'daily':   return buildDailyData(tasks, currentDate);
-    case 'weekly':  return buildWeeklyData(tasks, currentDate);
-    case 'monthly': return buildMonthlyData(tasks, currentDate);
-    case 'yearly':  return buildYearlyData(tasks, currentDate);
+    case 'daily':   return buildDailyData(sessions, currentDate);
+    case 'weekly':  return buildWeeklyData(sessions, currentDate);
+    case 'monthly': return buildMonthlyData(sessions, currentDate);
+    case 'yearly':  return buildYearlyData(sessions, currentDate);
   }
 }
 
@@ -209,12 +210,13 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
   onNavigate,
   accentColor = '#f25f5c',
 }) => {
-  const { tasks } = useTaskContext();
+  const { pomodoroSessions } = useTaskContext();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const barsRef = useRef<BarData[]>([]);
 
-  const bars = buildBarData(tasks, period, currentDate);
+  const focusSessions = pomodoroSessions.filter((s) => s.type === 'focus');
+  const bars = buildBarData(focusSessions, period, currentDate);
   barsRef.current = bars;
   const hasData = bars.some((b) => b.minutes > 0);
 

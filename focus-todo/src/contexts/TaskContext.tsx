@@ -1,6 +1,9 @@
 // ============================================================
 // FOCUS TO-DO - TaskContext
-// Quản lý toàn bộ trạng thái Task và Project trong ứng dụng
+// Quản lý toàn bộ trạng thái Task và Project trong ứng dụng.
+// Đây cũng là lớp đồng bộ với DB (nguồn dữ liệu chính):
+// load/save tasks, projects, folders, tags, settings,
+// pomodoro sessions và ui_state qua /api/state.
 // ============================================================
 import React, {
   createContext,
@@ -18,11 +21,14 @@ import type {
   ViewType,
   Priority,
   Subtask,
+  PomodoroSession,
 } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
 import { loadRemoteAppState, saveRemoteAppState } from '../utils/remoteState';
 import type { RemoteAppState } from '../utils/remoteState';
+import { useAppContext } from './AppContext';
+import { useWebhookContext } from './WebhookContext';
 
 // ----------------------------------------------------------
 // Danh sách project mặc định khi localStorage còn trống
@@ -42,6 +48,7 @@ interface TaskContextType {
   projects: Project[];
   folders: Folder[];
   tags: Tag[];
+  pomodoroSessions: PomodoroSession[];
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
@@ -67,6 +74,7 @@ interface TaskContextType {
   addSubtask: (taskId: string, title: string) => void;
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
+  addPomodoroSession: (session: PomodoroSession) => void;
   getFilteredTasks: () => Task[];
   getProjectName: (projectId: string | null) => string;
 }
@@ -84,10 +92,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useLocalStorage<Project[]>('focus-projects', DEFAULT_PROJECTS);
   const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
   const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
+  const [pomodoroSessions, setPomodoroSessions] = useLocalStorage<PomodoroSession[]>('focus-pomodoro-sessions', []);
   const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
   const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
   const [searchQuery, setSearchQuery] = useLocalStorage<string>('focus-search', '');
+
+  // Settings sống trong AppContext nhưng cũng đồng bộ với DB qua lớp này
+  const { settings, updateSettings } = useAppContext();
+  // Webhook (event log dùng chung) để bắn các sự kiện task/pomodoro
+  const { onTaskCreated, onTaskCompleted, onPomodoroCompleted } = useWebhookContext();
 
   // --------------------------------------------------------
   // Task actions
@@ -121,8 +135,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       updatedAt: now,
     };
     setTasks((prev) => [...prev, newTask]);
+    onTaskCreated(newTask);
     return newTask;
-  }, [setTasks]);
+  }, [setTasks, onTaskCreated]);
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks((prev) =>
@@ -154,8 +169,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       });
       return updated;
     });
+    if (completed) onTaskCompleted(completed);
     return completed;
-  }, [setTasks]);
+  }, [setTasks, onTaskCompleted]);
 
   const restoreTask = useCallback((id: string) => {
     setTasks((prev) =>
@@ -166,6 +182,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       ),
     );
   }, [setTasks]);
+
+  // --------------------------------------------------------
+  // Pomodoro session - lưu tập trung tại đây để đồng bộ DB
+  // (bảng system_logs) và để Report đọc dữ liệu thật.
+  // --------------------------------------------------------
+  const addPomodoroSession = useCallback((session: PomodoroSession) => {
+    setPomodoroSessions((prev) => [session, ...prev].slice(0, 200));
+    if (session.type === 'focus' && session.completed) {
+      onPomodoroCompleted(session);
+    }
+  }, [setPomodoroSessions, onPomodoroCompleted]);
 
   // --------------------------------------------------------
   // Subtask actions
@@ -297,7 +324,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTag = useCallback((id: string) => {
     setTags((prev) => prev.filter((t) => t.id !== id));
-    setTasks((prev) => prev.map((task) => 
+    setTasks((prev) => prev.map((task) =>
       task.tags.includes(id) ? { ...task, tags: task.tags.filter(tid => tid !== id), updatedAt: dateUtils.now() } : task
     ));
   }, [setTags, setTasks]);
@@ -314,7 +341,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   );
 
   // --------------------------------------------------------
-  // Logic lọc task theo view + searchQuery
+  // Đồng bộ với DB (nguồn dữ liệu chính)
   // --------------------------------------------------------
   const [remoteSyncEnabled, setRemoteSyncEnabled] = useState<boolean>(false);
 
@@ -333,22 +360,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           );
           setFolders(remoteState.folders || []);
           setTags(remoteState.tags || []);
+          setPomodoroSessions(remoteState.pomodoroSessions || []);
           setSelectedTaskId(remoteState.selectedTaskId);
 
-          const localActiveView = window.localStorage.getItem('focus-active-view');
-          if (!localActiveView || localActiveView === 'today') {
-            setActiveView(remoteState.activeView);
+          // Settings từ DB là nguồn chính - đẩy vào AppContext
+          if (remoteState.settings) {
+            updateSettings(remoteState.settings);
           }
 
-          const localActiveProjectId = window.localStorage.getItem('focus-active-project');
-          if (!localActiveProjectId || localActiveProjectId === 'null') {
-            setActiveProjectId(remoteState.activeProjectId);
-          }
-
-          const localSearchQuery = window.localStorage.getItem('focus-search');
-          if (!localSearchQuery) {
-            setSearchQuery(remoteState.searchQuery);
-          }
+          setActiveView(remoteState.activeView);
+          setActiveProjectId(remoteState.activeProjectId);
+          setSearchQuery(remoteState.searchQuery);
         }
 
         setRemoteSyncEnabled(true);
@@ -363,7 +385,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [setActiveProjectId, setActiveView, setProjects, setFolders, setTags, setSearchQuery, setSelectedTaskId, setTasks]);
+    // Chỉ load MỘT LẦN khi mount. Không phụ thuộc các setter của
+    // useLocalStorage vì chúng đổi identity mỗi khi giá trị thay đổi,
+    // khiến effect chạy lại và ghi đè state người dùng (vd: click chọn
+    // task xong bị reset selectedTaskId về null từ DB -> panel biến mất).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!remoteSyncEnabled) return;
@@ -373,6 +400,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       projects,
       folders,
       tags,
+      settings,
+      pomodoroSessions,
       selectedTaskId,
       activeView,
       activeProjectId,
@@ -383,12 +412,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       saveRemoteAppState(currentState).catch((error) => {
         console.warn('Unable to save state to remote DB:', error);
       });
+
+      // External API sync (tuỳ chọn) - đẩy toàn bộ state ra API ngoài
+      if (settings.externalApiEnabled && settings.externalApiUrl) {
+        fetch(settings.externalApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'focus-todo', state: currentState }),
+        }).catch((error) => {
+          console.warn('External API sync failed:', error);
+        });
+      }
     }, 500);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [tasks, projects, folders, tags, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
+  }, [tasks, projects, folders, tags, settings, pomodoroSessions, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
 
   const hasValidDueDate = (task: Task) =>
     typeof task.dueDate === 'string' && task.dueDate.trim() !== '';
@@ -462,7 +502,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       filtered = filtered.filter(
         (t) =>
           t.title.toLowerCase().includes(query) ||
-          t.note.toLowerCase().includes(query),
+          (t.note ?? '').toLowerCase().includes(query),
       );
     }
 
@@ -478,6 +518,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       projects,
       folders,
       tags,
+      pomodoroSessions,
       selectedTaskId,
       activeView,
       activeProjectId,
@@ -503,17 +544,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       addSubtask,
       toggleSubtask,
       deleteSubtask,
+      addPomodoroSession,
       getFilteredTasks,
       getProjectName,
     }),
     [
-      tasks, projects, folders, tags, selectedTaskId, activeView, activeProjectId, searchQuery,
+      tasks, projects, folders, tags, pomodoroSessions, selectedTaskId, activeView, activeProjectId, searchQuery,
       setSelectedTaskId, setActiveView, setActiveProjectId, setSearchQuery,
       addTask, updateTask, deleteTask, completeTask, restoreTask,
       addProject, updateProject, deleteProject,
       addFolder, updateFolder, deleteFolder,
       addTag, updateTag, deleteTag,
-      addSubtask, toggleSubtask, deleteSubtask,
+      addSubtask, toggleSubtask, deleteSubtask, addPomodoroSession,
       getFilteredTasks, getProjectName,
     ],
   );

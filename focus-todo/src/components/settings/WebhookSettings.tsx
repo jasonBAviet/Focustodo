@@ -4,7 +4,8 @@
 // ============================================================
 import React, { useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-import useWebhook from '../../hooks/useWebhook';
+import { useWebhookContext } from '../../contexts/WebhookContext';
+import type useWebhook from '../../hooks/useWebhook';
 import Toggle from '../common/Toggle';
 
 // ----------------------------------------------------------
@@ -139,10 +140,7 @@ const EventLogTable: React.FC<{
 // ----------------------------------------------------------
 const WebhookSettings: React.FC = () => {
   const { settings, updateSettings } = useAppContext();
-  const { webhookEvents, clearEvents } = useWebhook(
-    settings.webhookUrl,
-    settings.webhookEnabled,
-  );
+  const { webhookEvents, clearEvents } = useWebhookContext();
 
   const [testResult, setTestResult] = useState<TestResult>(null);
   const [testing, setTesting] = useState(false);
