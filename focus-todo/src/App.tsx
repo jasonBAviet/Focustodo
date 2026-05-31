@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TaskProvider, useTaskContext } from './contexts/TaskContext';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { WebhookProvider, useWebhookContext } from './contexts/WebhookContext';
+import { PomodoroProvider } from './contexts/PomodoroContext';
 import Sidebar from './components/layout/Sidebar';
 import TaskList from './components/task/TaskList';
 import TaskPanel from './components/layout/TaskPanel';
@@ -10,6 +11,7 @@ import AddFolderDialog from './components/common/AddFolderDialog';
 import AddTagDialog from './components/common/AddTagDialog';
 import ReportPage from './components/report/ReportPage';
 import PomodoroWidget from './components/pomodoro/PomodoroWidget';
+import PomodoroModal from './components/pomodoro/PomodoroModal';
 import HeaderActions from './components/layout/HeaderActions';
 import { useReminderCheck } from './hooks/useReminderCheck';
 import { useAppRouter } from './hooks/useAppRouter';
@@ -70,8 +72,9 @@ const AppInner: React.FC = () => {
       <AddFolderDialog />
       <AddTagDialog />
 
-      {/* Pomodoro widget */}
+      {/* Pomodoro widget & modal */}
       <PomodoroWidget />
+      <PomodoroModal />
 
       {/* Settings - lazy */}
       {openModal === 'settings' && (
@@ -95,7 +98,9 @@ const App: React.FC = () => (
   <AppProvider>
     <WebhookProvider>
       <TaskProvider>
-        <AppInner />
+        <PomodoroProvider>
+          <AppInner />
+        </PomodoroProvider>
       </TaskProvider>
     </WebhookProvider>
   </AppProvider>

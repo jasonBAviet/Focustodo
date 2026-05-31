@@ -18,7 +18,9 @@ export type ViewType =
   | 'high-priority'
   | 'medium-priority'
   | 'low-priority'
-  | 'project';
+  | 'project'
+  | 'tag'
+  | 'folder';
 
 export interface Subtask {
   id: string;

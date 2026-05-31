@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import TaskDetail from '../task/TaskDetail';
+import TagPicker from '../task/TagPicker';
 
 const TaskPanel: React.FC = () => {
-  const { tasks, selectedTaskId, setSelectedTaskId, updateTask, completeTask, restoreTask, deleteTask } = useTaskContext();
+  const { tasks, selectedTaskId, setSelectedTaskId, updateTask, completeTask, restoreTask, deleteTask, tags, addTag } = useTaskContext();
+  const [panelWidth, setPanelWidth] = useState(280);
+  const resizeRef = useRef(false);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
 
@@ -30,17 +33,45 @@ const TaskPanel: React.FC = () => {
     deleteTask(id);
   };
 
+  useEffect(() => {
+    document.documentElement.style.setProperty('--panel-width', `${panelWidth}px`);
+  }, [panelWidth]);
+
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    resizeRef.current = true;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const newWidth = startWidth - (e.clientX - startX);
+      const clamped = Math.max(240, Math.min(520, newWidth));
+      setPanelWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      resizeRef.current = false;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   if (!selectedTask) return null;
 
   return (
     <aside className="task-panel animate-slide-right">
+      <div className="panel-resize-handle" onMouseDown={handleResizeStart} />
       {/* Header */}
       <div className="task-panel-header">
         <div className="task-panel-check-wrap">
           <button
             className={`panel-check ${selectedTask.completed ? 'checked' : ''}`}
             onClick={handleCompleteToggle}
-            title={selectedTask.completed ? 'Khoi phuc' : 'Hoan thanh'}
+            title={selectedTask.completed ? 'Restore' : 'Complete'}
           >
             {selectedTask.completed && (
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -56,19 +87,29 @@ const TaskPanel: React.FC = () => {
           <button
             className="icon-btn"
             onClick={handleFlag}
-            title="Danh dau"
+            title="Flag"
             style={{ color: selectedTask.flagged ? 'var(--accent)' : 'var(--text-tertiary)' }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill={selectedTask.flagged ? 'currentColor' : 'none'}>
               <path d="M3 2v10M3 2h8l-2 4 2 4H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-          <button className="icon-btn" onClick={handleClose} title="Dong">
+          <button className="icon-btn" onClick={handleClose} title="Close">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
+      </div>
+
+      {/* Tags - ngay duoi tieu de */}
+      <div className="task-panel-tags">
+        <TagPicker
+          taskTags={selectedTask.tags || []}
+          allTags={tags}
+          onUpdate={(tagIds) => updateTask(selectedTask.id, { tags: tagIds })}
+          onAddTag={addTag}
+        />
       </div>
 
       {/* Body */}
@@ -79,12 +120,12 @@ const TaskPanel: React.FC = () => {
       {/* Footer */}
       <div className="task-panel-footer">
         <span className="panel-created-at">
-          Created on {new Date(selectedTask.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+          Created {new Date(selectedTask.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
         </span>
         <div className="panel-footer-actions">
           <button
             className="icon-btn"
-            title="Xoa task"
+            title="Delete task"
             onClick={handleDelete}
             style={{ color: 'var(--text-tertiary)' }}
           >
@@ -96,6 +137,12 @@ const TaskPanel: React.FC = () => {
       </div>
 
       <style>{`
+        .panel-resize-handle {
+          position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+          cursor: col-resize; z-index: 10;
+          transition: background 150ms;
+        }
+        .panel-resize-handle:hover { background: var(--accent); opacity: 0.5; }
         .task-panel-check-wrap { flex-shrink: 0; }
         .panel-check {
           width: 20px; height: 20px; border-radius: 50%;
@@ -124,6 +171,10 @@ const TaskPanel: React.FC = () => {
           transition: color var(--transition-fast), background var(--transition-fast);
         }
         .icon-btn:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
+        .task-panel-tags {
+          padding: 0 var(--panel-padding, 16px);
+          border-bottom: 1px solid var(--divider);
+        }
       `}</style>
     </aside>
   );

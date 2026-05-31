@@ -53,10 +53,14 @@ interface TaskContextType {
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
+  activeTagId: string | null;
+  activeFolderId: string | null;
   searchQuery: string;
   setSelectedTaskId: (id: string | null) => void;
   setActiveView: (view: ViewType) => void;
   setActiveProjectId: (id: string | null) => void;
+  setActiveTagId: (id: string | null) => void;
+  setActiveFolderId: (id: string | null) => void;
   setSearchQuery: (q: string) => void;
   addTask: (title: string, projectId?: string | null, priority?: Priority, pomodoroEstimate?: number) => Task;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -97,6 +101,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
   const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
+  const [activeTagId, setActiveTagId] = useLocalStorage<string | null>('focus-active-tag', null);
+  const [activeFolderId, setActiveFolderId] = useLocalStorage<string | null>('focus-active-folder', null);
   const [searchQuery, setSearchQuery] = useLocalStorage<string>('focus-search', '');
 
   // Settings sống trong AppContext nhưng cũng đồng bộ với DB qua lớp này
@@ -444,12 +450,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     switch (activeView) {
       case 'today':
-        // Tasks có dueDate hôm nay HOẶC không có dueDate nhưng tạo hôm nay, chưa hoàn thành
         filtered = tasks.filter(
-          (t) =>
-            !t.completed &&
-            (dateUtils.isToday(t.dueDate) ||
-              (!t.dueDate && dateUtils.isToday(t.createdAt))),
+          (t) => !t.completed && dateUtils.isToday(t.dueDate),
         );
         break;
 
@@ -496,6 +498,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         );
         break;
 
+      case 'tag':
+        // Filter theo tag duoc chon
+        filtered = tasks.filter(
+          (t) => !t.completed && activeTagId !== null && (t.tags || []).includes(activeTagId),
+        );
+        break;
+
+      case 'folder': {
+        // Filter task thuoc cac project trong folder duoc chon
+        const folderObj = folders.find((f) => f.id === activeFolderId);
+        const folderProjectIds = folderObj ? folderObj.projectIds : [];
+        filtered = tasks.filter(
+          (t) => !t.completed && t.projectId !== null && folderProjectIds.includes(t.projectId),
+        );
+        break;
+      }
+
       default:
         // Tất cả task chưa hoàn thành
         filtered = tasks.filter((t) => !t.completed);
@@ -513,7 +532,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     return filtered;
-  }, [tasks, activeView, activeProjectId, searchQuery]);
+  }, [tasks, activeView, activeProjectId, activeTagId, activeFolderId, folders, searchQuery]);
 
   // --------------------------------------------------------
   // Giá trị Context (memoized để tránh re-render không cần thiết)
@@ -528,10 +547,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       selectedTaskId,
       activeView,
       activeProjectId,
+      activeTagId,
+      activeFolderId,
       searchQuery,
       setSelectedTaskId,
       setActiveView,
       setActiveProjectId,
+      setActiveTagId,
+      setActiveFolderId,
       setSearchQuery,
       addTask,
       updateTask,
@@ -555,8 +578,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       getProjectName,
     }),
     [
-      tasks, projects, folders, tags, pomodoroSessions, selectedTaskId, activeView, activeProjectId, searchQuery,
-      setSelectedTaskId, setActiveView, setActiveProjectId, setSearchQuery,
+      tasks, projects, folders, tags, pomodoroSessions, selectedTaskId,
+      activeView, activeProjectId, activeTagId, activeFolderId, searchQuery,
+      setSelectedTaskId, setActiveView, setActiveProjectId, setActiveTagId, setActiveFolderId, setSearchQuery,
       addTask, updateTask, deleteTask, completeTask, restoreTask,
       addProject, updateProject, deleteProject,
       addFolder, updateFolder, deleteFolder,

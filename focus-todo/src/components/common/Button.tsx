@@ -150,7 +150,7 @@ const Button: React.FC<ButtonProps> = ({
         .btn--ghost {
           background: transparent;
           color: var(--text-secondary);
-          border: 1px solid transparent;
+          border: none;
         }
         .btn--ghost:hover:not(.btn--disabled) {
           background: var(--bg-card-hover);

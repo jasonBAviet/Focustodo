@@ -4,6 +4,7 @@ import type { Task, RepeatType } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
 import SubtaskList from './SubtaskList';
 import DatePicker from '../common/DatePicker';
+import PomodoroScrollPicker from '../common/PomodoroScrollPicker';
 
 interface TaskDetailProps {
   task: Task;
@@ -32,51 +33,64 @@ const DetailRow: React.FC<{
   </div>
 );
 
-const PomodoroRow: React.FC<{ task: Task }> = ({ task }) => {
+const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }> = ({ task, onUpdate }) => {
+  const [showPicker, setShowPicker] = useState(false);
+  const POMO_DURATION = 25;
+
   return (
-    <DetailRow
-      icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M7 4v3l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>}
-      label="Pomodoro"
-    >
-      <div className="pomo-row">
-        {Array.from({ length: Math.max(task.pomodoroEstimate, task.pomodoroCompleted, 4) }).map((_, i) => (
-          <svg
-            key={i}
-            className={`pomo-icon ${i < task.pomodoroCompleted ? 'done' : ''}`}
-            width="14" height="14" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <path d="M12 21c5.523 0 10-4.477 10-10 0-4.7-3-8.5-7.5-9.6a4.5 4.5 0 0 0-5 0C5 2.5 2 6.3 2 11c0 5.523 4.477 10 10 10z" className="tomato-body" />
-            <path d="M12 3v4" className="tomato-stem" />
-            <path d="M9 4s1-1 3-1 3 1 3 1" className="tomato-stem" />
-          </svg>
-        ))}
-        <span className="pomo-label">
-          {task.pomodoroCompleted}/{task.pomodoroEstimate || 0} = {(task.pomodoroEstimate || 0) * 25}m
-        </span>
-      </div>
-      <style>{`
-        .pomo-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-        .pomo-icon {
-          color: var(--border-strong); flex-shrink: 0;
-        }
-        .pomo-icon.done { color: var(--accent); }
-        .pomo-icon .tomato-body { fill: currentColor; stroke: none; }
-        .pomo-icon .tomato-stem { stroke: var(--bg-dialog); }
-        .pomo-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-left: 4px; }
-      `}</style>
-    </DetailRow>
+    <>
+      <DetailRow
+        icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
+          <path d="M7 4v3l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>}
+        label="Pomodoro"
+      >
+        <button
+          className="pomo-trigger"
+          onClick={() => setShowPicker(true)}
+          title="Chinh sua so Pomodoro"
+        >
+          <span className="pomo-trigger__count">{task.pomodoroEstimate || 0}</span>
+          <span className="pomo-trigger__meta">
+            {task.pomodoroCompleted}/{task.pomodoroEstimate || 0} = {(task.pomodoroEstimate || 0) * POMO_DURATION}m
+          </span>
+        </button>
+        <style>{`
+          .pomo-trigger {
+            display: flex; align-items: center; gap: 8px;
+            background: none; border: none; cursor: pointer;
+            padding: 2px 4px; border-radius: 6px;
+            transition: background var(--transition-fast);
+          }
+          .pomo-trigger:hover { background: var(--bg-card-hover); }
+          .pomo-trigger__count {
+            font-weight: 600; font-size: 15px;
+            color: var(--text-primary); min-width: 18px; text-align: center;
+            font-family: var(--font-main);
+          }
+          .pomo-trigger__meta {
+            font-size: var(--text-xs); color: var(--text-tertiary);
+          }
+        `}</style>
+      </DetailRow>
+      {showPicker && (
+        <PomodoroScrollPicker
+          estimate={task.pomodoroEstimate || 0}
+          pomoDuration={POMO_DURATION}
+          onEstimateChange={onUpdate}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </>
   );
 };
 
 const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
-  { value: 'none', label: 'Khong' },
-  { value: 'daily', label: 'Hang ngay' },
-  { value: 'weekly', label: 'Hang tuan' },
-  { value: 'monthly', label: 'Hang thang' },
+  { value: 'none', label: 'None' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
 ];
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
@@ -97,11 +111,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
   const dueDateText = task.dueDate
     ? dateUtils.isToday(task.dueDate)
-      ? 'Hom nay'
+      ? 'Today'
       : dateUtils.isTomorrow(task.dueDate)
-        ? 'Ngay mai'
+        ? 'Tomorrow'
         : dateUtils.formatShort(task.dueDate)
-    : 'Khong co';
+    : 'None';
 
   const dueDateColor = task.dueDate && dateUtils.isOverdue(task.dueDate)
     ? 'var(--priority-high)'
@@ -111,7 +125,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
   return (
     <div className="task-detail">
-      <PomodoroRow task={task} />
+      <PomodoroRow task={task} onUpdate={(e) => updateTask(task.id, { pomodoroEstimate: e })} />
 
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -151,9 +165,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Project"
       >
-        <span style={{ color: project?.color }}>
-          {project?.name || 'Khong co project'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+          {project && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: project.color, flexShrink: 0 }} />}
+          <select
+            className="detail-select"
+            value={task.projectId || ''}
+            onChange={(e) => updateTask(task.id, { projectId: e.target.value || null })}
+            style={{ flex: 1 }}
+          >
+            <option value="">No Project</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
       </DetailRow>
 
       <DetailRow
@@ -169,13 +194,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           style={{ color: task.reminder ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
         >
           {task.reminder
-            ? dateUtils.formatShort(task.reminder)
-            : 'Khong'}
+            ? (() => {
+              const [datePart, timePart] = task.reminder.split('T');
+              return `${dateUtils.formatShort(datePart)}${timePart ? ` · ${timePart.slice(0, 5)}` : ''}`;
+            })()
+            : 'None'}
         </button>
         {showReminderPicker && (
           <div className="detail-date-popover">
             <DatePicker
               value={task.reminder}
+              showTime
               onChange={(d) => {
                 updateTask(task.id, { reminder: d });
                 setShowReminderPicker(false);
@@ -213,7 +242,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       <div className="detail-note-section">
         <textarea
           className="detail-note"
-          placeholder="Them ghi chu..."
+          placeholder="Add note..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={handleNoteBlur}

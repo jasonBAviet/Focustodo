@@ -6,15 +6,16 @@ import React, { useState, useCallback } from 'react';
 
 export interface DatePickerProps {
   value: string | null;
-  onChange: (isoDate: string) => void;
+  onChange: (isoDateTime: string) => void;
   onRemove?: () => void;
   onClose?: () => void;
+  showTime?: boolean;
 }
 
-const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
-  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 function toLocalDateString(date: Date): string {
@@ -34,14 +35,17 @@ const DatePicker: React.FC<DatePickerProps> = ({
   onChange,
   onRemove,
   onClose,
+  showTime = false,
 }) => {
   const today = new Date();
   const todayStr = toLocalDateString(today);
 
-  const initDate = value ? parseLocalDate(value) : today;
+  const initDate = value ? parseLocalDate(value.split('T')[0]) : today;
+  const initTime = value && value.includes('T') ? value.split('T')[1].slice(0, 5) : '09:00';
   const [viewYear, setViewYear] = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(value);
+  const [selectedDate, setSelectedDate] = useState<string | null>(value?.split('T')[0] || null);
+  const [selectedTime, setSelectedTime] = useState(initTime);
 
   const prevMonth = useCallback(() => {
     if (viewMonth === 0) {
@@ -78,7 +82,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const handleOk = () => {
     if (selectedDate) {
-      onChange(selectedDate);
+      const result = showTime ? `${selectedDate}T${selectedTime}` : selectedDate;
+      onChange(result);
     }
     onClose?.();
   };
@@ -94,7 +99,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
       <style>{`
         .datepicker {
           background: var(--bg-card);
-          border: 1px solid var(--glass-border);
+          border: none;
           border-radius: var(--radius-lg);
           box-shadow: var(--shadow-md);
           padding: var(--space-4);
@@ -178,6 +183,25 @@ const DatePicker: React.FC<DatePickerProps> = ({
         .datepicker-cell--past {
           color: var(--text-tertiary);
         }
+        .datepicker-time-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: var(--space-3);
+          padding-bottom: var(--space-2);
+          justify-content: center;
+        }
+        .datepicker-time-row select {
+          background: var(--bg-input);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 4px 8px;
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          cursor: pointer;
+          font-family: var(--font-main);
+          min-width: 50px;
+        }
         .datepicker-footer {
           display: flex;
           align-items: center;
@@ -195,7 +219,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             type="button"
             className="datepicker-nav-btn"
             onClick={prevMonth}
-            aria-label="Tháng trước"
+            aria-label="Previous month"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -208,7 +232,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             type="button"
             className="datepicker-nav-btn"
             onClick={nextMonth}
-            aria-label="Tháng sau"
+            aria-label="Next month"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -260,6 +284,33 @@ const DatePicker: React.FC<DatePickerProps> = ({
           })}
         </div>
 
+        {/* Time picker (optional) */}
+        {showTime && (
+          <div className="datepicker-time-row">
+            <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>Time:</label>
+            <select
+              value={selectedTime.split(':')[0]}
+              onChange={(e) => setSelectedTime(`${e.target.value}:${selectedTime.split(':')[1]}`)}
+              style={{ flex: 0 }}
+            >
+              {Array.from({ length: 24 }).map((_, i) => {
+                const h = String(i).padStart(2, '0');
+                return <option key={h} value={h}>{h}</option>;
+              })}
+            </select>
+            <span style={{ color: 'var(--text-secondary)' }}>:</span>
+            <select
+              value={selectedTime.split(':')[1]}
+              onChange={(e) => setSelectedTime(`${selectedTime.split(':')[0]}:${e.target.value}`)}
+              style={{ flex: 0 }}
+            >
+              {['00', '15', '30', '45'].map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="datepicker-footer">
           {onRemove && (
@@ -268,7 +319,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
               className="btn btn--ghost btn--sm"
               onClick={handleRemove}
             >
-              Xóa
+              Remove
             </button>
           )}
           <button
@@ -277,7 +328,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
             style={{ marginLeft: 'auto' }}
             onClick={handleOk}
           >
-            Đồng ý
+            Confirm
           </button>
         </div>
       </div>

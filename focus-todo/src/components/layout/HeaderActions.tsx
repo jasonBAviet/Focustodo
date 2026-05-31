@@ -1,23 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 
-const IconGroup = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-  </svg>
-);
-
-const IconSprout = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M15.43 13.5l1.63 2.5H22L12 2 2 16h4.94l1.63-2.5h6.86zM13 16v6h-2v-6h2z"/>
-  </svg>
-);
-
-const IconTrophy = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19 3H5c-1.1 0-2 .9-2 2v2c0 2.21 1.79 4 4 4h1v1c0 2.21 1.79 4 4 4h2c2.21 0 4-1.79 4-4v-1h1c2.21 0 4-1.79 4-4V5c0-1.1-.9-2-2-2zm-2 4h-1V5h1v2zM7 5v2H6V5h1zm5 14H8v2h8v-2h-4z"/>
-  </svg>
-);
 
 const IconChart = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -63,9 +46,6 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
 
   return (
     <div className="header-actions">
-      <button className="ha-btn" title="Groups"><IconGroup /></button>
-      <button className="ha-btn" title="Forest"><IconSprout /></button>
-      <button className="ha-btn" title="Achievements"><IconTrophy /></button>
       <button className="ha-btn" title="Report" onClick={onShowReport}><IconChart /></button>
       <button className="ha-btn" title="Notifications"><IconBell /></button>
       <button

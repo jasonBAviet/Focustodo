@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
+import { usePomodoroContext } from '../../contexts/PomodoroContext';
 import type { Task } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
 import { IconPomodoro } from '../common/IconPomodoro';
@@ -9,6 +10,37 @@ interface TaskItemProps {
   isSelected: boolean;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
+
+interface PomodoroCountdownRingProps {
+  isRunning: boolean;
+  timeLeft: number;
+  progressPercent: number;
+}
+
+const SMALL_R = 9;
+const SMALL_C = 2 * Math.PI * SMALL_R;
+
+const PomodoroCountdownRing: React.FC<PomodoroCountdownRingProps> = ({ timeLeft, progressPercent }) => {
+  const dashOffset = SMALL_C * (1 - progressPercent / 100);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+      <svg width="24" height="24" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="12" cy="12" r={SMALL_R} stroke="var(--border)" strokeWidth="2" fill="none" />
+        <circle
+          cx="12" cy="12" r={SMALL_R}
+          stroke="var(--accent)" strokeWidth="2" fill="none"
+          strokeLinecap="round"
+          strokeDasharray={SMALL_C}
+          strokeDashoffset={dashOffset}
+          style={{ transition: 'stroke-dashoffset 0.8s linear' }}
+        />
+      </svg>
+      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', minWidth: 18 }}>
+        {Math.ceil(timeLeft / 60)}m
+      </span>
+    </div>
+  );
+};
 
 const PriorityDot: React.FC<{ priority: Task['priority'] }> = ({ priority }) => {
   const colors: Record<string, string> = {
@@ -50,6 +82,7 @@ const CheckCircle: React.FC<{ checked: boolean; onChange: () => void }> = ({ che
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) => {
   const { completeTask, restoreTask, setSelectedTaskId } = useTaskContext();
+  const pomo = usePomodoroContext();
 
   const handleToggle = useCallback(() => {
     if (task.completed) {
@@ -62,6 +95,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
   const handleSelect = useCallback(() => {
     setSelectedTaskId(task.id);
   }, [task.id, setSelectedTaskId]);
+
+  const handleStartPomodoro = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    pomo.activateTask(task.id, task.title);
+  }, [task.id, task.title, pomo]);
 
   const dueDateClass = task.dueDate && dateUtils.isOverdue(task.dueDate) && !task.completed
     ? 'overdue'
@@ -92,9 +130,20 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
             </span>
           )}
           {task.pomodoroEstimate > 0 && (
-            <span className="task-item__pomo">
-              <IconPomodoro width="14" height="14" />
-              {task.pomodoroCompleted}/{task.pomodoroEstimate}
+            <span className="task-item__pomo" style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              {Array.from({ length: Math.min(task.pomodoroEstimate, 8) }).map((_, i) => (
+                <IconPomodoro
+                  key={i}
+                  width="12"
+                  height="12"
+                  style={{ opacity: i < task.pomodoroCompleted ? 1 : 0.35 }}
+                />
+              ))}
+              {task.pomodoroEstimate > 8 && (
+                <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                  +{task.pomodoroEstimate - 8}
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -109,6 +158,26 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
         <span className="task-item__completed-date">
           {completedDateText}
         </span>
+      )}
+
+      {/* Pomodoro button / countdown ring */}
+      {pomo.currentTaskId === task.id ? (
+        <PomodoroCountdownRing
+          isRunning={pomo.isRunning}
+          timeLeft={pomo.timeLeft}
+          progressPercent={pomo.progressPercent}
+        />
+      ) : (
+        <button
+          className="task-item__pomo-btn"
+          onClick={handleStartPomodoro}
+          title="Start Pomodoro"
+          style={{ opacity: 0 }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm-7 0c0 .83-.67 1.5-1.5 1.5S5 11.83 5 11s.67-1.5 1.5-1.5 1.5.67 1.5 1.5z" />
+          </svg>
+        </button>
       )}
 
       <style>{`
@@ -176,6 +245,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
           font-size: var(--text-xs); color: var(--stat-blue); flex-shrink: 0;
           background: rgba(76,201,240,0.1); padding: 2px 8px; border-radius: var(--radius-full);
         }
+        .task-item:hover .task-item__pomo-btn { opacity: 1; }
+        .task-item__pomo-btn {
+          background: none; border: none; cursor: pointer;
+          color: var(--text-tertiary); padding: 4px; border-radius: 4px;
+          display: flex; align-items: center; justify-content: center;
+          transition: opacity var(--transition-fast), color var(--transition-fast);
+          flex-shrink: 0;
+        }
+        .task-item__pomo-btn:hover { color: var(--accent); }
       `}</style>
     </div>
   );

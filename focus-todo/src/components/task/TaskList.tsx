@@ -8,10 +8,17 @@ import TaskContextMenu from './TaskContextMenu';
 import ContextMenu from '../common/ContextMenu';
 
 type SortOption = 'project' | 'dueDate' | 'priority' | null;
+type SortDirection = 'asc' | 'desc';
 
-const IconSort = () => (
+const IconSort = ({ direction }: { direction?: SortDirection }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 8l-2 2h2v10M16 4v16M12 16l4 4 4-4"></path>
+    {direction === 'asc' ? (
+      <path d="M8 16l-2-2h2V4M16 4v10h2l-2 2M4 20h16"/>
+    ) : direction === 'desc' ? (
+      <path d="M8 4l-2 2h2v10M16 20v-10h2l-2-2M4 4h16"/>
+    ) : (
+      <path d="M8 8l-2 2h2v10M16 4v16M12 16l4 4 4-4"/>
+    )}
   </svg>
 );
 
@@ -34,6 +41,8 @@ const VIEW_LABELS: Record<string, string> = {
   'medium-priority': 'Medium Priority',
   'low-priority': 'Low Priority',
   project: '',
+  tag: '',
+  folder: '',
 };
 
 const StatCard: React.FC<{ label: string; value: string | number; color?: string }> = ({
@@ -58,7 +67,11 @@ const TaskList: React.FC = () => {
     selectedTaskId,
     activeView,
     activeProjectId,
+    activeTagId,
+    activeFolderId,
     projects,
+    folders,
+    tags,
     tasks: allTasks,
     deleteTask,
   } = useTaskContext();
@@ -68,6 +81,17 @@ const TaskList: React.FC = () => {
   const contextMenu = useContextMenu<string>();
   const sortMenu = useContextMenu<null>();
   const [sortBy, setSortBy] = useState<SortOption>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSortClick = (field: SortOption) => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+    sortMenu.close();
+  };
 
   const tasks = useMemo(() => {
     let result = [...filteredTasks];
@@ -83,15 +107,27 @@ const TaskList: React.FC = () => {
       const priorityWeight = { high: 3, medium: 2, low: 1, none: 0 };
       result.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
     }
+
+    if (sortBy && sortDirection === 'desc') {
+      result.reverse();
+    }
     return result;
-  }, [filteredTasks, sortBy]);
+  }, [filteredTasks, sortBy, sortDirection]);
 
   const viewLabel = useMemo(() => {
     if (activeView === 'project' && activeProjectId) {
       return projects.find((p) => p.id === activeProjectId)?.name || 'Project';
     }
+    if (activeView === 'tag' && activeTagId) {
+      const tag = tags.find((t) => t.id === activeTagId);
+      return tag ? `# ${tag.name}` : 'Tag';
+    }
+    if (activeView === 'folder' && activeFolderId) {
+      const folder = folders.find((f) => f.id === activeFolderId);
+      return folder ? folder.name : 'Folder';
+    }
     return VIEW_LABELS[activeView] || activeView;
-  }, [activeView, activeProjectId, projects]);
+  }, [activeView, activeProjectId, activeTagId, activeFolderId, projects, tags, folders]);
 
   // Stats
   const completedCount = tasks.filter((t) => t.completed).length;
@@ -129,10 +165,10 @@ const TaskList: React.FC = () => {
       {/* Header */}
       <div className="main-header">
         <h1 className="task-list__title">{viewLabel}</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="main-header-actions">
           {!isCompletedView && (
-            <button className="sort-btn" onClick={(e) => sortMenu.open(e, null)} title="Sort">
-              <IconSort />
+            <button className="sort-btn" onClick={(e) => sortMenu.open(e, null)} title={sortBy ? `Sort: ${sortDirection.toUpperCase()}` : "Sort"}>
+              <IconSort direction={sortBy ? sortDirection : undefined} />
             </button>
           )}
           {isCompletedView && tasks.length > 0 && (
@@ -184,7 +220,7 @@ const TaskList: React.FC = () => {
       )}
 
       {/* Task Items */}
-      <div className="main-task-area stagger-children">
+      <div className={`main-task-area stagger-children${activeView === 'planned' ? ' planned-view' : ''}`}>
         {tasks.length === 0 ? (
           <div className="task-list__empty">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
@@ -219,24 +255,34 @@ const TaskList: React.FC = () => {
         isOpen={sortMenu.isOpen}
         onClose={sortMenu.close}
       >
-        <div className="cm-menu" style={{ width: 180 }}>
-          <div className="cm-item" onClick={() => { setSortBy('project'); sortMenu.close(); }}>
-            <span className="cm-item-text">Sort by project</span>
+        <div className="cm-menu" style={{ width: 200 }}>
+          <div className="cm-item" onClick={() => handleSortClick('project')}>
+            <span className="cm-item-text">Sort by project {sortBy === 'project' && `(${sortDirection.toUpperCase()})`}</span>
             {sortBy === 'project' && <IconCheck />}
           </div>
-          <div className="cm-item" onClick={() => { setSortBy('dueDate'); sortMenu.close(); }}>
-            <span className="cm-item-text">Sort by due date</span>
+          <div className="cm-item" onClick={() => handleSortClick('dueDate')}>
+            <span className="cm-item-text">Sort by due date {sortBy === 'dueDate' && `(${sortDirection.toUpperCase()})`}</span>
             {sortBy === 'dueDate' && <IconCheck />}
           </div>
-          <div className="cm-item" onClick={() => { setSortBy('priority'); sortMenu.close(); }}>
-            <span className="cm-item-text">Sort by task priority</span>
+          <div className="cm-item" onClick={() => handleSortClick('priority')}>
+            <span className="cm-item-text">Sort by task priority {sortBy === 'priority' && `(${sortDirection.toUpperCase()})`}</span>
             {sortBy === 'priority' && <IconCheck />}
           </div>
+          {sortBy && (
+            <>
+              <div className="cm-divider"></div>
+              <div className="cm-item" onClick={() => { setSortBy(null); setSortDirection('asc'); sortMenu.close(); }}>
+                <span className="cm-item-text">Clear sort</span>
+              </div>
+            </>
+          )}
         </div>
       </ContextMenu>
 
       <style>{`
         .task-list-container { display: flex; flex-direction: column; height: 100%; }
+        .main-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .main-header-actions { display: flex; gap: 8px; align-items: center; }
         .task-list__title {
           font-size: var(--text-2xl);
           font-weight: 600;
@@ -275,6 +321,33 @@ const TaskList: React.FC = () => {
           color: var(--text-primary);
           background: var(--bg-card-hover);
           border-color: var(--border-strong);
+        }
+        .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* Planned view: card container cho moi task item */
+        .planned-view {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .planned-view .task-item {
+          border-bottom: none;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 10px 14px;
+          background: var(--bg-card, var(--task-bg));
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+          transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+        }
+        .planned-view .task-item:hover {
+          border-color: var(--border-strong);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+          background: var(--task-bg-hover);
+        }
+        .planned-view .task-item.selected {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+          background: var(--task-bg-selected);
         }
       `}</style>
     </div>
