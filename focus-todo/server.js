@@ -572,4 +572,11 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
   process.exit(1);
 }
 
-startWithRetry();
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  startWithRetry();
+} else {
+  // Ensure schema initializes once when on Vercel
+  ensureSchema().catch(err => console.error('Failed to init schema:', err));
+}
+
+export default app;
