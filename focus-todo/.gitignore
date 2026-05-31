@@ -8,8 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Environment
-# .env removed to allow tracking in private repo
-
+.env
 node_modules
 dist
 dist-ssr
