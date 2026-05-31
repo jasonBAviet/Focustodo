@@ -52,8 +52,7 @@ interface StatCardProps {
   accentBlue: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ data, accentRed, accentBlue }) => {
-  const color = data.color === 'red' ? accentRed : accentBlue;
+const StatCard: React.FC<StatCardProps> = ({ data }) => {
   return (
     <div style={{
       background: 'var(--bg-card)',

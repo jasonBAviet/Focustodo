@@ -61,7 +61,8 @@ async function ensureSchema() {
       tags JSONB DEFAULT '[]'::jsonb,
       created_at TEXT,
       completed_at TEXT,
-      updated_at TEXT
+      updated_at TEXT,
+      is_deleted BOOLEAN DEFAULT false
     );
 
     CREATE TABLE IF NOT EXISTS projects (
@@ -71,7 +72,8 @@ async function ensureSchema() {
       is_visible BOOLEAN DEFAULT true,
       task_count INTEGER DEFAULT 0,
       folder_id TEXT,
-      created_at TEXT
+      created_at TEXT,
+      is_deleted BOOLEAN DEFAULT false
     );
 
     CREATE TABLE IF NOT EXISTS folders (
@@ -79,14 +81,16 @@ async function ensureSchema() {
       name TEXT,
       color TEXT,
       project_ids JSONB DEFAULT '[]'::jsonb,
-      created_at TEXT
+      created_at TEXT,
+      is_deleted BOOLEAN DEFAULT false
     );
 
     CREATE TABLE IF NOT EXISTS tags (
       id TEXT PRIMARY KEY,
       name TEXT,
       color TEXT,
-      created_at TEXT
+      created_at TEXT,
+      is_deleted BOOLEAN DEFAULT false
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -129,6 +133,16 @@ async function ensureSchema() {
       completed BOOLEAN
     );
   `);
+
+  // Thêm cột is_deleted cho bảng cũ
+  try {
+    await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+  } catch (err) {
+    console.warn('[safety] Could not add is_deleted column', err.message);
+  }
 
   // Seed the 4 default projects only when projects table is empty.
   const projCount = await pool.query('SELECT count(*)::int AS n FROM projects');
@@ -249,10 +263,10 @@ function rowToSession(r) {
 app.get('/api/state', async (req, res) => {
   try {
     const [tasks, projects, folders, tags, settings, ui, sessions] = await Promise.all([
-      pool.query('SELECT * FROM tasks'),
-      pool.query('SELECT * FROM projects'),
-      pool.query('SELECT * FROM folders'),
-      pool.query('SELECT * FROM tags'),
+      pool.query('SELECT * FROM tasks WHERE is_deleted = false OR is_deleted IS NULL'),
+      pool.query('SELECT * FROM projects WHERE is_deleted = false OR is_deleted IS NULL'),
+      pool.query('SELECT * FROM folders WHERE is_deleted = false OR is_deleted IS NULL'),
+      pool.query('SELECT * FROM tags WHERE is_deleted = false OR is_deleted IS NULL'),
       pool.query("SELECT * FROM settings WHERE id = 'default'"),
       pool.query("SELECT * FROM ui_state WHERE id = 'default'"),
       pool.query('SELECT * FROM system_logs'),
@@ -312,7 +326,7 @@ async function reconcileTable(client, table, rows, columns, toValues) {
       console.warn(`[safety] Skip mass-delete on "${table}": payload ${ids.length} vs existing ${total}.`);
     } else {
       await client.query(
-        `DELETE FROM ${table} WHERE id <> ALL($1::text[])`,
+        `UPDATE ${table} SET is_deleted = true WHERE id <> ALL($1::text[])`,
         [ids],
       );
     }
@@ -480,6 +494,40 @@ app.post('/api/state', async (req, res) => {
       console.error('Failed to save remote state:', error);
       return res.status(500).json({ error: 'Failed to save remote state' });
     }
+  }
+});
+
+// ============================================================
+// Webhook Proxy - test and trigger Slack webhook from frontend
+// ============================================================
+app.post('/api/webhook/test', async (req, res) => {
+  try {
+    const { webhookUrl, payload } = req.body;
+
+    if (!webhookUrl) {
+      return res.status(400).json({ error: 'webhookUrl is required' });
+    }
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || { event: 'test', timestamp: new Date().toISOString() }),
+    });
+
+    const status = response.status;
+    const statusText = response.statusText;
+
+    res.status(200).json({
+      status: 'success',
+      code: status,
+      message: `${status} ${statusText}`
+    });
+  } catch (error) {
+    console.error('Webhook proxy error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 

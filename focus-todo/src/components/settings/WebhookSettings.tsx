@@ -145,18 +145,26 @@ const WebhookSettings: React.FC = () => {
   const [testResult, setTestResult] = useState<TestResult>(null);
   const [testing, setTesting] = useState(false);
 
-  // Test connection
+  // Test connection via backend proxy
   const handleTestConnection = async () => {
     if (!settings.webhookUrl) return;
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(settings.webhookUrl, {
+      const res = await fetch('/api/webhook/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'test', timestamp: new Date().toISOString() }),
+        body: JSON.stringify({
+          webhookUrl: settings.webhookUrl,
+          payload: { event: 'test', timestamp: new Date().toISOString() },
+        }),
       });
-      setTestResult({ status: 'success', code: res.status });
+      const data = await res.json();
+      if (res.ok) {
+        setTestResult({ status: 'success', code: data.code });
+      } else {
+        setTestResult({ status: 'error', message: data.message || 'Unknown error' });
+      }
     } catch (err) {
       setTestResult({ status: 'error', message: err instanceof Error ? err.message : String(err) });
     } finally {

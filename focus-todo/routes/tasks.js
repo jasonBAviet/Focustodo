@@ -96,7 +96,8 @@ export function createTasksRouter(pool) {
         conditions.push(`due_date = $${params.length}`);
       }
 
-      const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      conditions.push(`(is_deleted = false OR is_deleted IS NULL)`);
+      const where = `WHERE ${conditions.join(' AND ')}`;
       const limitVal = Math.min(Number(limit) || 100, 500);
       const offsetVal = Number(offset) || 0;
 
@@ -127,7 +128,7 @@ export function createTasksRouter(pool) {
   // ----------------------------------------------------------
   router.get('/:id', async (req, res) => {
     try {
-      const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
+      const result = await pool.query('SELECT * FROM tasks WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)', [req.params.id]);
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Task khong tim thay' });
       }
@@ -230,7 +231,7 @@ export function createTasksRouter(pool) {
     }
 
     try {
-      const existing = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+      const existing = await pool.query('SELECT * FROM tasks WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)', [id]);
       if (existing.rows.length === 0) {
         return res.status(404).json({ error: 'Task khong tim thay' });
       }
@@ -284,7 +285,7 @@ export function createTasksRouter(pool) {
   // ----------------------------------------------------------
   router.delete('/:id', async (req, res) => {
     try {
-      const result = await pool.query('DELETE FROM tasks WHERE id = $1 RETURNING id', [req.params.id]);
+      const result = await pool.query('UPDATE tasks SET is_deleted = true WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL) RETURNING id', [req.params.id]);
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Task khong tim thay' });
       }

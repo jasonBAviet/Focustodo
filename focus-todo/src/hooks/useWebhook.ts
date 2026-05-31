@@ -136,13 +136,17 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
           bodyToSend = buildSlackMessage(task);
         }
 
-        const res = await fetch(webhookUrl, {
+        const res = await fetch('/api/webhook/test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyToSend),
+          body: JSON.stringify({
+            webhookUrl,
+            payload: bodyToSend,
+          }),
         });
+        const responseData = await res.json();
         eventRecord.status = res.ok ? 'success' : 'error';
-        eventRecord.statusCode = res.status;
+        eventRecord.statusCode = responseData.code;
       } catch (err) {
         eventRecord.status = 'error';
         eventRecord.error = err instanceof Error ? err.message : String(err);

@@ -151,6 +151,13 @@ export interface ReportStats {
   todayCompleted: number;
 }
 
+// ----------------------------------------------------------
+// Đọc biến môi trường Vite (được inject lúc build/dev)
+// Các biến VITE_* trong file .env sẽ được thay thế tại compile time
+// ----------------------------------------------------------
+const _envWebhookUrl: string = import.meta.env.VITE_SLACK_WEBHOOK_URL ?? '';
+const _envExternalApiUrl: string = import.meta.env.VITE_EXTERNAL_API_URL ?? '';
+
 export const DEFAULT_SETTINGS: Settings = {
   pomodoroLength: 25,
   shortBreakLength: 5,
@@ -163,10 +170,11 @@ export const DEFAULT_SETTINGS: Settings = {
   darkMode: 'dark',
   themeWallpaper: 'dark-forest',
   accentColor: '#f25f5c',
-  webhookUrl: '',
-  webhookEnabled: false,
-  externalApiUrl: '',
-  externalApiEnabled: false,
+  // Nếu .env có giá trị thì dùng, ngược lại để trống
+  webhookUrl: _envWebhookUrl,
+  webhookEnabled: _envWebhookUrl.length > 0,
+  externalApiUrl: _envExternalApiUrl,
+  externalApiEnabled: _envExternalApiUrl.length > 0,
   dailyFocusGoalHours: 3,
   visibleViews: {
     today: true,
