@@ -38,7 +38,6 @@ function isToday(dateStr: string | null): boolean {
 // Kiểu dữ liệu card
 // ----------------------------------------------------------
 interface StatCardData {
-  icon: string;
   label: string;
   value: string;
   color: 'red' | 'blue';
@@ -58,7 +57,7 @@ const StatCard: React.FC<StatCardProps> = ({ data, accentRed, accentBlue }) => {
   return (
     <div style={{
       background: 'var(--bg-card)',
-      border: `1px solid ${color}33`,
+      border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
       borderRadius: 14,
       padding: '16px 20px',
       minWidth: 140,
@@ -66,23 +65,8 @@ const StatCard: React.FC<StatCardProps> = ({ data, accentRed, accentBlue }) => {
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
-      position: 'relative',
-      overflow: 'hidden',
     }}>
-      {/* Accent strip trên cùng */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        height: 3, background: color, borderRadius: '14px 14px 0 0',
-      }} />
-      {/* Icon */}
-      <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: `${color}1a`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18,
-      }}>
-        {data.icon}
-      </div>
+
       {/* Value */}
       <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 26, lineHeight: 1 }}>
         {data.value}
@@ -151,37 +135,31 @@ const StatCards: React.FC<StatCardsProps> = ({
 
   const cards: StatCardData[] = [
     {
-      icon: '⏱',
       label: 'Total Focus Time',
       value: fmtMin(stats.totalFocusTime),
       color: 'red',
     },
     {
-      icon: '📅',
       label: 'Focus Time This Week',
       value: fmtMin(stats.weekFocusTime),
       color: 'red',
     },
     {
-      icon: '🌅',
       label: 'Focus Time Today',
       value: fmtMin(stats.todayFocusTime),
       color: 'red',
     },
     {
-      icon: '✅',
       label: 'Total Completed Tasks',
       value: String(stats.totalCompleted),
       color: 'blue',
     },
     {
-      icon: '📆',
       label: 'Completed This Week',
       value: String(stats.weekCompleted),
       color: 'blue',
     },
     {
-      icon: '🎯',
       label: 'Completed Today',
       value: String(stats.todayCompleted),
       color: 'blue',

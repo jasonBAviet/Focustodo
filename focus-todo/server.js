@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import pkg from 'pg';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { createTasksRouter } from './routes/tasks.js';
+import swaggerRouter from './routes/swagger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -481,24 +483,45 @@ app.post('/api/state', async (req, res) => {
   }
 });
 
-app.get('/api/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok' });
-  } catch (error) {
-    res.status(500).json({ error: 'Database unavailable' });
-  }
-});
+// ============================================================
+// Public Task API - nhan/cung cap task cho he thong ben ngoai
+// ============================================================
+app.use('/api/tasks', createTasksRouter(pool));
+
+// ============================================================
+// Swagger UI tai /api/docs
+// ============================================================
+app.use('/api/docs', swaggerRouter);
 
 const PORT = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 4000;
 
-ensureSchema()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Focus To Do backend is running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Unable to initialize backend:', error);
-    process.exit(1);
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (err) {
+    res.status(503).json({ status: 'error', db: err.message });
+  }
+});
+
+async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await ensureSchema();
+      app.listen(PORT, () => {
+        console.log(`Focus To Do backend is running on http://localhost:${PORT}`);
+      });
+      return;
+    } catch (error) {
+      console.error(`Startup attempt ${attempt}/${maxAttempts} failed:`, error.message);
+      if (attempt < maxAttempts) {
+        console.log(`Retrying in ${delayMs / 1000}s...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  console.error('Unable to initialize backend after all retries');
+  process.exit(1);
+}
+
+startWithRetry();
