@@ -14,7 +14,9 @@ export interface RemoteAppState {
 }
 
 export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
-  const response = await fetch('/api/state');
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+  const url = `${backendUrl}/api/state`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Remote state request failed: ${response.statusText}`);
   }
@@ -40,7 +42,9 @@ export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
 }
 
 export async function saveRemoteAppState(state: RemoteAppState): Promise<void> {
-  await fetch('/api/state', {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+  const url = `${backendUrl}/api/state`;
+  await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state }),
