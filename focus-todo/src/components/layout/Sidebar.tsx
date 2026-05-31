@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import { useAppContext } from '../../contexts/AppContext';
 import type { Task, ViewType, Project } from '../../types';
+import { dateUtils } from '../../utils/dateUtils';
 
 import logoUrl from '../../assets/Logo.jpg';
 
@@ -127,6 +128,7 @@ const Sidebar: React.FC = () => {
   const formatMinutes = (minutes: number): string => {
     const h = Math.floor(minutes / 60);
     const m = Math.round(minutes % 60);
+    if (h > 0 && m === 0) return `${h}h`;
     if (h > 0) return `${h}h ${m}m`;
     return `${m}m`;
   };
@@ -169,10 +171,14 @@ const Sidebar: React.FC = () => {
         return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(todayStr)));
       case 'tomorrow':
         return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(tomorrowStr)));
+      case 'this-week':
+        return getTasksStats(tasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate)));
       case 'planned':
         return getTasksStats(tasks.filter((t) => !t.completed && hasValidDueDate(t)));
       case 'completed':
         return getTasksStats(tasks.filter((t) => t.completed));
+      case 'events':
+        return getTasksStats(tasks.filter((t) => !t.completed && hasValidDueDate(t)));
       default:
         return { count: 0, time: 0 };
     }
@@ -232,10 +238,12 @@ const Sidebar: React.FC = () => {
           style={{ backgroundColor: project.color, width: 12, height: 12, borderRadius: '50%', display: 'inline-block' }}
         />
         <span className="nav-label truncate">{project.name}</span>
-        <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
-          <span>{count}</span>
-        </span>
+        {(count > 0 || time > 0) && (
+          <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+            <span>{count}</span>
+          </span>
+        )}
       </div>
     );
   };
@@ -291,10 +299,12 @@ const Sidebar: React.FC = () => {
                 {view.icon}
               </span>
               <span className="nav-label">{view.label}</span>
-              <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
-                <span>{count}</span>
-              </span>
+              {(count > 0 || time > 0) && (
+                <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                  <span>{count}</span>
+                </span>
+              )}
             </div>
           );
         })}
@@ -342,8 +352,12 @@ const Sidebar: React.FC = () => {
                     </span>
                     <span className="nav-label truncate">{folder.name}</span>
                     <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
-                      <span>{count}</span>
+                      {(count > 0 || time > 0) && (
+                        <>
+                          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                          <span>{count}</span>
+                        </>
+                      )}
                       <span
                         style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
                         onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
@@ -377,10 +391,12 @@ const Sidebar: React.FC = () => {
                     <IconTag />
                   </span>
                   <span className="nav-label truncate">{tag.name}</span>
-                  <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
-                    <span>{count}</span>
-                  </span>
+                  {(count > 0 || time > 0) && (
+                    <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                      <span>{count}</span>
+                    </span>
+                  )}
                 </div>
               );
             })}
