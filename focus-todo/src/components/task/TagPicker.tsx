@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Tag } from '../../types';
+import { toggleArrayItem } from '../../utils/arrayUtils';
 
 const TAG_COLORS = [
   '#f25f5c', '#f4a261', '#e9c46a', '#2ec4b6', '#4361ee',
@@ -69,9 +70,7 @@ const TagPicker: React.FC<TagPickerProps> = ({ taskTags, allTags, onUpdate, onAd
   };
 
   const toggleTag = (id: string) => {
-    setPending((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setPending((prev) => toggleArrayItem(prev, id));
   };
 
   const handleAddNewTag = () => {

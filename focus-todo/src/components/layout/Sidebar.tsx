@@ -123,15 +123,41 @@ const Sidebar: React.FC = () => {
     (v) => settings.visibleViews[v.id] !== false
   );
 
+  // Format minutes to Xh Ym
+  const formatMinutes = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
+  const getTasksStats = (taskList: Task[]) => {
+    const count = taskList.length;
+    const totalPomodoros = taskList.reduce((acc, t) => {
+      // time remaining to complete
+      return acc + Math.max(0, (t.pomodoroEstimate || 0) - (t.pomodoroCompleted || 0));
+    }, 0);
+    const time = totalPomodoros * (settings?.pomodoroLength || 25);
+    return { count, time };
+  };
+
   // Task count cho moi project (chi dem task chua hoan thanh)
-  const getProjectCount = (projectId: string) =>
-    tasks.filter((t) => t.projectId === projectId && !t.completed).length;
+  const getProjectStats = (projectId: string) =>
+    getTasksStats(tasks.filter((t) => t.projectId === projectId && !t.completed));
+
+  const getFolderStats = (folderId: string) => {
+    const folderProjectIds = projects.filter(p => p.folderId === folderId).map(p => p.id);
+    return getTasksStats(tasks.filter(t => !t.completed && t.projectId && folderProjectIds.includes(t.projectId)));
+  };
+
+  const getTagStats = (tagId: string) =>
+    getTasksStats(tasks.filter(t => !t.completed && (t.tags || []).includes(tagId)));
 
   // Task count cho smart views
   const hasValidDueDate = (task: Task) =>
     typeof task.dueDate === 'string' && task.dueDate.trim() !== '';
 
-  const getViewCount = (viewId: ViewType): number => {
+  const getViewStats = (viewId: ViewType) => {
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const tomorrowDate = new Date(today);
@@ -140,15 +166,15 @@ const Sidebar: React.FC = () => {
 
     switch (viewId) {
       case 'today':
-        return tasks.filter((t) => !t.completed && t.dueDate?.startsWith(todayStr)).length;
+        return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(todayStr)));
       case 'tomorrow':
-        return tasks.filter((t) => !t.completed && t.dueDate?.startsWith(tomorrowStr)).length;
+        return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(tomorrowStr)));
       case 'planned':
-        return tasks.filter((t) => !t.completed && hasValidDueDate(t)).length;
+        return getTasksStats(tasks.filter((t) => !t.completed && hasValidDueDate(t)));
       case 'completed':
-        return tasks.filter((t) => t.completed).length;
+        return getTasksStats(tasks.filter((t) => t.completed));
       default:
-        return 0;
+        return { count: 0, time: 0 };
     }
   };
 
@@ -190,7 +216,7 @@ const Sidebar: React.FC = () => {
 
   const renderProjectItem = (project: Project, isChild = false) => {
     const isActive = activeView === 'project' && activeProjectId === project.id;
-    const count = getProjectCount(project.id);
+    const { count, time } = getProjectStats(project.id);
     return (
       <div
         key={project.id}
@@ -206,11 +232,10 @@ const Sidebar: React.FC = () => {
           style={{ backgroundColor: project.color, width: 12, height: 12, borderRadius: '50%', display: 'inline-block' }}
         />
         <span className="nav-label truncate">{project.name}</span>
-        {count > 0 && (
-          <span className="nav-meta">
-            <span>{count}</span>
-          </span>
-        )}
+        <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+          <span>{count}</span>
+        </span>
       </div>
     );
   };
@@ -251,7 +276,7 @@ const Sidebar: React.FC = () => {
         {visibleViews.map((view) => {
           const isActive =
             activeView === view.id && activeProjectId === null;
-          const count = getViewCount(view.id);
+          const { count, time } = getViewStats(view.id);
           return (
             <div
               key={view.id}
@@ -266,11 +291,10 @@ const Sidebar: React.FC = () => {
                 {view.icon}
               </span>
               <span className="nav-label">{view.label}</span>
-              {count > 0 && (
-                <span className="nav-meta">
-                  <span>{count}</span>
-                </span>
-              )}
+              <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                <span>{count}</span>
+              </span>
             </div>
           );
         })}
@@ -302,6 +326,7 @@ const Sidebar: React.FC = () => {
             {folders.map((folder) => {
               const isExpanded = expandedFolders[folder.id];
               const isFolderActive = activeView === 'folder' && activeFolderId === folder.id;
+              const { count, time } = getFolderStats(folder.id);
               return (
                 <React.Fragment key={folder.id}>
                   <div
@@ -316,11 +341,15 @@ const Sidebar: React.FC = () => {
                       <IconFolder />
                     </span>
                     <span className="nav-label truncate">{folder.name}</span>
-                    <span
-                      style={{ color: 'var(--text-tertiary)', marginLeft: 'auto' }}
-                      onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
-                    >
-                      <IconChevron down={isExpanded} />
+                    <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                      <span>{count}</span>
+                      <span
+                        style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
+                        onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
+                      >
+                        <IconChevron down={isExpanded} />
+                      </span>
                     </span>
                   </div>
                   {isExpanded && projects.filter(p => p.folderId === folder.id).map(p => renderProjectItem(p, true))}
@@ -334,7 +363,7 @@ const Sidebar: React.FC = () => {
             {/* Render Tags */}
             {tags.map((tag) => {
               const isTagActive = activeView === 'tag' && activeTagId === tag.id;
-              const tagCount = tasks.filter((t) => !t.completed && (t.tags || []).includes(tag.id)).length;
+              const { count, time } = getTagStats(tag.id);
               return (
                 <div
                   key={tag.id}
@@ -348,11 +377,10 @@ const Sidebar: React.FC = () => {
                     <IconTag />
                   </span>
                   <span className="nav-label truncate">{tag.name}</span>
-                  {tagCount > 0 && (
-                    <span className="nav-meta">
-                      <span>{tagCount}</span>
-                    </span>
-                  )}
+                  <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                    <span>{count}</span>
+                  </span>
                 </div>
               );
             })}

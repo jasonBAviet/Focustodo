@@ -17,6 +17,8 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear();
@@ -84,8 +86,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
     if (selectedDate) {
       const result = showTime ? `${selectedDate}T${selectedTime}` : selectedDate;
       onChange(result);
+      onClose?.();
     }
-    onClose?.();
   };
 
   const handleRemove = () => {
@@ -211,6 +213,28 @@ const DatePicker: React.FC<DatePickerProps> = ({
           border-top: 1px solid var(--divider);
           gap: var(--space-2);
         }
+        .datepicker-btn {
+          background: none;
+          border: none;
+          padding: 4px 8px;
+          font-size: var(--text-sm);
+          font-family: var(--font-main);
+          cursor: pointer;
+          color: var(--text-secondary);
+          border-radius: var(--radius-sm);
+          transition: color var(--transition-fast);
+        }
+        .datepicker-btn:hover {
+          color: var(--text-primary);
+        }
+        .datepicker-btn--confirm {
+          color: var(--accent);
+          font-weight: 500;
+        }
+        .datepicker-btn--confirm:hover {
+          color: var(--accent);
+          opacity: 0.8;
+        }
       `}</style>
       <div className="datepicker">
         {/* Header */}
@@ -293,10 +317,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
               onChange={(e) => setSelectedTime(`${e.target.value}:${selectedTime.split(':')[1]}`)}
               style={{ flex: 0 }}
             >
-              {Array.from({ length: 24 }).map((_, i) => {
-                const h = String(i).padStart(2, '0');
-                return <option key={h} value={h}>{h}</option>;
-              })}
+              {HOURS.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
             </select>
             <span style={{ color: 'var(--text-secondary)' }}>:</span>
             <select
@@ -304,7 +327,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
               onChange={(e) => setSelectedTime(`${selectedTime.split(':')[0]}:${e.target.value}`)}
               style={{ flex: 0 }}
             >
-              {['00', '15', '30', '45'].map((m) => (
+              {MINUTES.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
@@ -316,7 +339,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           {onRemove && (
             <button
               type="button"
-              className="btn btn--ghost btn--sm"
+              className="datepicker-btn"
               onClick={handleRemove}
             >
               Remove
@@ -324,7 +347,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           )}
           <button
             type="button"
-            className="btn btn--primary btn--sm"
+            className="datepicker-btn datepicker-btn--confirm"
             style={{ marginLeft: 'auto' }}
             onClick={handleOk}
           >

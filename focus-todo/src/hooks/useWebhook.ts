@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { WebhookEvent, Task, PomodoroSession } from '../types';
 import useLocalStorage from './useLocalStorage';
+import { buildSlackPayload } from '../services/slackFormatter';
 
 type WebhookEventType = WebhookEvent['eventType'];
 
@@ -10,86 +11,6 @@ interface WebhookPayload {
   data: Record<string, unknown>;
 }
 
-// Helper: Build Slack Block Kit message for task reminders
-function buildSlackMessage(task: Task): Record<string, unknown> {
-  const priorityColor = {
-    high: '#f25f5c',
-    medium: '#f4a261',
-    low: '#2ec4b6',
-    none: '#888',
-  }[task.priority] || '#888';
-
-  const priorityLabel = {
-    high: 'Ưu tiên cao',
-    medium: 'Ưu tiên trung bình',
-    low: 'Ưu tiên thấp',
-    none: 'Không ưu tiên',
-  }[task.priority] || 'Không ưu tiên';
-
-  const dueDateText = task.dueDate
-    ? new Date(task.dueDate).toLocaleDateString('vi-VN')
-    : 'Không có';
-
-  return {
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*⏰ Task Reminder*\n_Bạn có một task cần thực hiện_`,
-        },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: [
-          {
-            type: 'mrkdwn',
-            text: `*Tiêu đề*\n${task.title}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*Ưu tiên*\n${priorityLabel}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*Hạn chót*\n${dueDateText}`,
-          },
-          {
-            type: 'mrkdwn',
-            text: `*Thời gian*\n${new Date().toLocaleTimeString('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}`,
-          },
-        ],
-      },
-      ...(task.note
-        ? [
-            {
-              type: 'divider',
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `*Ghi chú*\n${task.note}`,
-              },
-            },
-          ]
-        : []),
-    ],
-    attachments: [
-      {
-        color: priorityColor,
-        footer: 'Focus To-Do',
-        ts: Math.floor(Date.now() / 1000),
-      },
-    ],
-  };
-}
 
 function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
   const [webhookEvents, setWebhookEvents] = useLocalStorage<WebhookEvent[]>(
@@ -124,47 +45,12 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
       }
 
       try {
-        // Special handling for Slack webhooks
         let bodyToSend: unknown = payload;
-        
+
         if (webhookUrl.includes('hooks.slack.com')) {
-          if (eventType === 'task.reminded' && (data as any).title !== undefined) {
-            const task = data as unknown as Task;
-            bodyToSend = buildSlackMessage(task);
-          } else if (eventType === 'task.completed') {
-            bodyToSend = {
-              blocks: [
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `*✅ Task Completed*\n_Bạn vừa hoàn thành một công việc!_`,
-                  },
-                },
-                { type: 'divider' },
-                {
-                  type: 'section',
-                  fields: [
-                    {
-                      type: 'mrkdwn',
-                      text: `*Tiêu đề*\n${data.title}`,
-                    },
-                    {
-                      type: 'mrkdwn',
-                      text: `*Thời gian tập trung*\n${data.totalFocusTime} phút (${data.pomodoroCompleted} Pomodoro)`,
-                    },
-                  ],
-                },
-              ],
-            };
-          } else if (eventType === 'task.created') {
-            bodyToSend = {
-              text: `🆕 Task mới được tạo: *${data.title}*`
-            };
-          } else if (eventType === 'pomodoro.completed') {
-            bodyToSend = {
-              text: `🍅 Hoàn thành một Pomodoro: *${data.taskTitle || 'Tự do'}* (${data.duration} phút)`
-            };
+          const slackPayload = buildSlackPayload(eventType, data);
+          if (slackPayload) {
+            bodyToSend = slackPayload;
           }
         }
 
