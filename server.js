@@ -572,11 +572,12 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
   process.exit(1);
 }
 
+// Initialize schema once on startup (works for both local and Vercel)
+ensureSchema().catch(err => console.error('Failed to init schema:', err));
+
+// Only listen locally in development
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   startWithRetry();
-} else {
-  // Ensure schema initializes once when on Vercel
-  ensureSchema().catch(err => console.error('Failed to init schema:', err));
 }
 
 export default app;

@@ -1,8 +1,17 @@
 {
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm ci && npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/[...handler].ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/[...handler]"
+    },
     {
       "source": "/((?!api/.*).*)",
       "destination": "/index.html"
