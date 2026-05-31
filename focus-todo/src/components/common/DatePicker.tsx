@@ -268,7 +268,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
               className="btn btn--ghost btn--sm"
               onClick={handleRemove}
             >
-              Clear
+              Xóa
             </button>
           )}
           <button

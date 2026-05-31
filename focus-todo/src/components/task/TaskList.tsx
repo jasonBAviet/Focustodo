@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import TaskItem from './TaskItem';
 import TaskAddBar from './TaskAddBar';
@@ -86,32 +86,6 @@ const TaskList: React.FC = () => {
     return result;
   }, [filteredTasks, sortBy]);
 
-  const [visibleCount, setVisibleCount] = useState(20);
-  const observerTarget = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setVisibleCount(20);
-  }, [tasks]);
-
-  const visibleTasks = tasks.slice(0, visibleCount);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 20, tasks.length));
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [tasks.length]);
-
   const viewLabel = useMemo(() => {
     if (activeView === 'project' && activeProjectId) {
       return projects.find((p) => p.id === activeProjectId)?.name || 'Project';
@@ -172,9 +146,9 @@ const TaskList: React.FC = () => {
               </button>
             ) : (
               <>
-                <span className="clear-completed-confirm">Delete {tasks.length} tasks?</span>
-                <button className="clear-completed-btn danger" onClick={handleClearCompleted}>Delete</button>
-                <button className="clear-completed-btn" onClick={() => setConfirmClear(false)}>Cancel</button>
+                <span className="clear-completed-confirm">Xóa {tasks.length} task?</span>
+                <button className="clear-completed-btn danger" onClick={handleClearCompleted}>Xóa</button>
+                <button className="clear-completed-btn" onClick={() => setConfirmClear(false)}>Hủy</button>
               </>
             )}
           </div>
@@ -217,22 +191,17 @@ const TaskList: React.FC = () => {
               <circle cx="24" cy="24" r="22" stroke="var(--border-strong)" strokeWidth="2"/>
               <path d="M16 24h16M24 16v16" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round"/>
             </svg>
-            <p>No tasks available</p>
+            <p>Khong co task nao</p>
           </div>
         ) : (
-          <>
-            {visibleTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                isSelected={task.id === selectedTaskId}
-                onContextMenu={(e) => contextMenu.open(e, task.id)}
-              />
-            ))}
-            {visibleCount < tasks.length && (
-              <div ref={observerTarget} style={{ height: '20px', width: '100%' }} />
-            )}
-          </>
+          tasks.map((task) => (
+            <TaskItem
+              key={task.id}
+              task={task}
+              isSelected={task.id === selectedTaskId}
+              onContextMenu={(e) => contextMenu.open(e, task.id)}
+            />
+          ))
         )}
       </div>
 

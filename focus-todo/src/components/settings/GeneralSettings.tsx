@@ -2,10 +2,20 @@
 // FOCUS TO-DO - GeneralSettings
 // Tab General - Xuat/Nhap du lieu, Focus Goal, Thong tin app
 // ============================================================
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { Priority } from '../../types';
+import { exportTasks } from '../../utils/exportUtils';
+import { importFromCSV, readFileAsText } from '../../utils/importUtils';
+
+// ----------------------------------------------------------
+// Kieu du lieu thong bao import
+// ----------------------------------------------------------
+type ImportState =
+  | { status: 'idle' }
+  | { status: 'success'; count: number }
+  | { status: 'error'; message: string };
 
 // ----------------------------------------------------------
 // Styles
@@ -74,9 +84,72 @@ const infoRowStyle: React.CSSProperties = {
 // ----------------------------------------------------------
 const GeneralSettings: React.FC = () => {
   const { settings, updateSettings } = useAppContext();
-  const { tasks, addTask } = useTaskContext();
+  const { tasks, addTask, updateTask, getProjectName } = useTaskContext();
 
-// ----------------------------------------------------------
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importState, setImportState] = useState<ImportState>({ status: 'idle' });
+
+  // ----------------------------------------------------------
+  // Xuat du lieu CSV
+  // ----------------------------------------------------------
+  const handleExport = () => {
+    exportTasks(tasks, getProjectName);
+  };
+
+  // ----------------------------------------------------------
+  // Nhap tu CSV
+  // ----------------------------------------------------------
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportState({ status: 'idle' });
+
+    try {
+      const text = await readFileAsText(file);
+      const imported = importFromCSV(text);
+
+      if (imported.length === 0) {
+        setImportState({ status: 'error', message: 'File khong co du lieu hop le.' });
+        return;
+      }
+
+      // Them tung task vao TaskContext
+      imported.forEach((partial) => {
+        if (!partial.title) return;
+        const task = addTask(partial.title, partial.projectId ?? null, partial.priority ?? 'none');
+        updateTask(task.id, {
+          dueDate: partial.dueDate ?? task.dueDate,
+          note: partial.note ?? task.note,
+          pomodoroEstimate: partial.pomodoroEstimate ?? task.pomodoroEstimate,
+          pomodoroCompleted: partial.pomodoroCompleted ?? task.pomodoroCompleted,
+          totalFocusTime: partial.totalFocusTime ?? task.totalFocusTime,
+          completed: partial.completed ?? task.completed,
+          completedAt: partial.completedAt ?? task.completedAt,
+          flagged: partial.flagged ?? task.flagged,
+          repeat: partial.repeat ?? task.repeat,
+          repeatCustom: partial.repeatCustom ?? task.repeatCustom,
+          reminder: partial.reminder ?? task.reminder,
+        });
+      });
+
+      setImportState({ status: 'success', count: imported.length });
+    } catch (err) {
+      setImportState({
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Loi doc file.',
+      });
+    } finally {
+      // Reset input de co the chon lai cung file
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // ----------------------------------------------------------
   // Tao du lieu mockup
   // ----------------------------------------------------------
   const handleGenerateMockData = () => {
@@ -108,13 +181,62 @@ const GeneralSettings: React.FC = () => {
       <div style={sectionTitleStyle}>Dữ liệu</div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-        <button type="button" style={btnPrimaryStyle} onClick={handleGenerateMockData}>
+        <button type="button" style={btnPrimaryStyle} onClick={handleExport}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Xuất dữ liệu (CSV)
+        </button>
+
+        <button type="button" style={btnStyle} onClick={handleImportClick}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 9V1M4 4l3-3 3 3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Nhập từ CSV
+        </button>
+        
+        <button type="button" style={btnStyle} onClick={handleGenerateMockData}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M12 4v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4m10 0V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2m10 0h-10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Tạo Mockup 100 Tasks
         </button>
+
+        {/* Input file an */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
       </div>
+
+      {/* Thong bao import */}
+      {importState.status === 'success' && (
+        <div style={{
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'rgba(6,214,160,0.12)',
+          color: '#06d6a0',
+          fontSize: 'var(--text-sm)',
+          marginBottom: 10,
+        }}>
+          Nhập thành công {importState.count} task từ CSV.
+        </div>
+      )}
+      {importState.status === 'error' && (
+        <div style={{
+          padding: '8px 12px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'rgba(242,95,92,0.12)',
+          color: '#f25f5c',
+          fontSize: 'var(--text-sm)',
+          marginBottom: 10,
+        }}>
+          Lỗi: {importState.message}
+        </div>
+      )}
 
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>
         Hiện có {tasks.length} task trong hệ thống.

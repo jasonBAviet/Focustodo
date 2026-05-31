@@ -8,7 +8,10 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Environment
-
+.env
+.env.local
+.env.production
+.env.*.local
 
 dist
 dist-ssr
