@@ -64,7 +64,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, isOpen, onClose, childr
         zIndex: 9999,
         background: 'var(--bg-dialog, #fff)',
         boxShadow: 'var(--shadow-xl, 0 10px 25px rgba(0,0,0,0.1))',
-        border: '1px solid var(--border-strong, #ddd)',
+        border: 'none',
         borderRadius: 'var(--radius-md, 8px)',
         minWidth: '220px',
         padding: '8px 0',

@@ -104,10 +104,14 @@ const Sidebar: React.FC = () => {
     tags,
     activeView,
     activeProjectId,
+    activeTagId,
+    activeFolderId,
     searchQuery,
     setSearchQuery,
     setActiveView,
     setActiveProjectId,
+    setActiveTagId,
+    setActiveFolderId,
   } = useTaskContext();
 
   const { settings, setOpenModal } = useAppContext();
@@ -151,12 +155,32 @@ const Sidebar: React.FC = () => {
   const handleNavClick = (viewId: ViewType) => {
     setActiveView(viewId);
     setActiveProjectId(null);
+    setActiveTagId(null);
+    setActiveFolderId(null);
     setSearchQuery('');
   };
 
   const handleProjectClick = (projectId: string) => {
     setActiveView('project');
     setActiveProjectId(projectId);
+    setActiveTagId(null);
+    setActiveFolderId(null);
+    setSearchQuery('');
+  };
+
+  const handleTagClick = (tagId: string) => {
+    setActiveView('tag');
+    setActiveTagId(tagId);
+    setActiveProjectId(null);
+    setActiveFolderId(null);
+    setSearchQuery('');
+  };
+
+  const handleFolderFilterClick = (folderId: string) => {
+    setActiveView('folder');
+    setActiveFolderId(folderId);
+    setActiveProjectId(null);
+    setActiveTagId(null);
     setSearchQuery('');
   };
 
@@ -277,19 +301,25 @@ const Sidebar: React.FC = () => {
             {/* Render Folders and their child projects */}
             {folders.map((folder) => {
               const isExpanded = expandedFolders[folder.id];
+              const isFolderActive = activeView === 'folder' && activeFolderId === folder.id;
               return (
                 <React.Fragment key={folder.id}>
                   <div
-                    className="nav-item"
-                    onClick={() => toggleFolder(folder.id)}
+                    className={`nav-item${isFolderActive ? ' active' : ''}`}
+                    onClick={() => handleFolderFilterClick(folder.id)}
                     role="button"
                     tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleFolderFilterClick(folder.id)}
+                    title={`Xem tat ca task trong folder ${folder.name}`}
                   >
-                    <span style={{ color: folder.color }}>
+                    <span style={{ color: isFolderActive ? 'var(--accent)' : folder.color }}>
                       <IconFolder />
                     </span>
                     <span className="nav-label truncate">{folder.name}</span>
-                    <span style={{ color: 'var(--text-tertiary)' }}>
+                    <span
+                      style={{ color: 'var(--text-tertiary)', marginLeft: 'auto' }}
+                      onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
+                    >
                       <IconChevron down={isExpanded} />
                     </span>
                   </div>
@@ -302,20 +332,30 @@ const Sidebar: React.FC = () => {
             {projects.filter(p => !p.folderId).map(p => renderProjectItem(p, false))}
 
             {/* Render Tags */}
-            {tags.map((tag) => (
-              <div
-                key={tag.id}
-                className="nav-item"
-                // onClick={() => handleTagClick(tag.id)} // Tag filtering not fully implemented yet
-                role="button"
-                tabIndex={0}
-              >
-                <span style={{ color: tag.color }}>
-                  <IconTag />
-                </span>
-                <span className="nav-label truncate">{tag.name}</span>
-              </div>
-            ))}
+            {tags.map((tag) => {
+              const isTagActive = activeView === 'tag' && activeTagId === tag.id;
+              const tagCount = tasks.filter((t) => !t.completed && (t.tags || []).includes(tag.id)).length;
+              return (
+                <div
+                  key={tag.id}
+                  className={`nav-item${isTagActive ? ' active' : ''}`}
+                  onClick={() => handleTagClick(tag.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTagClick(tag.id)}
+                >
+                  <span style={{ color: isTagActive ? 'var(--accent)' : tag.color }}>
+                    <IconTag />
+                  </span>
+                  <span className="nav-label truncate">{tag.name}</span>
+                  {tagCount > 0 && (
+                    <span className="nav-meta">
+                      <span>{tagCount}</span>
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </>
         )}
       </nav>
@@ -327,7 +367,7 @@ const Sidebar: React.FC = () => {
           className="btn btn--ghost btn--sm"
           onClick={() => setOpenModal('add-project')}
           aria-label="Thêm project mới"
-          style={{ justifyContent: 'flex-start', gap: 'var(--space-2)', flex: 1, paddingLeft: 0, color: '#f25f5c' }}
+          style={{ justifyContent: 'flex-start', gap: 'var(--space-2)', flex: 1, paddingLeft: 0, color: '#f25f5c', border: 'none', outline: 'none', boxShadow: 'none' }}
         >
           <IconPlus />
           <span style={{ fontSize: '14px', fontWeight: 500 }}>Add Project</span>
