@@ -124,16 +124,48 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
       }
 
       try {
-        // Special handling for Slack webhooks with task.reminded event
+        // Special handling for Slack webhooks
         let bodyToSend: unknown = payload;
-        if (
-          eventType === 'task.reminded' &&
-          webhookUrl.includes('hooks.slack.com') &&
-          (data as any).title !== undefined
-        ) {
-          // Reconstruct task object for Slack message formatting
-          const task = data as unknown as Task;
-          bodyToSend = buildSlackMessage(task);
+        
+        if (webhookUrl.includes('hooks.slack.com')) {
+          if (eventType === 'task.reminded' && (data as any).title !== undefined) {
+            const task = data as unknown as Task;
+            bodyToSend = buildSlackMessage(task);
+          } else if (eventType === 'task.completed') {
+            bodyToSend = {
+              blocks: [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: `*✅ Task Completed*\n_Bạn vừa hoàn thành một công việc!_`,
+                  },
+                },
+                { type: 'divider' },
+                {
+                  type: 'section',
+                  fields: [
+                    {
+                      type: 'mrkdwn',
+                      text: `*Tiêu đề*\n${data.title}`,
+                    },
+                    {
+                      type: 'mrkdwn',
+                      text: `*Thời gian tập trung*\n${data.totalFocusTime} phút (${data.pomodoroCompleted} Pomodoro)`,
+                    },
+                  ],
+                },
+              ],
+            };
+          } else if (eventType === 'task.created') {
+            bodyToSend = {
+              text: `🆕 Task mới được tạo: *${data.title}*`
+            };
+          } else if (eventType === 'pomodoro.completed') {
+            bodyToSend = {
+              text: `🍅 Hoàn thành một Pomodoro: *${data.taskTitle || 'Tự do'}* (${data.duration} phút)`
+            };
+          }
         }
 
         const res = await fetch('/api/webhook/test', {
