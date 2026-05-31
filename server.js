@@ -19,17 +19,22 @@ const {
   DB_PASSWORD,
 } = process.env;
 
-if (!DB_HOST || !DB_PORT || !DB_NAME || !DB_USER || !DB_PASSWORD) {
-  console.error('Missing required DB environment variables in .env');
-  process.exit(1);
+const DBG_VARS_OK = !!(DB_HOST && DB_PORT && DB_NAME && DB_USER && DB_PASSWORD);
+if (!DBG_VARS_OK) {
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    console.error('Missing required DB environment variables in .env');
+    process.exit(1);
+  } else {
+    console.warn('[VERCEL] Database credentials not configured. Set DB_* environment variables on Vercel dashboard.');
+  }
 }
 
 const pool = new Pool({
-  host: DB_HOST,
-  port: Number(DB_PORT),
-  database: DB_NAME,
-  user: DB_USER,
-  password: DB_PASSWORD,
+  host: DB_HOST || 'localhost',
+  port: Number(DB_PORT) || 5432,
+  database: DB_NAME || 'focustodo',
+  user: DB_USER || 'postgres',
+  password: DB_PASSWORD || 'postgres',
   max: 10,
 });
 
@@ -544,11 +549,25 @@ app.use('/api/docs', swaggerRouter);
 const PORT = process.env.SERVER_PORT ? Number(process.env.SERVER_PORT) : 4000;
 
 app.get('/api/health', async (req, res) => {
+  if (!DBG_VARS_OK) {
+    return res.status(503).json({
+      status: 'error',
+      db: 'not_configured',
+      message: 'Database credentials missing. Set DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD on Vercel Dashboard → Environment Variables',
+      configured_vars: {
+        DB_HOST: !!DB_HOST,
+        DB_PORT: !!DB_PORT,
+        DB_NAME: !!DB_NAME,
+        DB_USER: !!DB_USER,
+        DB_PASSWORD: !!DB_PASSWORD,
+      }
+    });
+  }
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', db: 'connected' });
   } catch (err) {
-    res.status(503).json({ status: 'error', db: err.message });
+    res.status(503).json({ status: 'error', db: 'connection_failed', message: err.message });
   }
 });
 
@@ -572,8 +591,12 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
   process.exit(1);
 }
 
-// Initialize schema once on startup (works for both local and Vercel)
-ensureSchema().catch(err => console.error('Failed to init schema:', err));
+// Initialize schema once on startup (if database is configured)
+if (DBG_VARS_OK) {
+  ensureSchema().catch(err => console.error('Failed to init schema:', err));
+} else {
+  console.warn('[STARTUP] Skipping schema initialization - database not configured');
+}
 
 // Only listen locally in development
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
