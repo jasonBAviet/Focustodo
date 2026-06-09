@@ -742,15 +742,18 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
   process.exit(1);
 }
 
-// Initialize schema once on startup (if database is configured)
-if (DBG_VARS_OK) {
-  ensureSchema().catch(err => console.error('Failed to init schema:', err));
-} else {
+// ensureSchema phải chạy ĐÚNG MỘT LẦN lúc khởi động:
+//  - Khi tự listen (VPS/dev): startWithRetry() đã gọi ensureSchema() rồi await
+//    trước khi listen -> KHÔNG gọi lần nữa ở đây (tránh đua tạo bảng -> 23505).
+//  - Khi serverless (Vercel): không có startWithRetry() -> phải init schema ở đây.
+const willListen = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+if (!DBG_VARS_OK) {
   console.warn('[STARTUP] Skipping schema initialization - database not configured');
+} else if (!willListen) {
+  ensureSchema().catch(err => console.error('Failed to init schema:', err));
 }
 
-// Only listen locally in development
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+if (willListen) {
   startWithRetry();
 }
 
