@@ -18,8 +18,21 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleAdd();
-    if (e.key === 'Escape') { setNewSubtask(''); setShowInput(false); }
+    // Bỏ qua Enter khi bộ gõ (IME tiếng Việt) còn đang soạn ký tự để tránh
+    // "chốt ký tự" bị hiểu nhầm là submit và thêm subtask thiếu chữ.
+    if (e.key === 'Enter' && !(e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) {
+      e.preventDefault();
+      handleAdd();
+    } else if (e.key === 'Escape') {
+      setNewSubtask('');
+      setShowInput(false);
+    }
+  };
+
+  // Lưu (thay vì vứt bỏ) chữ đã gõ khi rời ô input mà chưa Enter.
+  const handleBlur = () => {
+    if (newSubtask.trim()) handleAdd();
+    setShowInput(false);
   };
 
   return (
@@ -66,7 +79,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
             value={newSubtask}
             onChange={(e) => setNewSubtask(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => { if (!newSubtask.trim()) setShowInput(false); }}
+            onBlur={handleBlur}
             placeholder="Subtask name, press Enter to save"
           />
         </div>

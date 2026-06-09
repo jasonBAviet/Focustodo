@@ -7,8 +7,26 @@ const TaskPanel: React.FC = () => {
   const { tasks, selectedTaskId, setSelectedTaskId, updateTask, completeTask, restoreTask, deleteTask, tags, addTag } = useTaskContext();
   const [panelWidth, setPanelWidth] = useState(280);
   const resizeRef = useRef(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
+
+  // Đổi task -> thoát chế độ sửa tiêu đề.
+  useEffect(() => { setEditingTitle(false); }, [selectedTaskId]);
+
+  const startEditTitle = () => {
+    if (!selectedTask) return;
+    setTitleDraft(selectedTask.title);
+    setEditingTitle(true);
+  };
+  const commitTitle = () => {
+    if (selectedTask) {
+      const next = titleDraft.trim();
+      if (next && next !== selectedTask.title) updateTask(selectedTask.id, { title: next });
+    }
+    setEditingTitle(false);
+  };
 
   const handleClose = () => setSelectedTaskId(null);
 
@@ -81,7 +99,32 @@ const TaskPanel: React.FC = () => {
           </button>
         </div>
 
-        <h2 className="task-panel-title">{selectedTask.title}</h2>
+        {editingTitle ? (
+          <input
+            className="task-panel-title-input"
+            autoFocus
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !(e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) {
+                e.preventDefault();
+                commitTitle();
+              } else if (e.key === 'Escape') {
+                setEditingTitle(false);
+              }
+            }}
+            onBlur={commitTitle}
+          />
+        ) : (
+          <h2
+            className="task-panel-title"
+            onClick={startEditTitle}
+            title="Bấm để đổi tên task"
+            style={{ cursor: 'text' }}
+          >
+            {selectedTask.title}
+          </h2>
+        )}
 
         <div className="task-panel-header-actions">
           <button
@@ -160,6 +203,24 @@ const TaskPanel: React.FC = () => {
           color: var(--text-primary);
           line-height: 1.4;
           word-break: break-word;
+          border-radius: 4px;
+          padding: 2px 4px;
+          margin: -2px -4px;
+          transition: background var(--transition-fast);
+        }
+        .task-panel-title:hover { background: var(--glass-bg-hover); }
+        .task-panel-title-input {
+          flex: 1;
+          font-size: var(--text-md);
+          font-weight: 600;
+          color: var(--text-primary);
+          line-height: 1.4;
+          font-family: var(--font-main);
+          background: var(--bg-input);
+          border: 1px solid var(--accent);
+          border-radius: 4px;
+          padding: 2px 6px;
+          outline: none;
         }
         .task-panel-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .panel-created-at { font-size: var(--text-xs); color: var(--text-tertiary); }
