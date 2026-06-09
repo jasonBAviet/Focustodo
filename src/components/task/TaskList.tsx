@@ -2,10 +2,18 @@ import React, { useMemo, useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import TaskItem from './TaskItem';
 import TaskAddBar from './TaskAddBar';
+import TaskFilterBar from './TaskFilterBar';
 import { dateUtils } from '../../utils/dateUtils';
 import { useContextMenu } from '../../hooks/useContextMenu';
+import { useInjectedStyle } from '../../hooks/useInjectedStyle';
 import TaskContextMenu from './TaskContextMenu';
 import ContextMenu from '../common/ContextMenu';
+
+const STAT_CARD_CSS = `
+      .stat-card { display: flex; flex-direction: column; gap: 2px; }
+      .stat-card__value { font-size: var(--text-2xl); font-weight: 700; line-height: 1; }
+      .stat-card__label { font-size: var(--text-xs); color: var(--text-tertiary); }
+`;
 
 type SortOption = 'project' | 'dueDate' | 'priority' | null;
 type SortDirection = 'asc' | 'desc';
@@ -47,19 +55,17 @@ const VIEW_LABELS: Record<string, string> = {
 
 const StatCard: React.FC<{ label: string; value: string | number; color?: string }> = ({
   label, value, color,
-}) => (
-  <div className="stat-card">
-    <span className="stat-card__value" style={{ color: color || 'var(--stat-red)' }}>
-      {value}
-    </span>
-    <span className="stat-card__label">{label}</span>
-    <style>{`
-      .stat-card { display: flex; flex-direction: column; gap: 2px; }
-      .stat-card__value { font-size: var(--text-2xl); font-weight: 700; line-height: 1; }
-      .stat-card__label { font-size: var(--text-xs); color: var(--text-tertiary); }
-    `}</style>
-  </div>
-);
+}) => {
+  useInjectedStyle('stat-card', STAT_CARD_CSS);
+  return (
+    <div className="stat-card">
+      <span className="stat-card__value" style={{ color: color || 'var(--stat-red)' }}>
+        {value}
+      </span>
+      <span className="stat-card__label">{label}</span>
+    </div>
+  );
+};
 
 const TaskList: React.FC = () => {
   const {
@@ -74,6 +80,7 @@ const TaskList: React.FC = () => {
     tags,
     tasks: allTasks,
     deleteTask,
+    reorderTasks,
   } = useTaskContext();
 
   const filteredTasks = useMemo(() => getFilteredTasks(), [getFilteredTasks]);
@@ -82,6 +89,8 @@ const TaskList: React.FC = () => {
   const sortMenu = useContextMenu<null>();
   const [sortBy, setSortBy] = useState<SortOption>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  // Kéo-thả sắp xếp: chỉ bật trong project view khi không áp sort thủ công.
+  const [dragId, setDragId] = useState<string | null>(null);
 
   const handleSortClick = (field: SortOption) => {
     if (sortBy === field) {
@@ -106,13 +115,33 @@ const TaskList: React.FC = () => {
     } else if (sortBy === 'priority') {
       const priorityWeight = { high: 3, medium: 2, low: 1, none: 0 };
       result.sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority]);
+    } else if (activeView === 'project') {
+      // Mặc định trong project view: theo position (thứ tự kéo-thả).
+      result.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }
 
     if (sortBy && sortDirection === 'desc') {
       result.reverse();
     }
     return result;
-  }, [filteredTasks, sortBy, sortDirection]);
+  }, [filteredTasks, sortBy, sortDirection, activeView]);
+
+  // Kéo-thả: chỉ trong project view và khi chưa áp sort thủ công.
+  const canReorder = activeView === 'project' && sortBy === null;
+
+  const handleDrop = (overId: string) => {
+    if (!dragId || dragId === overId) {
+      setDragId(null);
+      return;
+    }
+    const ids = tasks.map((t) => t.id);
+    const from = ids.indexOf(dragId);
+    const to = ids.indexOf(overId);
+    setDragId(null);
+    if (from === -1 || to === -1) return;
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    reorderTasks(ids);
+  };
 
   const viewLabel = useMemo(() => {
     if (activeView === 'project' && activeProjectId) {
@@ -219,6 +248,9 @@ const TaskList: React.FC = () => {
         </div>
       )}
 
+      {/* Filter Bar - lọc theo tag/project/text/ngày tạo/ngày due */}
+      <TaskFilterBar />
+
       {/* Task Items */}
       <div className={`main-task-area stagger-children${activeView === 'planned' ? ' planned-view' : ''}`}>
         {tasks.length === 0 ? (
@@ -230,14 +262,32 @@ const TaskList: React.FC = () => {
             <p>Khong co task nao</p>
           </div>
         ) : (
-          tasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              isSelected={task.id === selectedTaskId}
-              onContextMenu={(e) => contextMenu.open(e, task.id)}
-            />
-          ))
+          tasks.map((task) =>
+            canReorder ? (
+              <div
+                key={task.id}
+                className={`task-drag-row${dragId === task.id ? ' dragging' : ''}`}
+                draggable
+                onDragStart={() => setDragId(task.id)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); handleDrop(task.id); }}
+                onDragEnd={() => setDragId(null)}
+              >
+                <TaskItem
+                  task={task}
+                  isSelected={task.id === selectedTaskId}
+                  onContextMenu={(e) => contextMenu.open(e, task.id)}
+                />
+              </div>
+            ) : (
+              <TaskItem
+                key={task.id}
+                task={task}
+                isSelected={task.id === selectedTaskId}
+                onContextMenu={(e) => contextMenu.open(e, task.id)}
+              />
+            ),
+          )
         )}
       </div>
 
@@ -323,6 +373,10 @@ const TaskList: React.FC = () => {
           border-color: var(--border-strong);
         }
         .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* Kéo-thả sắp xếp task trong project view */
+        .task-drag-row { cursor: grab; }
+        .task-drag-row.dragging { opacity: 0.45; cursor: grabbing; }
 
         /* Planned view: card container cho moi task item */
         .planned-view {

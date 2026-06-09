@@ -13,6 +13,7 @@ import ReportPage from './components/report/ReportPage';
 import PomodoroWidget from './components/pomodoro/PomodoroWidget';
 import PomodoroModal from './components/pomodoro/PomodoroModal';
 import HeaderActions from './components/layout/HeaderActions';
+import CommandPalette from './components/common/CommandPalette';
 import { useReminderCheck } from './hooks/useReminderCheck';
 import { useAppRouter } from './hooks/useAppRouter';
 import './styles/index.css';
@@ -66,6 +67,9 @@ const AppInner: React.FC = () => {
 
       {/* Right panel (task detail) */}
       {selectedTaskId && <TaskPanel />}
+
+      {/* Command palette (Ctrl/Cmd+K) + quick-capture */}
+      <CommandPalette onToggleReport={handleShowReport} />
 
       {/* Dialogs */}
       <AddProjectDialog />

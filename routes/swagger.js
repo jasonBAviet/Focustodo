@@ -8,11 +8,13 @@ const router = Router();
 const spec = {
   openapi: '3.0.3',
   info: {
-    title: 'Focus To-Do Public Task API',
+    title: 'Focus To-Do Hub API',
     description:
-      'API cong khai cho phep he thong ben ngoai tao, doc, cap nhat va xoa task trong Focus To-Do. ' +
-      'Xac thuc bang header `X-API-Key` (neu bien moi truong `API_KEY` duoc cau hinh).',
-    version: '1.0.0',
+      'API cong khai bien Focus To-Do thanh "task hub": he thong ben ngoai co the doc/ghi task, project, folder, tag, ' +
+      'nhan delta qua /changes, va day task vao qua inbound webhook /hooks/{integration} (xac thuc HMAC). ' +
+      'Xac thuc bang header `X-API-Key` (key tao qua POST /keys, co scope: tasks:read|write, projects:*, folders:*, tags:*, changes:read, admin). ' +
+      'SPA cung origin duoc cho qua khong can key.',
+    version: '2.0.0',
   },
   servers: [{ url: '/api', description: 'Local backend' }],
   components: {
@@ -96,6 +98,74 @@ const spec = {
           data: { $ref: '#/components/schemas/Task' },
         },
       },
+      Project: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string', example: 'Work' },
+          color: { type: 'string', example: '#4361ee' },
+          isVisible: { type: 'boolean' },
+          taskCount: { type: 'integer' },
+          folderId: { type: 'string', nullable: true },
+          position: { type: 'integer' },
+          createdAt: { type: 'string' },
+          updatedAt: { type: 'string' },
+        },
+      },
+      Folder: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string', example: 'Q2 Goals' },
+          color: { type: 'string' },
+          projectIds: { type: 'array', items: { type: 'string' } },
+          parentId: { type: 'string', nullable: true, description: 'Folder cha (lồng nhiều cấp); null = gốc' },
+          position: { type: 'integer' },
+          createdAt: { type: 'string' },
+          updatedAt: { type: 'string' },
+        },
+      },
+      Tag: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string', example: 'urgent' },
+          color: { type: 'string' },
+          createdAt: { type: 'string' },
+          updatedAt: { type: 'string' },
+        },
+      },
+      ReorderInput: {
+        type: 'object',
+        required: ['orderedIds'],
+        properties: {
+          orderedIds: { type: 'array', items: { type: 'string' }, description: 'Danh sach id theo thu tu moi; position = chi so.' },
+        },
+      },
+      ChangesResponse: {
+        type: 'object',
+        properties: {
+          now: { type: 'string', description: 'Moc ISO de dung cho lan poll ke tiep (?since=)' },
+          changes: {
+            type: 'object',
+            properties: {
+              tasks: { type: 'array', items: { $ref: '#/components/schemas/Task' } },
+              projects: { type: 'array', items: { $ref: '#/components/schemas/Project' } },
+              folders: { type: 'array', items: { $ref: '#/components/schemas/Folder' } },
+              tags: { type: 'array', items: { $ref: '#/components/schemas/Tag' } },
+            },
+          },
+          deletedIds: {
+            type: 'object',
+            properties: {
+              tasks: { type: 'array', items: { type: 'string' } },
+              projects: { type: 'array', items: { type: 'string' } },
+              folders: { type: 'array', items: { type: 'string' } },
+              tags: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+      },
     },
   },
   security: [{ ApiKeyAuth: [] }],
@@ -168,6 +238,95 @@ const spec = {
           404: { description: 'Khong tim thay task', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },
+    },
+    '/tasks/{id}/complete': {
+      patch: {
+        summary: 'Hoan thanh task (sinh occurrence ke tiep neu lap)',
+        description: 'Dat completed (mac dinh true). Neu task lap (repeat != none) va chuyen false->true, server sinh occurrence ke tiep va tra ve trong truong `spawned`.',
+        tags: ['Tasks'],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { completed: { type: 'boolean', default: true } } } } } },
+        responses: {
+          200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { data: { $ref: '#/components/schemas/Task' }, spawned: { $ref: '#/components/schemas/Task' } } } } } },
+          404: { description: 'Khong tim thay task' },
+        },
+      },
+    },
+    '/tasks/reorder': {
+      post: {
+        summary: 'Sap xep lai thu tu task',
+        tags: ['Tasks'],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReorderInput' } } } },
+        responses: { 200: { description: 'OK' } },
+      },
+    },
+    '/projects': {
+      get: { summary: 'Danh sach project', tags: ['Projects'], responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { $ref: '#/components/schemas/Project' } } } } } } } } },
+      post: { summary: 'Tao project', tags: ['Projects'], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/Project' } } } }, responses: { 201: { description: 'Created' } } },
+    },
+    '/projects/{id}': {
+      get: { summary: 'Chi tiet project', tags: ['Projects'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
+      put: { summary: 'Cap nhat project', tags: ['Projects'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+      delete: { summary: 'Xoa project (gan task ve null, go khoi folder)', tags: ['Projects'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+    },
+    '/folders': {
+      get: { summary: 'Danh sach folder', tags: ['Folders'], responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { $ref: '#/components/schemas/Folder' } } } } } } } } },
+      post: { summary: 'Tao folder', tags: ['Folders'], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/Folder' } } } }, responses: { 201: { description: 'Created' } } },
+    },
+    '/folders/{id}': {
+      put: { summary: 'Cap nhat folder', tags: ['Folders'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+      delete: { summary: 'Xoa folder (gan project con ve null)', tags: ['Folders'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+    },
+    '/tags': {
+      get: { summary: 'Danh sach tag', tags: ['Tags'], responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'object', properties: { data: { type: 'array', items: { $ref: '#/components/schemas/Tag' } } } } } } } } },
+      post: { summary: 'Tao tag', tags: ['Tags'], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/Tag' } } } }, responses: { 201: { description: 'Created' } } },
+    },
+    '/tags/{id}': {
+      put: { summary: 'Cap nhat tag', tags: ['Tags'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+      delete: { summary: 'Xoa tag (go khoi moi task)', tags: ['Tags'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+    },
+    '/changes': {
+      get: {
+        summary: 'Delta feed - thay doi ke tu `since`',
+        description: 'Tra ve cac entity co updated_at > since (gom ca tombstone). Dung de dong bo 2 chieu khong can reload.',
+        tags: ['Sync'],
+        parameters: [
+          { name: 'since', in: 'query', schema: { type: 'string' }, description: 'Moc ISO; bo trong = tra ve toan bo entity con song.' },
+          { name: 'types', in: 'query', schema: { type: 'string' }, description: 'Loc loai, vd: tasks,projects' },
+        ],
+        responses: { 200: { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/ChangesResponse' } } } } },
+      },
+    },
+    '/events': {
+      get: {
+        summary: 'Realtime SSE - nudge khi co thay doi',
+        description: 'Stream text/event-stream; moi mutation 2xx phat 1 event {"type":"change"} de client poll /changes ngay. SPA same-origin. Khong giu ket noi dai tren serverless (Vercel).',
+        tags: ['Sync'],
+        responses: { 200: { description: 'event-stream' } },
+      },
+    },
+    '/hooks/{integration}': {
+      post: {
+        summary: 'Inbound webhook - app ngoai day task vao',
+        description: 'Body JSON tuy y duoc map sang task theo cau hinh webhook_endpoints. Header `X-Signature` = HMAC-SHA256(secret, rawBody) hex.',
+        tags: ['Inbound'],
+        security: [],
+        parameters: [{ name: 'integration', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { content: { 'application/json': { schema: { type: 'object' } } } },
+        responses: {
+          201: { description: 'Da tao task', content: { 'application/json': { schema: { $ref: '#/components/schemas/TaskResponse' } } } },
+          401: { description: 'Chu ky HMAC khong hop le' },
+          404: { description: 'Integration khong ton tai/da tat' },
+        },
+      },
+    },
+    '/keys': {
+      get: { summary: 'Liet ke API key (chi prefix)', tags: ['Admin'], responses: { 200: { description: 'OK' } } },
+      post: { summary: 'Tao API key (tra raw key 1 lan)', tags: ['Admin'], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { label: { type: 'string' }, scopes: { type: 'array', items: { type: 'string' } } } } } } }, responses: { 201: { description: 'Created' } } },
+    },
+    '/integrations': {
+      get: { summary: 'Liet ke inbound endpoint', tags: ['Admin'], responses: { 200: { description: 'OK' } } },
+      post: { summary: 'Tao/cap nhat inbound endpoint (tra secret)', tags: ['Admin'], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { integration: { type: 'string' }, secret: { type: 'string' }, mapping: { type: 'object' }, defaultProjectId: { type: 'string' }, enabled: { type: 'boolean' } } } } } }, responses: { 201: { description: 'Created' } } },
     },
   },
 };

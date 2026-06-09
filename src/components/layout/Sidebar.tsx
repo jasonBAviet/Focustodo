@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import { useAppContext } from '../../contexts/AppContext';
-import type { Task, ViewType, Project } from '../../types';
+import type { Task, ViewType, Project, Folder } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
+import { getRootFolders, getChildFolders, getDescendantFolderIds } from '../../utils/folderUtils';
 
 import logoUrl from '../../assets/Logo.jpg';
 
@@ -148,7 +149,9 @@ const Sidebar: React.FC = () => {
     getTasksStats(tasks.filter((t) => t.projectId === projectId && !t.completed));
 
   const getFolderStats = (folderId: string) => {
-    const folderProjectIds = projects.filter(p => p.folderId === folderId).map(p => p.id);
+    // Đếm cả cây con (folder lồng nhiều cấp).
+    const subtree = new Set(getDescendantFolderIds(folders, folderId));
+    const folderProjectIds = projects.filter(p => p.folderId && subtree.has(p.folderId)).map(p => p.id);
     return getTasksStats(tasks.filter(t => !t.completed && t.projectId && folderProjectIds.includes(t.projectId)));
   };
 
@@ -220,14 +223,17 @@ const Sidebar: React.FC = () => {
     setExpandedFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }));
   };
 
-  const renderProjectItem = (project: Project, isChild = false) => {
+  const indentStyle = (depth: number): React.CSSProperties =>
+    depth > 0 ? { paddingLeft: `calc(var(--space-4) + ${depth * 16}px)` } : {};
+
+  const renderProjectItem = (project: Project, depth = 0) => {
     const isActive = activeView === 'project' && activeProjectId === project.id;
     const { count, time } = getProjectStats(project.id);
     return (
       <div
         key={project.id}
         className={`nav-item${isActive ? ' active' : ''}`}
-        style={isChild ? { paddingLeft: 'var(--space-6)' } : {}}
+        style={indentStyle(depth)}
         onClick={() => handleProjectClick(project.id)}
         role="button"
         tabIndex={0}
@@ -245,6 +251,56 @@ const Sidebar: React.FC = () => {
           </span>
         )}
       </div>
+    );
+  };
+
+  // Render đệ quy 1 folder + folder con + project con (lồng nhiều cấp).
+  const renderFolder = (folder: Folder, depth: number): React.ReactNode => {
+    const isExpanded = expandedFolders[folder.id];
+    const isFolderActive = activeView === 'folder' && activeFolderId === folder.id;
+    const { count, time } = getFolderStats(folder.id);
+    const childFolders = getChildFolders(folders, folder.id);
+    const childProjects = projects.filter((p) => p.folderId === folder.id);
+    const hasChildren = childFolders.length > 0 || childProjects.length > 0;
+    return (
+      <React.Fragment key={folder.id}>
+        <div
+          className={`nav-item${isFolderActive ? ' active' : ''}`}
+          style={indentStyle(depth)}
+          onClick={() => handleFolderFilterClick(folder.id)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleFolderFilterClick(folder.id)}
+          title={`Xem tat ca task trong folder ${folder.name}`}
+        >
+          <span style={{ color: isFolderActive ? 'var(--accent)' : folder.color }}>
+            <IconFolder />
+          </span>
+          <span className="nav-label truncate">{folder.name}</span>
+          <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+            {(count > 0 || time > 0) && (
+              <>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                <span>{count}</span>
+              </>
+            )}
+            {hasChildren && (
+              <span
+                style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
+                onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
+              >
+                <IconChevron down={isExpanded} />
+              </span>
+            )}
+          </span>
+        </div>
+        {isExpanded && (
+          <>
+            {childFolders.map((cf) => renderFolder(cf, depth + 1))}
+            {childProjects.map((p) => renderProjectItem(p, depth + 1))}
+          </>
+        )}
+      </React.Fragment>
     );
   };
 
@@ -332,47 +388,11 @@ const Sidebar: React.FC = () => {
 
         {listsExpanded && (
           <>
-            {/* Render Folders and their child projects */}
-            {folders.map((folder) => {
-              const isExpanded = expandedFolders[folder.id];
-              const isFolderActive = activeView === 'folder' && activeFolderId === folder.id;
-              const { count, time } = getFolderStats(folder.id);
-              return (
-                <React.Fragment key={folder.id}>
-                  <div
-                    className={`nav-item${isFolderActive ? ' active' : ''}`}
-                    onClick={() => handleFolderFilterClick(folder.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleFolderFilterClick(folder.id)}
-                    title={`Xem tat ca task trong folder ${folder.name}`}
-                  >
-                    <span style={{ color: isFolderActive ? 'var(--accent)' : folder.color }}>
-                      <IconFolder />
-                    </span>
-                    <span className="nav-label truncate">{folder.name}</span>
-                    <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-                      {(count > 0 || time > 0) && (
-                        <>
-                          <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
-                          <span>{count}</span>
-                        </>
-                      )}
-                      <span
-                        style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', marginLeft: '4px' }}
-                        onClick={(e) => { e.stopPropagation(); toggleFolder(folder.id); }}
-                      >
-                        <IconChevron down={isExpanded} />
-                      </span>
-                    </span>
-                  </div>
-                  {isExpanded && projects.filter(p => p.folderId === folder.id).map(p => renderProjectItem(p, true))}
-                </React.Fragment>
-              );
-            })}
+            {/* Render Folders (lồng nhiều cấp) + project con của chúng */}
+            {getRootFolders(folders).map((folder) => renderFolder(folder, 0))}
 
-            {/* Render Standalone Projects */}
-            {projects.filter(p => !p.folderId).map(p => renderProjectItem(p, false))}
+            {/* Render Standalone Projects (không thuộc folder nào) */}
+            {projects.filter(p => !p.folderId).map(p => renderProjectItem(p, 0))}
 
             {/* Render Tags */}
             {tags.map((tag) => {

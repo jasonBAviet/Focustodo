@@ -2,24 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { Task, RepeatType } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
+import { describeRecurrence, toRecurrence } from '../../utils/recurrence';
 import SubtaskList from './SubtaskList';
 import DatePicker from '../common/DatePicker';
 import PomodoroScrollPicker from '../common/PomodoroScrollPicker';
+import RepeatEditor from './RepeatEditor';
+import { useInjectedStyle } from '../../hooks/useInjectedStyle';
 
 interface TaskDetailProps {
   task: Task;
 }
 
-const DetailRow: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}> = ({ icon, label, children }) => (
-  <div className="detail-row">
-    <span className="detail-row__icon">{icon}</span>
-    <span className="detail-row__label">{label}</span>
-    <span className="detail-row__value">{children}</span>
-    <style>{`
+const DETAIL_ROW_CSS = `
       .detail-row {
         display: flex; align-items: center; gap: 10px;
         padding: 10px 0; border-bottom: 1px solid var(--divider);
@@ -29,9 +23,22 @@ const DetailRow: React.FC<{
       .detail-row__icon { color: var(--text-tertiary); flex-shrink: 0; width: 16px; }
       .detail-row__label { color: var(--text-secondary); flex: 1; }
       .detail-row__value { color: var(--text-primary); font-size: var(--text-sm); }
-    `}</style>
-  </div>
-);
+`;
+
+const DetailRow: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}> = ({ icon, label, children }) => {
+  useInjectedStyle('detail-row', DETAIL_ROW_CSS);
+  return (
+    <div className="detail-row">
+      <span className="detail-row__icon">{icon}</span>
+      <span className="detail-row__label">{label}</span>
+      <span className="detail-row__value">{children}</span>
+    </div>
+  );
+};
 
 const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }> = ({ task, onUpdate }) => {
   const [showPicker, setShowPicker] = useState(false);
@@ -86,17 +93,11 @@ const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }
   );
 };
 
-const REPEAT_OPTIONS: { value: RepeatType; label: string }[] = [
-  { value: 'none', label: 'None' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-];
-
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const { updateTask, projects } = useTaskContext();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [note, setNote] = useState(task.note);
 
   useEffect(() => { setNote(task.note); }, [task.id]);
@@ -226,15 +227,24 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Repeat"
       >
-        <select
-          className="detail-select"
-          value={task.repeat}
-          onChange={(e) => updateTask(task.id, { repeat: e.target.value as RepeatType })}
+        <button
+          className="detail-inline-btn"
+          onClick={() => { setShowRepeatPicker(!showRepeatPicker); setShowDatePicker(false); setShowReminderPicker(false); }}
+          style={{ color: task.repeat && task.repeat !== 'none' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
         >
-          {REPEAT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          {describeRecurrence(task.repeat, task.repeatCustom)}
+        </button>
+        {showRepeatPicker && (
+          <div className="detail-date-popover">
+            <RepeatEditor
+              value={toRecurrence(task.repeat, task.repeatCustom)}
+              onChange={(repeat, repeatCustom) =>
+                updateTask(task.id, { repeat: repeat as RepeatType, repeatCustom })
+              }
+              onClose={() => setShowRepeatPicker(false)}
+            />
+          </div>
+        )}
       </DetailRow>
 
       <SubtaskList task={task} />

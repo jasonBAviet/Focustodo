@@ -1,2 +1,8 @@
 .claude/
+.env
 .env.local
+
+# dependencies & build artifacts
+node_modules/
+dist/
+*.tsbuildinfo

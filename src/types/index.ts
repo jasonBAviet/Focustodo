@@ -46,6 +46,7 @@ export interface Task {
   completed: boolean;
   flagged: boolean;
   tags: string[];
+  position?: number; // thứ tự kéo-thả trong dự án
   createdAt: string;
   completedAt: string | null;
   updatedAt: string;
@@ -58,7 +59,9 @@ export interface Project {
   isVisible: boolean;
   taskCount: number;
   folderId?: string | null;
+  position?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Folder {
@@ -66,7 +69,10 @@ export interface Folder {
   name: string;
   color: string;
   projectIds: string[];
+  parentId?: string | null; // thư mục cha (lồng nhiều cấp); null = gốc
+  position?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Tag {
@@ -74,6 +80,7 @@ export interface Tag {
   name: string;
   color: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PomodoroSession {

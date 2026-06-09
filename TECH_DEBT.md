@@ -47,14 +47,33 @@
 - Dynamic styling support, better scoping
 - Higher runtime overhead
 
+### Update (Phase 4): duplicate-injection risk addressed via `useInjectedStyle`
+
+The most concrete risk above — **duplicate `<style>` injection on rapid re-renders**
+— is now mitigated without a full CSS-Modules migration:
+
+- New hook `src/hooks/useInjectedStyle.ts` injects a CSS string into `<head>`
+  exactly once per `id` (reference-counted), instead of rendering a `<style>`
+  tag inside JSX (which duplicates the tag per component instance).
+- Migrated the highest-instance offenders to the hook:
+  `TaskItem` (one style/​task → one total), `TaskDetail`'s `DetailRow`,
+  and `TaskList`'s `StatCard`.
+- Pattern to migrate the rest: move the component's CSS to a module-level
+  `const X_CSS = \`…\``, call `useInjectedStyle('x', X_CSS)`, delete the
+  `<style>{…}</style>` from JSX.
+
+Name-collision risk (global class names) is unchanged — still pending the CSS
+Modules migration below for a full fix.
+
 ### Action Items
-1. [ ] Choose approach (A recommended)
+1. [ ] Choose approach (A recommended) for the remaining name-collision risk
 2. [ ] Set up tooling (if CSS Modules)
-3. [ ] Migrate components in waves:
+3. [x] Mitigate duplicate-injection risk (`useInjectedStyle` + migrate hot components)
+4. [ ] Migrate remaining components to `useInjectedStyle` (or CSS Modules) in waves:
    - Wave 1: Common components (Button, Dialog, DatePicker)
    - Wave 2: Context components (TaskContextMenu, TagPicker)
    - Wave 3: Remaining components
-4. [ ] Add ESLint rule to prevent new inline styles
+5. [ ] Add ESLint rule to prevent new inline `<style>` in JSX
 
 ### References
 - Current pattern: See `DatePicker.tsx` lines 99-236
