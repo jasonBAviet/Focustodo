@@ -93,20 +93,88 @@ const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }
   );
 };
 
+import Lightbox from '../common/Lightbox';
+
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
-  const { updateTask, projects } = useTaskContext();
+  const { updateTask, projects, attachments, addAttachment, deleteAttachment } = useTaskContext();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [note, setNote] = useState(task.note);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { setNote(task.note); }, [task.id]);
 
   const project = projects.find((p) => p.id === task.projectId);
+  const taskAttachments = (attachments || []).filter((a) => a.taskId === task.id);
 
   const handleNoteBlur = () => {
     if (note !== task.note) {
       updateTask(task.id, { note });
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/upload`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      addAttachment({
+        id: Math.random().toString(36).substring(2, 9),
+        taskId: task.id,
+        fileName: file.name,
+        fileUrl: data.url,
+        fileSize: file.size,
+        mimeType: file.type,
+        createdAt: new Date().toISOString(),
+      });
+    } catch {
+      alert('Không thể tải ảnh lên');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (!file) continue;
+        if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+        setUploading(true);
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/upload`, { method: 'POST', body: fd });
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          addAttachment({
+            id: Math.random().toString(36).substring(2, 9),
+            taskId: task.id,
+            fileName: file.name || `clipboard-${Date.now()}.png`,
+            fileUrl: data.url,
+            fileSize: file.size,
+            mimeType: file.type,
+            createdAt: new Date().toISOString(),
+          });
+        } catch {
+          alert('Không thể tải ảnh lên');
+        } finally {
+          setUploading(false);
+        }
+        break;
+      }
     }
   };
 
@@ -125,7 +193,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       : 'var(--text-tertiary)';
 
   return (
-    <div className="task-detail">
+    <div className="task-detail" onPaste={handlePaste}>
       <PomodoroRow task={task} onUpdate={(e) => updateTask(task.id, { pomodoroEstimate: e })} />
 
       <DetailRow
@@ -249,6 +317,34 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
       <SubtaskList task={task} />
 
+      <div className="detail-attachments-section">
+        <div className="attachments-header">
+          <span className="attachments-title">Hình ảnh đính kèm</span>
+          <label className="attachments-add-btn">
+            {uploading ? 'Đang tải...' : 'Thêm ảnh'}
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
+          </label>
+        </div>
+        {taskAttachments.length > 0 ? (
+          <div className="attachments-grid">
+            {taskAttachments.map((a) => (
+              <div key={a.id} className="attachment-card">
+                <img src={a.fileUrl} alt={a.fileName} className="attachment-thumb" onClick={() => { setLightboxImg(a.fileUrl); setLightboxOpen(true); }} />
+                <button type="button" className="attachment-delete" onClick={() => deleteAttachment(a.id)} title="Xoá ảnh">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 4h12M5 4v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4M6 4V2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="attachments-placeholder">
+            Nhấn Ctrl+V để dán ảnh chụp màn hình trực tiếp tại đây
+          </div>
+        )}
+      </div>
+
       <div className="detail-note-section">
         <textarea
           className="detail-note"
@@ -260,43 +356,33 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         />
       </div>
 
+      <Lightbox isOpen={lightboxOpen} imageUrl={lightboxImg} onClose={() => setLightboxOpen(false)} />
+
       <style>{`
-        .task-detail { padding-bottom: 20px; }
-        .detail-inline-btn {
-          background: none; border: none; cursor: pointer;
-          font-size: var(--text-sm); padding: 0;
-          font-family: var(--font-main);
-        }
+        .task-detail { padding-bottom: 20px; outline: none; }
+        .detail-inline-btn { background: none; border: none; cursor: pointer; font-size: var(--text-sm); padding: 0; font-family: var(--font-main); }
         .detail-inline-btn:hover { text-decoration: underline; }
         .detail-muted { color: var(--text-tertiary); }
-        .detail-date-popover {
-          position: absolute;
-          right: 0;
-          top: calc(100% + 8px);
-          z-index: 200;
-          background: var(--bg-dialog);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-lg);
-          animation: slide-in-down 150ms ease both;
-        }
-        .detail-select {
-          background: none; border: none; outline: none;
-          color: var(--text-primary); font-size: var(--text-sm);
-          cursor: pointer; font-family: var(--font-main);
-        }
+        .detail-date-popover { position: absolute; right: 0; top: calc(100% + 8px); z-index: 200; background: var(--bg-dialog); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); animation: slide-in-down 150ms ease both; }
+        .detail-select { background: none; border: none; outline: none; color: var(--text-primary); font-size: var(--text-sm); cursor: pointer; font-family: var(--font-main); }
         .detail-select option { background: var(--bg-dialog); }
         .detail-note-section { padding: 12px 0; }
-        .detail-note {
-          width: 100%; background: var(--bg-input);
-          border: 1px solid var(--border); border-radius: var(--radius-md);
-          padding: 10px 12px; color: var(--text-primary);
-          font-size: var(--text-sm); font-family: var(--font-main);
-          resize: vertical; outline: none; line-height: 1.6;
-          transition: border-color var(--transition-fast);
-        }
+        .detail-note { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; color: var(--text-primary); font-size: var(--text-sm); font-family: var(--font-main); resize: vertical; outline: none; line-height: 1.6; transition: border-color var(--transition-fast); }
         .detail-note:focus { border-color: var(--accent); }
         .detail-note::placeholder { color: var(--text-tertiary); }
+        .detail-attachments-section { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+        .attachments-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .attachments-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+        .attachments-add-btn { font-size: var(--text-xs); font-weight: 500; color: var(--accent); cursor: pointer; padding: 4px 8px; border-radius: 4px; background: var(--bg-card-hover); transition: background 0.2s; }
+        .attachments-add-btn:hover { background: var(--divider); }
+        .attachments-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .attachment-card { position: relative; width: 64px; height: 64px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+        .attachment-thumb { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s; }
+        .attachment-thumb:hover { transform: scale(1.05); }
+        .attachment-delete { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+        .attachment-card:hover .attachment-delete { opacity: 1; }
+        .attachment-delete:hover { background: var(--priority-high); }
+        .attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
       `}</style>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession } from '../types';
+import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment } from '../types';
 
 // Hoàn thành task qua endpoint granular để server sinh occurrence kế tiếp
 // (1 điểm sinh duy nhất cho task lặp). Trả task vừa sinh (nếu có).
@@ -19,6 +19,7 @@ export interface DeletedIds {
   projects: string[];
   folders: string[];
   tags: string[];
+  attachments: string[];
 }
 
 export interface RemoteAppState {
@@ -28,6 +29,7 @@ export interface RemoteAppState {
   tags: Tag[];
   settings: Settings | null;
   pomodoroSessions: PomodoroSession[];
+  attachments: Attachment[];
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
@@ -44,12 +46,14 @@ export interface ChangesResponse {
     projects: Project[];
     folders: Folder[];
     tags: Tag[];
+    attachments: Attachment[];
   };
   deletedIds: {
     tasks: string[];
     projects: string[];
     folders: string[];
     tags: string[];
+    attachments: string[];
   };
 }
 
@@ -77,6 +81,7 @@ export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
     tags: state.tags ?? [],
     settings: state.settings ?? null,
     pomodoroSessions: state.pomodoroSessions ?? [],
+    attachments: state.attachments ?? [],
     selectedTaskId: state.selectedTaskId ?? null,
     activeView: state.activeView ?? 'today',
     activeProjectId: state.activeProjectId ?? null,

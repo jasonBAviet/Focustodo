@@ -23,11 +23,22 @@ export type ViewType =
   | 'folder'
   | 'knowledge';
 
+export interface Attachment {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
+
 export interface Subtask {
   id: string;
   title: string;
   completed: boolean;
   createdAt: string;
+  attachments?: Omit<Attachment, 'taskId'>[];
 }
 
 export interface Task {
@@ -52,6 +63,7 @@ export interface Task {
   completedAt: string | null;
   updatedAt: string;
   isKnowledge?: boolean;
+  attachments?: Attachment[];
 }
 
 export interface Project {
@@ -137,6 +149,7 @@ export interface AppState {
   folders: Folder[];
   tags: Tag[];
   pomodoroSessions: PomodoroSession[];
+  attachments: Attachment[];
   webhookEvents: WebhookEvent[];
   settings: Settings;
   selectedTaskId: string | null;

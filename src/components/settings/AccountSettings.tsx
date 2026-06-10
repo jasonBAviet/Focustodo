@@ -46,7 +46,7 @@ const btnStyle: React.CSSProperties = {
 const AccountSettings: React.FC = () => {
   const { settings } = useAppContext();
   const {
-    tasks, projects, folders, tags, pomodoroSessions,
+    tasks, projects, folders, tags, pomodoroSessions, attachments,
     selectedTaskId, activeView, activeProjectId, searchQuery,
   } = useTaskContext();
 
@@ -73,7 +73,7 @@ const AccountSettings: React.FC = () => {
     setBusy('save');
     setMessage(null);
     const state: RemoteAppState = {
-      tasks, projects, folders, tags, settings, pomodoroSessions,
+      tasks, projects, folders, tags, settings, pomodoroSessions, attachments,
       selectedTaskId, activeView, activeProjectId, searchQuery,
     };
     try {
@@ -97,9 +97,9 @@ const AccountSettings: React.FC = () => {
     setBusy('clear');
     const keys = [
       'focus-tasks', 'focus-projects', 'focus-folders', 'focus-tags',
-      'focus-pomodoro-sessions', 'focus-selected-task', 'focus-active-view',
-      'focus-active-project', 'focus-search', 'focus-settings',
-      'ftd_webhook_events',
+      'focus-pomodoro-sessions', 'focus-attachments', 'focus-selected-task',
+      'focus-active-view', 'focus-active-project', 'focus-search',
+      'focus-settings', 'ftd_webhook_events',
     ];
     keys.forEach((k) => window.localStorage.removeItem(k));
     // Tải lại từ DB (nguồn chính)

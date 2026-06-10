@@ -23,6 +23,7 @@ import type {
   Priority,
   Subtask,
   PomodoroSession,
+  Attachment,
 } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
@@ -116,6 +117,7 @@ interface TaskContextType {
   folders: Folder[];
   tags: Tag[];
   pomodoroSessions: PomodoroSession[];
+  attachments: Attachment[];
   selectedTaskId: string | null;
   activeView: ViewType;
   activeProjectId: string | null;
@@ -149,6 +151,8 @@ interface TaskContextType {
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   addPomodoroSession: (session: PomodoroSession) => void;
+  addAttachment: (attachment: Attachment) => void;
+  deleteAttachment: (id: string) => void;
   getFilteredTasks: () => Task[];
   getProjectName: (projectId: string | null) => string;
 }
@@ -167,6 +171,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
   const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
   const [pomodoroSessions, setPomodoroSessions] = useLocalStorage<PomodoroSession[]>('focus-pomodoro-sessions', []);
+  const [attachments, setAttachments] = useLocalStorage<Attachment[]>('focus-attachments', []);
   const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
   const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
@@ -237,9 +242,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask = useCallback((id: string) => {
     deletedIdsRef.current.tasks.push(id);
+    // Xoá các attachments cục bộ liên kết với task
+    setAttachments((prev) => {
+      const targets = prev.filter((a) => a.taskId === id);
+      targets.forEach((a) => {
+        deletedIdsRef.current.attachments.push(a.id);
+      });
+      return prev.filter((a) => a.taskId !== id);
+    });
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setSelectedTaskId((prev) => (prev === id ? null : prev));
-  }, [setTasks, setSelectedTaskId]);
+  }, [setTasks, setAttachments, setSelectedTaskId]);
 
   const reorderTasks = useCallback((orderedIds: string[]) => {
     const now = dateUtils.now();
@@ -297,6 +310,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       onPomodoroCompleted(session);
     }
   }, [setPomodoroSessions, onPomodoroCompleted]);
+
+  // --------------------------------------------------------
+  // Attachment actions
+  // --------------------------------------------------------
+  const addAttachment = useCallback((attachment: Attachment) => {
+    setAttachments((prev) => [...prev, attachment]);
+  }, [setAttachments]);
+
+  const deleteAttachment = useCallback((id: string) => {
+    deletedIdsRef.current.attachments.push(id);
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, [setAttachments]);
 
   // --------------------------------------------------------
   // Subtask actions
@@ -476,7 +501,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [remoteSyncEnabled, setRemoteSyncEnabled] = useState<boolean>(false);
   const lastSavedStateRef = useRef<string>('');
   // Hàng đợi xoá mềm tường minh gửi kèm full-state (reconcile đã upsert-only).
-  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], projects: [], folders: [], tags: [] });
+  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], projects: [], folders: [], tags: [], attachments: [] });
   // Mốc thời gian cho /api/changes (đặt sau khi load xong).
   const sinceRef = useRef<string | null>(null);
   // Ref selectedTaskId để merge không đè task đang mở mà không cần thêm deps.
@@ -501,6 +526,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           setFolders(remoteState.folders || []);
           setTags(remoteState.tags || []);
           setPomodoroSessions(remoteState.pomodoroSessions || []);
+          setAttachments(remoteState.attachments || []);
           setSelectedTaskId(remoteState.selectedTaskId);
 
           // Settings từ DB là nguồn chính - đẩy vào AppContext
@@ -545,6 +571,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       projects: [...deletedIdsRef.current.projects],
       folders: [...deletedIdsRef.current.folders],
       tags: [...deletedIdsRef.current.tags],
+      attachments: [...deletedIdsRef.current.attachments],
     };
 
     const currentState: RemoteAppState = {
@@ -554,6 +581,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       tags,
       settings,
       pomodoroSessions,
+      attachments,
       selectedTaskId,
       activeView,
       activeProjectId,
@@ -576,6 +604,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           deletedIdsRef.current.projects = drop(deletedIdsRef.current.projects, sentDeleted.projects);
           deletedIdsRef.current.folders = drop(deletedIdsRef.current.folders, sentDeleted.folders);
           deletedIdsRef.current.tags = drop(deletedIdsRef.current.tags, sentDeleted.tags);
+          deletedIdsRef.current.attachments = drop(deletedIdsRef.current.attachments, sentDeleted.attachments);
         })
         .catch((error) => {
           console.warn('Unable to save state to remote DB:', error);
@@ -596,7 +625,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [tasks, projects, folders, tags, settings, pomodoroSessions, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
+  }, [tasks, projects, folders, tags, settings, pomodoroSessions, attachments, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
 
   // --------------------------------------------------------
   // Đồng bộ 2 chiều: poll /api/changes để bắt kịp dữ liệu app ngoài ghi vào
@@ -616,6 +645,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         setProjects((prev) => mergeList(prev, res.changes.projects, res.deletedIds.projects, pd.projects, null));
         setFolders((prev) => mergeList(prev, res.changes.folders, res.deletedIds.folders, pd.folders, null));
         setTags((prev) => mergeList(prev, res.changes.tags, res.deletedIds.tags, pd.tags, null));
+        setAttachments((prev) => mergeList(prev, res.changes.attachments || [], res.deletedIds.attachments || [], pd.attachments, null));
         sinceRef.current = res.now;
       } catch {
         /* mạng chập chờn -> bỏ qua, thử lại lần sau */
@@ -646,7 +676,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('focus', onFocus);
       if (es) es.close();
     };
-  }, [remoteSyncEnabled, setTasks, setProjects, setFolders, setTags]);
+  }, [remoteSyncEnabled, setTasks, setProjects, setFolders, setTags, setAttachments]);
 
   const hasValidDueDate = (task: Task) =>
     typeof task.dueDate === 'string' && task.dueDate.trim() !== '';
@@ -809,6 +839,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       folders,
       tags,
       pomodoroSessions,
+      attachments,
       selectedTaskId,
       activeView,
       activeProjectId,
@@ -842,11 +873,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       toggleSubtask,
       deleteSubtask,
       addPomodoroSession,
+      addAttachment,
+      deleteAttachment,
       getFilteredTasks,
       getProjectName,
     }),
     [
-      tasks, projects, folders, tags, pomodoroSessions, selectedTaskId,
+      tasks, projects, folders, tags, pomodoroSessions, attachments, selectedTaskId,
       activeView, activeProjectId, activeTagId, activeFolderId, searchQuery,
       filters, setFilters,
       setSelectedTaskId, setActiveView, setActiveProjectId, setActiveTagId, setActiveFolderId, setSearchQuery,
@@ -855,6 +888,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       addFolder, updateFolder, deleteFolder,
       addTag, updateTag, deleteTag,
       addSubtask, toggleSubtask, deleteSubtask, addPomodoroSession,
+      addAttachment, deleteAttachment,
       getFilteredTasks, getProjectName,
     ],
   );

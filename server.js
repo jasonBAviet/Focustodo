@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import pkg from 'pg';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import multer from 'multer';
+import fs from 'fs';
 import { createTasksRouter } from './routes/tasks.js';
 import swaggerRouter from './routes/swagger.js';
 import { createAuth, hashKey } from './routes/auth.js';
@@ -16,6 +18,36 @@ import { createEventsRouter, notifyChange } from './routes/events.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error('Chi cho phep upload anh (.png, .jpg, .jpeg, .gif)'));
+  }
+});
 
 const { Pool } = pkg;
 const {
@@ -172,6 +204,18 @@ async function ensureSchema() {
       created_at TEXT,
       last_used_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS attachments (
+      id TEXT PRIMARY KEY,
+      task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_url TEXT NOT NULL,
+      file_size INTEGER,
+      mime_type TEXT,
+      created_at TEXT NOT NULL,
+      is_deleted BOOLEAN DEFAULT false
+    );
+    CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
   `);
 
   // Thêm cột is_deleted cho bảng cũ
@@ -181,6 +225,7 @@ async function ensureSchema() {
     await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE attachments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
   } catch (err) {
     console.warn('[safety] Could not add is_deleted column', err.message);
   }
@@ -386,12 +431,24 @@ function rowToSession(r) {
   };
 }
 
+function rowToAttachment(r) {
+  return {
+    id: r.id,
+    taskId: r.task_id,
+    fileName: r.file_name,
+    fileUrl: r.file_url,
+    fileSize: r.file_size,
+    mimeType: r.mime_type,
+    createdAt: r.created_at,
+  };
+}
+
 // ============================================================
 // GET /api/state - aggregate all tables into a full app state
 // ============================================================
 app.get('/api/state', async (req, res) => {
   try {
-    const [tasks, projects, folders, tags, settings, ui, sessions] = await Promise.all([
+    const [tasks, projects, folders, tags, settings, ui, sessions, attachments] = await Promise.all([
       pool.query('SELECT * FROM tasks WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at DESC'),
       pool.query('SELECT * FROM projects WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at ASC'),
       pool.query('SELECT * FROM folders WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at ASC'),
@@ -399,6 +456,7 @@ app.get('/api/state', async (req, res) => {
       pool.query("SELECT * FROM settings WHERE id = 'default'"),
       pool.query("SELECT * FROM ui_state WHERE id = 'default'"),
       pool.query('SELECT * FROM system_logs'),
+      pool.query('SELECT * FROM attachments WHERE is_deleted = false OR is_deleted IS NULL'),
     ]);
 
     const uiRow = ui.rows[0] ?? {};
@@ -410,6 +468,7 @@ app.get('/api/state', async (req, res) => {
       tags: tags.rows.map(rowToTag),
       settings: settings.rows[0] ? rowToSettings(settings.rows[0]) : null,
       pomodoroSessions: sessions.rows.map(rowToSession),
+      attachments: attachments.rows.map(rowToAttachment),
       selectedTaskId: uiRow.selected_task_id ?? null,
       activeView: uiRow.active_view ?? 'today',
       activeProjectId: uiRow.active_project_id ?? null,
@@ -545,12 +604,30 @@ async function persistState(incoming) {
       ],
     );
 
+    // --- attachments ---
+    await reconcileTable(
+      client,
+      'attachments',
+      incoming.attachments ?? [],
+      ['id', 'task_id', 'file_name', 'file_url', 'file_size', 'mime_type', 'created_at'],
+      (a) => [
+        a.id,
+        a.taskId,
+        a.fileName ?? 'Unnamed File',
+        a.fileUrl ?? '',
+        a.fileSize ?? 0,
+        a.mimeType ?? '',
+        a.createdAt ?? nowIso,
+      ],
+    );
+
     // --- xoá mềm tường minh theo deletedIds (nếu client gửi) ---
     const del = incoming.deletedIds ?? {};
     await applyDeletedIds(client, 'tasks', del.tasks);
     await applyDeletedIds(client, 'projects', del.projects);
     await applyDeletedIds(client, 'folders', del.folders);
     await applyDeletedIds(client, 'tags', del.tags);
+    await applyDeletedIds(client, 'attachments', del.attachments);
 
     // --- settings (single row id='default') ---
     if (incoming.settings) {
@@ -667,6 +744,27 @@ app.post('/api/webhook/test', async (req, res) => {
       status: 'error',
       message: error instanceof Error ? error.message : String(error)
     });
+  }
+});
+
+// Phuc vu file uploads tinh tu local folder
+app.use('/uploads', express.static(uploadDir));
+
+// API upload file anh
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Khong co file nao duoc gui len.' });
+    }
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({
+      url: fileUrl,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

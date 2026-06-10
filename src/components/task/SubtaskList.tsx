@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import type { Task } from '../../types';
+import Lightbox from '../common/Lightbox';
 
 interface SubtaskListProps {
   task: Task;
 }
 
 const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
-  const { addSubtask, toggleSubtask, deleteSubtask } = useTaskContext();
+  const { addSubtask, toggleSubtask, deleteSubtask, updateTask } = useTaskContext();
   const [newSubtask, setNewSubtask] = useState('');
   const [showInput, setShowInput] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState('');
 
   const handleAdd = () => {
     if (!newSubtask.trim()) return;
@@ -18,8 +21,6 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Bỏ qua Enter khi bộ gõ (IME tiếng Việt) còn đang soạn ký tự để tránh
-    // "chốt ký tự" bị hiểu nhầm là submit và thêm subtask thiếu chữ.
     if (e.key === 'Enter' && !(e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) {
       e.preventDefault();
       handleAdd();
@@ -29,10 +30,52 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
     }
   };
 
-  // Lưu (thay vì vứt bỏ) chữ đã gõ khi rời ô input mà chưa Enter.
   const handleBlur = () => {
     if (newSubtask.trim()) handleAdd();
     setShowInput(false);
+  };
+
+  const handleUploadSubtaskImage = async (subtaskId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/upload`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const newAttach = {
+        id: Math.random().toString(36).substring(2, 9),
+        fileName: file.name,
+        fileUrl: data.url,
+        fileSize: file.size,
+        mimeType: file.type,
+        createdAt: new Date().toISOString(),
+      };
+      
+      const updatedSubtasks = task.subtasks.map(s => {
+        if (s.id === subtaskId) {
+          const currentAttach = s.attachments || [];
+          return { ...s, attachments: [...currentAttach, newAttach] };
+        }
+        return s;
+      });
+      updateTask(task.id, { subtasks: updatedSubtasks });
+    } catch {
+      alert('Không thể tải ảnh lên');
+    }
+  };
+
+  const handleDeleteSubtaskImage = (subtaskId: string, attachId: string) => {
+    const updatedSubtasks = task.subtasks.map(s => {
+      if (s.id === subtaskId) {
+        return { ...s, attachments: (s.attachments || []).filter(a => a.id !== attachId) };
+      }
+      return s;
+    });
+    updateTask(task.id, { subtasks: updatedSubtasks });
   };
 
   return (
@@ -53,6 +96,42 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
           <span className={`subtask-title ${sub.completed ? 'done' : ''}`}>
             {sub.title}
           </span>
+
+          <div className="subtask-meta-actions">
+            {(sub.attachments || []).map((a) => (
+              <div key={a.id} className="sub-attach-card">
+                <img
+                  src={a.fileUrl}
+                  alt={a.fileName}
+                  className="sub-attach-thumb"
+                  onClick={() => {
+                    setLightboxImg(a.fileUrl);
+                    setLightboxOpen(true);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="sub-attach-delete"
+                  onClick={() => handleDeleteSubtaskImage(sub.id, a.id)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <label className="sub-attach-add" title="Thêm ảnh">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M13.5 13.5H2.5V4.5H5.5L7 2.5H9L10.5 4.5H13.5V13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => handleUploadSubtaskImage(sub.id, e)}
+              />
+            </label>
+          </div>
+
           <button
             className="subtask-delete"
             onClick={() => deleteSubtask(task.id, sub.id)}
@@ -94,6 +173,8 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
           Add subtask
         </button>
       )}
+
+      <Lightbox isOpen={lightboxOpen} imageUrl={lightboxImg} onClose={() => setLightboxOpen(false)} />
 
       <style>{`
         .subtask-section { padding: 8px 0; border-bottom: 1px solid var(--divider); }
@@ -143,6 +224,13 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
           transition: color var(--transition-fast);
         }
         .subtask-add-btn:hover { color: var(--accent); }
+
+        .subtask-meta-actions { display: flex; align-items: center; gap: 6px; margin-right: 4px; }
+        .sub-attach-card { position: relative; width: 26px; height: 26px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+        .sub-attach-thumb { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        .sub-attach-delete { position: absolute; top: -2px; right: -2px; width: 11px; height: 11px; border-radius: 50%; background: rgba(0,0,0,0.65); color: #fff; border: none; font-size: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .sub-attach-add { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 4px; border: 1px dashed var(--border-strong); color: var(--text-tertiary); cursor: pointer; transition: all 0.2s; }
+        .sub-attach-add:hover { border-color: var(--accent); color: var(--accent); }
       `}</style>
     </div>
   );
