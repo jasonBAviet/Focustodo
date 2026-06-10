@@ -25,6 +25,7 @@ function rowToFolder(r) {
 function rowToTag(r) {
   return {
     id: r.id, name: r.name ?? '', color: r.color ?? '#7ec8e3',
+    projectId: r.project_id ?? null, folderId: r.folder_id ?? null,
     createdAt: r.created_at ?? null, updatedAt: r.updated_at ?? null,
   };
 }

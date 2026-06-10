@@ -41,6 +41,21 @@ export function getDescendantFolderIds(folders: Folder[], rootId: string): strin
   return result;
 }
 
+// Chuỗi tổ tiên của một folder (gồm chính nó): [folderId, parent, grandparent, ...].
+// Đi ngược theo parentId, chống chu trình bằng tập visited.
+export function getAncestorFolderIds(folders: Folder[], folderId: string): string[] {
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const result: string[] = [];
+  const visited = new Set<string>();
+  let cur: string | null | undefined = folderId;
+  while (cur && !visited.has(cur) && byId.has(cur)) {
+    visited.add(cur);
+    result.push(cur);
+    cur = byId.get(cur)!.parentId ?? null;
+  }
+  return result;
+}
+
 // Có phải `candidateAncestorId` là tổ tiên (hoặc chính) của `folderId` không?
 // Dùng để chặn việc đặt một folder làm con của chính cây con của nó.
 export function isAncestor(folders: Folder[], candidateAncestorId: string, folderId: string): boolean {

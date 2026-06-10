@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTaskContext, EMPTY_FILTERS } from '../../contexts/TaskContext';
 import { toggleArrayItem } from '../../utils/arrayUtils';
+import { getContextTags } from '../../utils/tagScope';
 
 type OpenMenu = 'tag' | 'project' | 'created' | 'due' | null;
 
@@ -18,8 +19,12 @@ const IconSearch = () => (
 );
 
 const TaskFilterBar: React.FC = () => {
-  const { filters, setFilters, tags, projects } = useTaskContext();
+  const { filters, setFilters, tags, projects, folders, activeView, activeProjectId, activeFolderId } = useTaskContext();
+  // Nhãn lọc theo ngữ cảnh dự án/thư mục đang xem (view khác -> hiện tất cả).
+  const visibleTags = getContextTags(tags, folders, projects, activeView, activeProjectId, activeFolderId);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
+  // Mobile: Tag/Project/ngày thu sau nút "Lọc"; toggle này bung/đóng chúng.
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,7 +59,7 @@ const TaskFilterBar: React.FC = () => {
   const dueActive = !!(filters.dueFrom || filters.dueTo);
 
   return (
-    <div className="task-filter-bar" ref={wrapRef}>
+    <div className={`task-filter-bar ${mobileFiltersOpen ? 'filters-open' : ''}`} ref={wrapRef}>
       {/* Text */}
       <div className="tfb-search">
         <IconSearch />
@@ -67,6 +72,19 @@ const TaskFilterBar: React.FC = () => {
         />
       </div>
 
+      {/* Mobile-only: nút bung/đóng nhóm bộ lọc (Tag/Project/ngày) */}
+      <button
+        type="button"
+        className={`tfb-toggle ${activeCount > 0 ? 'active' : ''}`}
+        onClick={() => setMobileFiltersOpen((v) => !v)}
+        aria-expanded={mobileFiltersOpen}
+      >
+        Lọc{activeCount > 0 ? ` (${activeCount})` : ''} <IconChevron />
+      </button>
+
+      {/* Nhóm bộ lọc — desktop: inline (display:contents); mobile: thu sau nút "Lọc" */}
+      <div className="tfb-filters">
+
       {/* Tag */}
       <div className="tfb-item">
         <button
@@ -77,10 +95,10 @@ const TaskFilterBar: React.FC = () => {
         </button>
         {openMenu === 'tag' && (
           <div className="tfb-menu">
-            {tags.length === 0 ? (
+            {visibleTags.length === 0 ? (
               <p className="tfb-empty">Chưa có tag nào</p>
             ) : (
-              tags.map((tag) => {
+              visibleTags.map((tag) => {
                 const checked = filters.tagIds.includes(tag.id);
                 return (
                   <button
@@ -209,16 +227,36 @@ const TaskFilterBar: React.FC = () => {
 
       {/* Xóa tất cả filter */}
       {activeCount > 0 && (
-        <button className="tfb-clear-all" onClick={() => { setFilters(EMPTY_FILTERS); setOpenMenu(null); }}>
+        <button className="tfb-clear-all" onClick={() => { setFilters(EMPTY_FILTERS); setOpenMenu(null); setMobileFiltersOpen(false); }}>
           Xóa lọc ({activeCount})
         </button>
       )}
+
+      </div>
 
       <style>{`
         .task-filter-bar {
           display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
           margin-bottom: 10px;
         }
+        /* Desktop: nút "Lọc" ẩn, nhóm bộ lọc flow inline như cũ.
+           Mobile override (display:flex / collapse) nằm trong index.css @media. */
+        .tfb-toggle {
+          display: none; align-items: center; gap: 6px;
+          background: var(--task-bg); border: 1px solid var(--border);
+          color: var(--text-secondary); font-size: var(--text-sm);
+          font-family: var(--font-main); cursor: pointer;
+          padding: 6px 10px; border-radius: var(--radius-md);
+          transition: all var(--transition-fast);
+        }
+        .tfb-toggle:hover { border-color: var(--border-strong); color: var(--text-primary); }
+        .tfb-toggle.active {
+          border-color: var(--accent); color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 8%, transparent);
+        }
+        .tfb-toggle svg { transition: transform var(--transition-fast); }
+        .tfb-filters { display: contents; }
+        .task-filter-bar.filters-open .tfb-toggle svg { transform: rotate(180deg); }
         .tfb-search {
           display: flex; align-items: center; gap: 6px;
           border: 1px solid var(--border); border-radius: var(--radius-md);

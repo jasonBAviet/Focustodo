@@ -266,6 +266,9 @@ async function ensureSchema() {
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS updated_at TEXT;');
     // GĐ4: thư mục lồng nhiều cấp.
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS parent_id TEXT;');
+    // GĐ5: nhãn theo phạm vi dự án / thư mục (null = dùng chung).
+    await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS project_id TEXT;');
+    await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS folder_id TEXT;');
 
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at);');
@@ -417,6 +420,8 @@ function rowToTag(r) {
     id: r.id,
     name: r.name ?? '',
     color: r.color ?? '#7ec8e3',
+    projectId: r.project_id ?? null,
+    folderId: r.folder_id ?? null,
     createdAt: r.created_at ?? null,
     updatedAt: r.updated_at ?? null,
   };
@@ -632,8 +637,8 @@ async function persistState(incoming) {
       client,
       'tags',
       incoming.tags ?? [],
-      ['id', 'name', 'color', 'created_at', 'updated_at'],
-      (t) => [t.id, t.name ?? '', t.color ?? '#7ec8e3', t.createdAt ?? null, t.updatedAt ?? t.createdAt ?? nowIso],
+      ['id', 'name', 'color', 'project_id', 'folder_id', 'created_at', 'updated_at'],
+      (t) => [t.id, t.name ?? '', t.color ?? '#7ec8e3', t.projectId ?? null, t.folderId ?? null, t.createdAt ?? null, t.updatedAt ?? t.createdAt ?? nowIso],
       'updated_at',
     );
 

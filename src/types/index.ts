@@ -94,6 +94,8 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  projectId?: string | null; // nhãn thuộc dự án (null = không gắn)
+  folderId?: string | null; // nhãn thuộc thư mục (null = không gắn); cả hai null = dùng chung
   createdAt: string;
   updatedAt?: string;
 }

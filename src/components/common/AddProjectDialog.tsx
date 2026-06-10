@@ -4,10 +4,11 @@ import { useAppContext } from '../../contexts/AppContext';
 import ColorPicker from '../common/ColorPicker';
 
 const AddProjectDialog: React.FC = () => {
-  const { addProject } = useTaskContext();
+  const { addProject, folders } = useTaskContext();
   const { openModal, setOpenModal } = useAppContext();
   const [name, setName] = useState('');
   const [color, setColor] = useState('#4361ee');
+  const [folderId, setFolderId] = useState<string>('');
 
   const isOpen = openModal === 'add-project';
 
@@ -15,11 +16,12 @@ const AddProjectDialog: React.FC = () => {
     setOpenModal(null);
     setName('');
     setColor('#4361ee');
+    setFolderId('');
   };
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    addProject(name.trim(), color);
+    addProject(name.trim(), color, folderId || null);
     handleClose();
   };
 
@@ -37,6 +39,18 @@ const AddProjectDialog: React.FC = () => {
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') handleClose(); }}
         />
+        <select
+          className="add-project-input"
+          value={folderId}
+          onChange={(e) => setFolderId(e.target.value)}
+          style={{ cursor: 'pointer' }}
+          aria-label="Thư mục"
+        >
+          <option value="">Thư mục: Không có</option>
+          {folders.map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
         <ColorPicker value={color} onChange={setColor} />
         <div className="add-project-footer">
           <button className="apd-btn apd-btn--cancel" onClick={handleClose}>Cancel</button>

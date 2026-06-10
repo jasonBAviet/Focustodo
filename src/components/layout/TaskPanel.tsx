@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import TaskDetail from '../task/TaskDetail';
 import TagPicker from '../task/TagPicker';
+import { getVisibleTags } from '../../utils/tagScope';
 
 const TaskPanel: React.FC = () => {
-  const { tasks, selectedTaskId, setSelectedTaskId, updateTask, completeTask, restoreTask, deleteTask, tags, addTag } = useTaskContext();
+  const { tasks, selectedTaskId, setSelectedTaskId, updateTask, completeTask, restoreTask, deleteTask, tags, addTag, projects, folders } = useTaskContext();
   const [panelWidth, setPanelWidth] = useState(280);
   const resizeRef = useRef(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -149,9 +150,9 @@ const TaskPanel: React.FC = () => {
       <div className="task-panel-tags">
         <TagPicker
           taskTags={selectedTask.tags || []}
-          allTags={tags}
+          allTags={getVisibleTags(tags, folders, projects, { projectId: selectedTask.projectId })}
           onUpdate={(tagIds) => updateTask(selectedTask.id, { tags: tagIds })}
-          onAddTag={addTag}
+          onAddTag={(name, color) => addTag(name, color, { projectId: selectedTask.projectId ?? null })}
         />
       </div>
 

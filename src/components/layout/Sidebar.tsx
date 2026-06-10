@@ -4,6 +4,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import type { Task, ViewType, Project, Folder } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
 import { getRootFolders, getChildFolders, getDescendantFolderIds } from '../../utils/folderUtils';
+import { getContextTags } from '../../utils/tagScope';
 
 import logoUrl from '../../assets/Logo.jpg';
 
@@ -413,8 +414,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
             {/* Render Standalone Projects (không thuộc folder nào) */}
             {projects.filter(p => !p.folderId).map(p => renderProjectItem(p, 0))}
 
-            {/* Render Tags */}
-            {tags.map((tag) => {
+            {/* Render Tags — lọc theo dự án/thư mục đang xem (view khác hiện tất cả) */}
+            {getContextTags(tags, folders, projects, activeView, activeProjectId, activeFolderId).map((tag) => {
               const isTagActive = activeView === 'tag' && activeTagId === tag.id;
               const { count, time } = getTagStats(tag.id);
               return (

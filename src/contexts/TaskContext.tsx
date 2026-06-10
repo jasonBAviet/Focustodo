@@ -146,7 +146,7 @@ interface TaskContextType {
   addFolder: (name: string, color: string, parentId?: string | null) => Folder;
   updateFolder: (id: string, updates: Partial<Folder>) => void;
   deleteFolder: (id: string) => void;
-  addTag: (name: string, color: string) => Tag;
+  addTag: (name: string, color: string, scope?: { projectId?: string | null; folderId?: string | null }) => Tag;
   updateTag: (id: string, updates: Partial<Tag>) => void;
   deleteTag: (id: string) => void;
   addSubtask: (taskId: string, title: string) => void;
@@ -477,12 +477,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
   // Tag actions
   // --------------------------------------------------------
-  const addTag = useCallback((name: string, color: string): Tag => {
+  const addTag = useCallback((
+    name: string,
+    color: string,
+    scope?: { projectId?: string | null; folderId?: string | null },
+  ): Tag => {
     const now = dateUtils.now();
     const newTag: Tag = {
       id: uuid(),
       name,
       color,
+      projectId: scope?.projectId ?? null,
+      folderId: scope?.folderId ?? null,
       createdAt: now,
       updatedAt: now,
     };

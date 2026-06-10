@@ -6,6 +6,7 @@ import TaskFilterBar from './TaskFilterBar';
 import { dateUtils } from '../../utils/dateUtils';
 import { useContextMenu } from '../../hooks/useContextMenu';
 import { useInjectedStyle } from '../../hooks/useInjectedStyle';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import TaskContextMenu from './TaskContextMenu';
 import ContextMenu from '../common/ContextMenu';
 
@@ -84,6 +85,8 @@ const TaskList: React.FC = () => {
   } = useTaskContext();
 
   const filteredTasks = useMemo(() => getFilteredTasks(), [getFilteredTasks]);
+  // Mobile: nhãn stat ngắn để 4 ô vừa 1 hàng compact (desktop giữ nhãn đầy đủ).
+  const isMobile = useIsMobile();
   const [confirmClear, setConfirmClear] = useState(false);
   const contextMenu = useContextMenu<string>();
   const sortMenu = useContextMenu<null>();
@@ -224,20 +227,20 @@ const TaskList: React.FC = () => {
       {/* Stats Row */}
       {isCompletedView ? (
         <div className="main-stats-row">
-          <StatCard label="Completed Today" value={todayCompleted} color="var(--stat-blue)" />
-          <StatCard label="Completed This Week" value={weekCompleted} color="var(--stat-blue)" />
-          <StatCard label="Total Completed" value={totalCompleted} color="var(--stat-blue)" />
-          <StatCard label="Total Focus Time" value={formatStatTime(totalFocusAll)} />
+          <StatCard label={isMobile ? 'Today' : 'Completed Today'} value={todayCompleted} color="var(--stat-blue)" />
+          <StatCard label={isMobile ? 'Week' : 'Completed This Week'} value={weekCompleted} color="var(--stat-blue)" />
+          <StatCard label={isMobile ? 'Total' : 'Total Completed'} value={totalCompleted} color="var(--stat-blue)" />
+          <StatCard label={isMobile ? 'Focus' : 'Total Focus Time'} value={formatStatTime(totalFocusAll)} />
         </div>
       ) : (
         <div className="main-stats-row">
-          <StatCard label="Estimated Time" value={formatStatTime(totalEstimatedMin)} />
-          <StatCard label="Tasks to Complete" value={activeCount} />
+          <StatCard label={isMobile ? 'Est.' : 'Estimated Time'} value={formatStatTime(totalEstimatedMin)} />
+          <StatCard label={isMobile ? 'To-do' : 'Tasks to Complete'} value={activeCount} />
           <StatCard
-            label="Elapsed Time"
+            label={isMobile ? 'Elapsed' : 'Elapsed Time'}
             value={totalElapsedMin > 0 ? formatStatTime(totalElapsedMin) : '0m'}
           />
-          <StatCard label="Completed Tasks" value={completedCount} color="var(--stat-blue)" />
+          <StatCard label={isMobile ? 'Done' : 'Completed Tasks'} value={completedCount} color="var(--stat-blue)" />
         </div>
       )}
 
