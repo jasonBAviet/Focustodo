@@ -104,15 +104,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
       </div>
 
       {/* Global Filters */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: 16, 
-        padding: '16px 32px 20px',
-        borderBottom: '1px solid var(--divider)',
-        background: 'var(--bg-card)',
-        marginBottom: 20
-      }}>
+      <div className="report-filters">
         <div>
           <label style={labelStyle}>Thư mục</label>
           <select value={selectedFolderId} onChange={handleFolderChange} style={selectStyle}>
@@ -145,7 +137,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
       </div>
 
       {/* Body container wrapper */}
-      <div style={{ padding: '0 32px' }}>
+      <div className="report-body">
         {/* Cấp độ 1: Tổng quan vĩ mô (Stat Cards) */}
         <StatCards 
           selectedFolderId={selectedFolderId}
@@ -154,7 +146,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
         />
 
         {/* Cấp độ 2: Xu hướng & Tăng trưởng (Grid of 2 charts) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+        <div className="report-grid-2">
           {/* Focus Time Chart */}
           <div className="report-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -297,6 +289,22 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           grid-template-columns: 1fr 1fr;
           gap: 16px;
           padding: 0;
+        }
+        .report-filters {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          padding: 16px 32px 20px;
+          border-bottom: 1px solid var(--divider);
+          background: var(--bg-card);
+          margin-bottom: 20px;
+        }
+        .report-body { padding: 0 32px; }
+        .report-grid-2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-top: 20px;
         }
         .report-col-left, .report-col-right {
           display: flex; flex-direction: column; gap: 16px;

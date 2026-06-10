@@ -29,6 +29,7 @@ interface UsePomodoroParams {
   onFocusTimeUpdate: (taskId: string, seconds: number) => void;
   onPomodoroRecordStart?: (record: PomodoroRecord) => void;
   onPomodoroRecordUpdate?: (id: string, updates: Partial<PomodoroRecord>) => void;
+  onPomodoroCountIncrement?: (taskId: string) => void;
 }
 
 // ----------------------------------------------------------
@@ -83,6 +84,7 @@ function usePomodoro({
   onFocusTimeUpdate,
   onPomodoroRecordStart,
   onPomodoroRecordUpdate,
+  onPomodoroCountIncrement,
 }: UsePomodoroParams): UsePomodoroReturn {
   // Trạng thái ban đầu - bắt đầu ở idle
   const [state, setState] = useState<PomodoroState>({
@@ -104,6 +106,8 @@ function usePomodoro({
   const settingsRef = useRef(settings);
   const sessionStartRef = useRef<string>(dateUtils.now());
   const activeRecordIdRef = useRef<string | null>(null);
+  // Số giây focus thực đã trôi qua trong pha focus hiện tại (reset ở đầu mỗi pha focus)
+  const focusElapsedRef = useRef<number>(0);
 
   // Đồng bộ refs mỗi khi state/settings thay đổi
   useEffect(() => { stateRef.current = state; }, [state]);
@@ -128,7 +132,10 @@ function usePomodoro({
     const cfg = settingsRef.current;
     const now = dateUtils.now();
 
-    // Tạo session record
+    // Tạo session record. Với pha focus, ghi thời lượng THỰC đã trôi qua
+    // (round phút) để Σ session ≈ Σ totalFocusTime; pomodoro chạy hết giờ
+    // thì giá trị này = pomodoroLength nên không đổi hành vi cũ.
+    const focusMinutes = Math.round(focusElapsedRef.current / 60);
     const session: PomodoroSession = {
       id: uuid(),
       taskId: current.currentTaskId,
@@ -136,7 +143,7 @@ function usePomodoro({
       type: current.phase as 'focus' | 'short-break' | 'long-break',
       duration:
         current.phase === 'focus'
-          ? cfg.pomodoroLength
+          ? focusMinutes
           : current.phase === 'short-break'
           ? cfg.shortBreakLength
           : cfg.longBreakLength,
@@ -144,7 +151,10 @@ function usePomodoro({
       endTime: dateUtils.now(),
       completed: true,
     };
-    onSessionComplete(session);
+    // Bỏ qua session focus 0 phút (tránh rác); break luôn ghi
+    if (current.phase !== 'focus' || focusMinutes >= 1) {
+      onSessionComplete(session);
+    }
 
     // Tính chu kỳ mới và phase tiếp theo
     let newCycleCount = current.cycleCount;
@@ -152,10 +162,18 @@ function usePomodoro({
       newCycleCount += 1;
       // Cộng thêm vào tổng focus hôm nay (phút)
       setTotalFocusedToday((prev) => prev + cfg.pomodoroLength);
+      // Pomodoro chạy hết giờ = 1 pomodoro hoàn thành cho task
+      if (current.currentTaskId && onPomodoroCountIncrement) {
+        onPomodoroCountIncrement(current.currentTaskId);
+      }
     }
 
     const nextPhase = getNextPhase(current.phase, newCycleCount, cfg);
     const nextTimeLeft = getPhaseDuration(nextPhase, cfg);
+    // Bắt đầu một pha focus mới -> reset bộ đếm giây focus thực
+    if (nextPhase === 'focus') {
+      focusElapsedRef.current = 0;
+    }
 
     // Ghi nhận vòng đời chi tiết
     if (current.phase === 'focus') {
@@ -228,7 +246,7 @@ function usePomodoro({
       }, 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearTimer, onSessionComplete, onPomodoroRecordStart, onPomodoroRecordUpdate]);
+  }, [clearTimer, onSessionComplete, onPomodoroRecordStart, onPomodoroRecordUpdate, onPomodoroCountIncrement]);
 
   // --------------------------------------------------------
   // Tick mỗi giây
@@ -240,6 +258,10 @@ function usePomodoro({
     // Cập nhật focus time cho task đang làm
     if (current.phase === 'focus' && current.currentTaskId) {
       onFocusTimeUpdate(current.currentTaskId, 1);
+    }
+    // Đếm giây focus thực của pha hiện tại (kể cả khi chưa gán task)
+    if (current.phase === 'focus') {
+      focusElapsedRef.current += 1;
     }
 
     setState((prev) => {
@@ -285,6 +307,8 @@ function usePomodoro({
 
       // Tạo PomodoroRecord mới khi chuyển từ idle sang focus thủ công
       if (prev.phase === 'idle') {
+        // Bắt đầu pha focus mới -> reset bộ đếm giây focus thực
+        focusElapsedRef.current = 0;
         const recordId = uuid();
         activeRecordIdRef.current = recordId;
         if (onPomodoroRecordStart) {
@@ -326,6 +350,20 @@ function usePomodoro({
     const current = stateRef.current;
     const now = dateUtils.now();
     if (current.phase === 'focus') {
+      // Ghi nhận phần focus dở (thời gian thực) trước khi huỷ
+      const focusMinutes = Math.round(focusElapsedRef.current / 60);
+      if (focusMinutes >= 1) {
+        onSessionComplete({
+          id: uuid(),
+          taskId: current.currentTaskId,
+          taskTitle: current.currentTaskTitle,
+          type: 'focus',
+          duration: focusMinutes,
+          startTime: sessionStartRef.current,
+          endTime: now,
+          completed: false,
+        });
+      }
       const recordId = activeRecordIdRef.current;
       if (recordId && onPomodoroRecordUpdate) {
         setTimeout(() => {
@@ -348,6 +386,7 @@ function usePomodoro({
       }
     }
     activeRecordIdRef.current = null;
+    focusElapsedRef.current = 0;
 
     setState((prev) => ({
       ...prev,
@@ -356,7 +395,7 @@ function usePomodoro({
       isRunning: false,
       totalSecondsThisSession: 0,
     }));
-  }, [clearTimer, onPomodoroRecordUpdate]);
+  }, [clearTimer, onPomodoroRecordUpdate, onSessionComplete]);
 
   // --------------------------------------------------------
   // skip: bỏ qua phase hiện tại, chuyển sang phase tiếp theo
@@ -367,6 +406,20 @@ function usePomodoro({
     const now = dateUtils.now();
     
     if (current.phase === 'focus') {
+      // Ghi nhận phần focus dở (thời gian thực) trước khi bỏ qua
+      const focusMinutes = Math.round(focusElapsedRef.current / 60);
+      if (focusMinutes >= 1) {
+        onSessionComplete({
+          id: uuid(),
+          taskId: current.currentTaskId,
+          taskTitle: current.currentTaskTitle,
+          type: 'focus',
+          duration: focusMinutes,
+          startTime: sessionStartRef.current,
+          endTime: now,
+          completed: false,
+        });
+      }
       const recordId = activeRecordIdRef.current;
       if (recordId && onPomodoroRecordUpdate) {
         const nextPhase = getNextPhase(current.phase, current.cycleCount, settingsRef.current);
@@ -407,7 +460,9 @@ function usePomodoro({
         isRunning: false,
       };
     });
-  }, [clearTimer, onPomodoroRecordUpdate]);
+    // Pha tiếp theo bắt đầu lại từ đầu -> reset bộ đếm giây focus thực
+    focusElapsedRef.current = 0;
+  }, [clearTimer, onPomodoroRecordUpdate, onSessionComplete]);
 
   // --------------------------------------------------------
   // setTask: gán task cho phiên hiện tại

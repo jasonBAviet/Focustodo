@@ -37,14 +37,15 @@ export function getPeakHoursData(
 
   pomodoroSessions.forEach(session => {
     if (session.type !== 'focus') return;
-    if (session.taskId && !filteredTaskIds.has(session.taskId)) return;
+    // Loại session không gắn task / không khớp bộ lọc (nhất quán với các thẻ khác)
+    if (!session.taskId || !filteredTaskIds.has(session.taskId)) return;
 
     try {
       const startDate = new Date(session.startTime);
       if (isNaN(startDate.getTime())) return;
-      
+
       const startHour = startDate.getHours();
-      hours[startHour] += (session.duration ?? 25);
+      hours[startHour] += (session.duration ?? 0);
     } catch (e) {
       // ignore invalid dates
     }

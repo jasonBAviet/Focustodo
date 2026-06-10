@@ -26,7 +26,7 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
   selectedProjectId = 'all',
   selectedTagId = 'all',
 }) => {
-  const { tasks, projects, pomodoroSessions } = useTaskContext();
+  const { tasks, projects } = useTaskContext();
 
   const slices = useMemo<ProjectSlice[]>(() => {
     // ---- Lọc danh sách task theo bộ lọc chọn ----
@@ -45,30 +45,14 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
       return true;
     });
 
-    const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
-    const taskById = new Map(filteredTasks.map((t) => [t.id, t]));
+    // Nguồn sự thật: gom task.totalFocusTime (thời gian thực) theo dự án
     const minutesByProject = new Map<string, number>();
-
-    const focusSessions = pomodoroSessions
-      .filter((s) => s.type === 'focus')
-      .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
-
-    if (focusSessions.length > 0) {
-      // Tính từ session thật
-      focusSessions.forEach((s) => {
-        const task = s.taskId ? taskById.get(s.taskId) : undefined;
-        const pid = task?.projectId ?? 'inbox';
-        minutesByProject.set(pid, (minutesByProject.get(pid) ?? 0) + (s.duration ?? 0));
-      });
-    } else {
-      // Fallback: gom theo task.totalFocusTime
-      filteredTasks.forEach((t) => {
-        const mins = t.totalFocusTime ?? 0;
-        if (mins <= 0) return;
-        const pid = t.projectId ?? 'inbox';
-        minutesByProject.set(pid, (minutesByProject.get(pid) ?? 0) + mins);
-      });
-    }
+    filteredTasks.forEach((t) => {
+      const mins = t.totalFocusTime ?? 0;
+      if (mins <= 0) return;
+      const pid = t.projectId ?? 'inbox';
+      minutesByProject.set(pid, (minutesByProject.get(pid) ?? 0) + mins);
+    });
 
     const projectById = new Map(projects.map((p) => [p.id, p]));
 
@@ -84,7 +68,7 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
       })
       .filter((s) => s.minutes > 0)
       .sort((a, b) => b.minutes - a.minutes);
-  }, [tasks, projects, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId]);
+  }, [tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
 
   if (slices.length === 0) {
     return (

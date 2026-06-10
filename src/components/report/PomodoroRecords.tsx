@@ -100,7 +100,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
     }
 
     return (
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+      <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--divider)' }}>
             <th style={thStyle}>Loại</th>
@@ -160,7 +160,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
     }
 
     return (
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+      <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--divider)' }}>
             <th style={thStyle}>Công việc</th>
@@ -271,7 +271,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
         </button>
       </div>
 
-      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 320, overflowY: 'auto', overflowX: 'auto' }}>
         {viewMode === 'runs' ? renderRuns() : renderSessions()}
       </div>
 

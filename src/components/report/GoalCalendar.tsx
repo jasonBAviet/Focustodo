@@ -4,7 +4,9 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { dateUtils } from '../../utils/dateUtils';
+import type { PomodoroSession } from '../../types';
 
 // ----------------------------------------------------------
 // Props
@@ -34,16 +36,15 @@ function getFocusMinutesForDay(
   return tasksMap.get(key) ?? 0;
 }
 
-/** Xây dựng map: 'YYYY-MM-DD' -> tổng focus phút */
-function buildFocusMap(tasks: ReturnType<typeof useTaskContext>['tasks']): Map<string, number> {
+/** Xây dựng map: 'YYYY-MM-DD' -> tổng focus phút (theo session, đúng ngày tập trung) */
+function buildFocusMap(sessions: PomodoroSession[]): Map<string, number> {
   const map = new Map<string, number>();
-  tasks.forEach((t) => {
-    if (!t.updatedAt && !t.completedAt) return;
-    const dateStr = t.completedAt ?? t.updatedAt;
-    if (!dateStr) return;
-    const d = new Date(dateStr);
+  sessions.forEach((s) => {
+    if (s.type !== 'focus' || !s.startTime) return;
+    const d = new Date(s.startTime);
+    if (isNaN(d.getTime())) return;
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    map.set(key, (map.get(key) ?? 0) + (t.totalFocusTime ?? 0));
+    map.set(key, (map.get(key) ?? 0) + (s.duration ?? 0));
   });
   return map;
 }
@@ -69,13 +70,14 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
   focusGoalHours,
   accentColor = '#f25f5c',
 }) => {
-  const { tasks } = useTaskContext();
+  const { pomodoroSessions } = useTaskContext();
+  const isMobile = useIsMobile();
   const today = new Date();
 
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
 
-  const focusMap = useMemo(() => buildFocusMap(tasks), [tasks]);
+  const focusMap = useMemo(() => buildFocusMap(pomodoroSessions), [pomodoroSessions]);
   const daysInMonth = dateUtils.getDaysInMonth(viewYear, viewMonth);
   const firstOffset = getFirstDayOfMonthOffset(viewYear, viewMonth);
   const goalMinutes = focusGoalHours * 60;
@@ -118,7 +120,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
       background: 'var(--bg-card)',
       border: '1px solid var(--border)',
       borderRadius: 16,
-      padding: '18px 20px',
+      padding: isMobile ? '14px 10px' : '18px 20px',
     }}>
       {/* Header */}
       <div style={{

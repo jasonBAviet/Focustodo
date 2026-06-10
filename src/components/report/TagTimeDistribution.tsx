@@ -14,17 +14,16 @@ const TagTimeDistribution: React.FC<TagTimeDistributionProps> = ({
   selectedProjectId = 'all',
   selectedTagId = 'all',
 }) => {
-  const { tasks, tags, pomodoroSessions, projects } = useTaskContext();
+  const { tasks, tags, projects } = useTaskContext();
 
   const slices = useMemo(() => {
     return getTagTimeDistribution(
       tasks,
       tags,
-      pomodoroSessions,
       { selectedFolderId, selectedProjectId, selectedTagId },
       projects
     );
-  }, [tasks, tags, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId, projects]);
+  }, [tasks, tags, selectedFolderId, selectedProjectId, selectedTagId, projects]);
 
   if (slices.length === 0) {
     return (

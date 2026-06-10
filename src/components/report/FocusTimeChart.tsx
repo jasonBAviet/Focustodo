@@ -32,8 +32,22 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
 }) => {
   const { pomodoroSessions, tasks, projects } = useTaskContext();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasW, setCanvasW] = useState(560);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const barsRef = useRef<BarData[]>([]);
+
+  // Canvas vẽ đúng theo bề ngang container (tránh bị CSS kéo méo trên mobile)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (w > 0) setCanvasW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Lọc các session dựa trên Folder/Project/Tag được chọn
   const focusSessions = useMemo(() => {
@@ -71,7 +85,7 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
     if (!canvas) return;
     drawChart(canvas, bars, accentColor);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, accentColor]);
+  }, [bars, accentColor, canvasW]);
 
   // Tooltip khi hover
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -133,7 +147,7 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
       </div>
 
       {/* Canvas area */}
-      <div style={{
+      <div ref={containerRef} style={{
         position: 'relative',
         background: 'var(--glass-bg)',
         borderRadius: 12,
@@ -144,7 +158,7 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
           <>
             <canvas
               ref={canvasRef}
-              width={560}
+              width={canvasW}
               height={200}
               style={{ width: '100%', height: '100%', display: 'block' }}
               onMouseMove={handleMouseMove}

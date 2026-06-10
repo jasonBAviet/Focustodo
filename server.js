@@ -216,8 +216,6 @@ async function ensureSchema() {
       updated_at TEXT,
       is_deleted BOOLEAN DEFAULT false
     );
-    CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
-    CREATE INDEX IF NOT EXISTS idx_attachments_updated_at ON attachments(updated_at);
 
     CREATE TABLE IF NOT EXISTS pomodoro_records (
       id TEXT PRIMARY KEY,
@@ -232,9 +230,15 @@ async function ensureSchema() {
       updated_at TEXT NOT NULL,
       is_deleted BOOLEAN DEFAULT false
     );
-    CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);
-    CREATE INDEX IF NOT EXISTS idx_pomodoro_records_updated_at ON pomodoro_records(updated_at);
   `);
+
+  try {
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pomodoro_records_updated_at ON pomodoro_records(updated_at);');
+  } catch (err) {
+    console.warn('[safety] Could not create new indices', err.message);
+  }
 
   // Thêm cột is_deleted cho bảng cũ
   try {
@@ -256,6 +260,7 @@ async function ensureSchema() {
     await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;');
     await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;');
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS position INTEGER DEFAULT 0;');
+    await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at TEXT;');
     await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at TEXT;');
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS updated_at TEXT;');
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS updated_at TEXT;');

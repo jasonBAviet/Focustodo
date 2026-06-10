@@ -467,15 +467,40 @@ body {
   }
   .dialog-box .settings-content { padding: 16px; }
 
-  /* ---- Report: stack the two chart columns ---- */
-  .report-page .report-grid {
-    grid-template-columns: 1fr;
-    padding: 12px 16px;
-  }
+  /* ---- Report: stack all chart columns, tighten the (now class-based) padding ---- */
+  .report-page .report-grid,
+  .report-page .report-grid-2 { grid-template-columns: 1fr; }
+  .report-page .report-grid-2 { gap: 16px; }
+  .report-page .report-filters { padding: 12px 16px 16px; gap: 12px; }
+  .report-page .report-body { padding: 0 16px; }
   .report-page .report-header { padding: 52px 16px 16px; }
 
   /* ---- Shared small dialogs (Add Project / Folder / Tag) ---- */
   .add-project-dialog { width: min(360px, calc(100vw - 32px)); }
+
+  /* ---- Keep fixed-width popovers/pickers inside the viewport ---- */
+  .datepicker,
+  .tag-dropdown,
+  .repeat-editor,
+  .psp-modal { max-width: calc(100vw - 24px); }
+}
+
+/* ============================================================
+   TOUCH DEVICES — reveal hover-only controls
+   On touch there is no hover, so buttons that default to opacity:0 and only
+   appear on :hover are otherwise unreachable. (hover: none) targets touch
+   pointers at any width and never matches a mouse, so desktop is untouched.
+   ============================================================ */
+@media (hover: none) {
+  /* !important is required: each control's base `opacity:0` lives in a component
+     <style> block that is injected into <body> AFTER this stylesheet, so an
+     equal-specificity rule here would lose on source order. !important also
+     beats TaskItem's inline opacity:0. */
+  .attachment-delete,
+  .kd-attachment-delete,
+  .kl-delete-item-btn,
+  .subtask-delete,
+  .task-item__pomo-btn { opacity: 1 !important; }
 }
 
 /* Extra-tight phones */

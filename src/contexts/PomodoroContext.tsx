@@ -40,12 +40,20 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateTask(taskId, { totalFocusTime: (task.totalFocusTime ?? 0) + addedMinutes });
   }, [tasks, updateTask]);
 
+  // Mỗi pomodoro chạy hết giờ -> tăng số pomodoro hoàn thành của task
+  const handlePomodoroCountIncrement = useCallback((taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    updateTask(taskId, { pomodoroCompleted: (task.pomodoroCompleted ?? 0) + 1 });
+  }, [tasks, updateTask]);
+
   const pomo = usePomodoro({
     settings,
     onSessionComplete: handleSessionComplete,
     onFocusTimeUpdate: handleFocusTimeUpdate,
     onPomodoroRecordStart: addPomodoroRecord,
     onPomodoroRecordUpdate: updatePomodoroRecord,
+    onPomodoroCountIncrement: handlePomodoroCountIncrement,
   });
 
   const activateTask = useCallback((taskId: string, taskTitle: string) => {

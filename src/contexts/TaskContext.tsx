@@ -310,14 +310,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // (bảng system_logs) và để Report đọc dữ liệu thật.
   // --------------------------------------------------------
   const addPomodoroSession = useCallback((session: PomodoroSession) => {
-    setPomodoroSessions((prev) => [session, ...prev].slice(0, 200));
+    setPomodoroSessions((prev) => [session, ...prev].slice(0, 2000));
     if (session.type === 'focus' && session.completed) {
       onPomodoroCompleted(session);
     }
   }, [setPomodoroSessions, onPomodoroCompleted]);
 
   const addPomodoroRecord = useCallback((record: PomodoroRecord) => {
-    setPomodoroRecords((prev) => [record, ...prev].slice(0, 200));
+    setPomodoroRecords((prev) => [record, ...prev].slice(0, 2000));
   }, [setPomodoroRecords]);
 
   const updatePomodoroRecord = useCallback((id: string, updates: Partial<PomodoroRecord>) => {

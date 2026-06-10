@@ -1,7 +1,7 @@
 // ============================================================
 // FOCUS TO-DO - tagDistributionHelpers
 // ============================================================
-import type { Task, Tag, PomodoroSession } from '../../types';
+import type { Task, Tag } from '../../types';
 
 export interface TagSlice {
   id: string;
@@ -13,7 +13,6 @@ export interface TagSlice {
 export function getTagTimeDistribution(
   tasks: Task[],
   tags: Tag[],
-  pomodoroSessions: PomodoroSession[],
   filters: {
     selectedFolderId: string;
     selectedProjectId: string;
@@ -39,41 +38,18 @@ export function getTagTimeDistribution(
     return true;
   });
 
-  const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
-  const taskById = new Map(filteredTasks.map((t) => [t.id, t]));
+  // Nguồn sự thật: gom task.totalFocusTime (thời gian thực) theo nhãn.
+  // 1 task có nhiều nhãn -> chia đều thời gian để tổng không bị nhân lên.
   const minutesByTag = new Map<string, number>(); // tagId -> minutes
-
-  const focusSessions = pomodoroSessions
-    .filter((s) => s.type === 'focus')
-    .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
-
-  if (focusSessions.length > 0) {
-    focusSessions.forEach((s) => {
-      const task = s.taskId ? taskById.get(s.taskId) : undefined;
-      const tTags = task?.tags && task.tags.length > 0 ? task.tags : ['untagged'];
-      
-      // Chia đều thời gian cho các tag của task (hoặc có thể cộng dồn nguyên thời gian, ở đây cộng dồn nguyên thời gian)
-      // Tùy quan điểm: Thường 1 task có 2 tag thì 30p focus sẽ tính 30p cho tag A và 30p cho tag B.
-      // Để tránh tổng sai, ta chia đều.
-      const mins = s.duration ?? 0;
-      const minsPerTag = mins / tTags.length;
-
-      tTags.forEach(tid => {
-        minutesByTag.set(tid, (minutesByTag.get(tid) ?? 0) + minsPerTag);
-      });
+  filteredTasks.forEach((t) => {
+    const mins = t.totalFocusTime ?? 0;
+    if (mins <= 0) return;
+    const tTags = t.tags && t.tags.length > 0 ? t.tags : ['untagged'];
+    const minsPerTag = mins / tTags.length;
+    tTags.forEach(tid => {
+      minutesByTag.set(tid, (minutesByTag.get(tid) ?? 0) + minsPerTag);
     });
-  } else {
-    // Fallback
-    filteredTasks.forEach((t) => {
-      const mins = t.totalFocusTime ?? 0;
-      if (mins <= 0) return;
-      const tTags = t.tags && t.tags.length > 0 ? t.tags : ['untagged'];
-      const minsPerTag = mins / tTags.length;
-      tTags.forEach(tid => {
-        minutesByTag.set(tid, (minutesByTag.get(tid) ?? 0) + minsPerTag);
-      });
-    });
-  }
+  });
 
   const tagById = new Map(tags.map((t) => [t.id, t]));
 

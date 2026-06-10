@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { getPeakHoursData } from './peakHoursHelpers';
 
 interface PeakHoursHeatmapProps {
@@ -14,6 +15,7 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
   selectedTagId = 'all',
 }) => {
   const { tasks, pomodoroSessions, projects } = useTaskContext();
+  const isMobile = useIsMobile();
 
   const hoursData = useMemo(() => {
     return getPeakHoursData(
@@ -44,7 +46,7 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(12, 1fr)',
+        gridTemplateColumns: isMobile ? 'repeat(6, 1fr)' : 'repeat(12, 1fr)',
         gap: '4px',
         marginTop: '10px'
       }}>
