@@ -1,5 +1,6 @@
 import type { Task, Priority, RepeatType, Subtask } from '../types';
 import { dateUtils } from './dateUtils';
+import { uuid } from './uuid';
 
 interface ParsedCSVTask {
   title: string;
@@ -71,7 +72,7 @@ function parseSubtaskJSON(raw: string): Subtask[] {
     return arr
       .filter((item) => typeof item.title === 'string')
       .map((item) => ({
-        id: crypto.randomUUID(),
+        id: uuid(),
         title: String(item.title),
         completed: Boolean(item.completed),
         createdAt: dateUtils.now(),
@@ -166,7 +167,7 @@ export function importFromCSV(content: string): Partial<Task>[] {
     };
 
     tasks.push({
-      id: crypto.randomUUID(),
+      id: uuid(),
       title: parsed.title,
       projectId: parsed.projectId,
       priority: parsed.priority,

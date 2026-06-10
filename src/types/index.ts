@@ -20,7 +20,8 @@ export type ViewType =
   | 'low-priority'
   | 'project'
   | 'tag'
-  | 'folder';
+  | 'folder'
+  | 'knowledge';
 
 export interface Subtask {
   id: string;
@@ -50,6 +51,7 @@ export interface Task {
   createdAt: string;
   completedAt: string | null;
   updatedAt: string;
+  isKnowledge?: boolean;
 }
 
 export interface Project {

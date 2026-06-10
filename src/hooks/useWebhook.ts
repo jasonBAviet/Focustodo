@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { WebhookEvent, Task, PomodoroSession } from '../types';
 import useLocalStorage from './useLocalStorage';
 import { buildSlackPayload } from '../services/slackFormatter';
+import { uuid } from '../utils/uuid';
 
 type WebhookEventType = WebhookEvent['eventType'];
 
@@ -32,7 +33,7 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
       const payload = buildPayload(eventType, data);
 
       const eventRecord: WebhookEvent = {
-        id: crypto.randomUUID(),
+        id: uuid(),
         eventType,
         payload: { ...payload },
         timestamp: new Date().toISOString(),

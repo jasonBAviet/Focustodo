@@ -80,7 +80,8 @@ async function ensureSchema() {
       created_at TEXT,
       completed_at TEXT,
       updated_at TEXT,
-      is_deleted BOOLEAN DEFAULT false
+      is_deleted BOOLEAN DEFAULT false,
+      is_knowledge BOOLEAN DEFAULT false
     );
 
     CREATE TABLE IF NOT EXISTS projects (
@@ -176,6 +177,7 @@ async function ensureSchema() {
   // Thêm cột is_deleted cho bảng cũ
   try {
     await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_knowledge BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
@@ -308,6 +310,7 @@ function rowToTask(r) {
     createdAt: r.created_at ?? null,
     completedAt: r.completed_at ?? null,
     updatedAt: r.updated_at ?? null,
+    isKnowledge: r.is_knowledge ?? false,
   };
 }
 
@@ -480,14 +483,14 @@ async function persistState(incoming) {
       incoming.tasks ?? [],
       ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
         'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
-        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at'],
+        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at', 'is_knowledge'],
       (t) => [
         t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
         t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
         JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
         Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
         JSON.stringify(t.tags ?? []), t.position ?? 0, t.createdAt ?? null, t.completedAt ?? null,
-        t.updatedAt ?? t.createdAt ?? nowIso,
+        t.updatedAt ?? t.createdAt ?? nowIso, t.isKnowledge ?? false,
       ],
       'updated_at',
     );

@@ -29,6 +29,7 @@ export function rowToTask(r) {
     createdAt: r.created_at ?? null,
     completedAt: r.completed_at ?? null,
     updatedAt: r.updated_at ?? null,
+    isKnowledge: r.is_knowledge ?? false,
   };
 }
 
@@ -55,8 +56,8 @@ export async function insertTaskRow(db, input) {
     `INSERT INTO tasks
        (id, title, project_id, priority, due_date, reminder, repeat, repeat_custom,
         note, subtasks, pomodoro_estimate, pomodoro_completed, total_focus_time,
-        completed, flagged, tags, position, created_at, completed_at, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+        completed, flagged, tags, position, created_at, completed_at, updated_at, is_knowledge)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
      RETURNING *`,
     [
       id,
@@ -79,6 +80,7 @@ export async function insertTaskRow(db, input) {
       now,
       null,
       now,
+      input.isKnowledge ?? false,
     ],
   );
   return rowToTask(result.rows[0]);

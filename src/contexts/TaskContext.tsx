@@ -26,6 +26,7 @@ import type {
 } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
+import { uuid } from '../utils/uuid';
 import { loadRemoteAppState, saveRemoteAppState, fetchChanges, completeTaskRemote } from '../utils/remoteState';
 import type { RemoteAppState, DeletedIds, ChangesResponse } from '../utils/remoteState';
 import { getDescendantFolderIds } from '../utils/folderUtils';
@@ -129,7 +130,7 @@ interface TaskContextType {
   setActiveTagId: (id: string | null) => void;
   setActiveFolderId: (id: string | null) => void;
   setSearchQuery: (q: string) => void;
-  addTask: (title: string, projectId?: string | null, priority?: Priority, pomodoroEstimate?: number) => Task;
+  addTask: (title: string, projectId?: string | null, priority?: Priority, pomodoroEstimate?: number, isKnowledge?: boolean) => Task;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   completeTask: (id: string) => Task | null;
@@ -190,10 +191,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     projectId: string | null = null,
     priority: Priority = 'none',
     pomodoroEstimate: number = 1,
+    isKnowledge: boolean = false,
   ): Task => {
     const now = dateUtils.now();
     const newTask: Task = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       title,
       projectId,
       priority,
@@ -212,6 +214,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       createdAt: now,
       completedAt: null,
       updatedAt: now,
+      isKnowledge,
     };
     setTasks((prev) => {
       // Vị trí kế tiếp trong cùng dự án (cuối danh sách).
@@ -300,7 +303,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
   const addSubtask = useCallback((taskId: string, title: string) => {
     const subtask: Subtask = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       title,
       completed: false,
       createdAt: dateUtils.now(),
@@ -350,7 +353,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const addProject = useCallback((name: string, color: string, folderId: string | null = null): Project => {
     const now = dateUtils.now();
     const newProject: Project = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       name,
       color,
       isVisible: true,
@@ -399,7 +402,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const addFolder = useCallback((name: string, color: string, parentId: string | null = null): Folder => {
     const now = dateUtils.now();
     const newFolder: Folder = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       name,
       color,
       projectIds: [],
@@ -434,7 +437,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const addTag = useCallback((name: string, color: string): Tag => {
     const now = dateUtils.now();
     const newTag: Tag = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       name,
       color,
       createdAt: now,
@@ -650,30 +653,31 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const getFilteredTasks = useCallback((): Task[] => {
     let filtered: Task[] = [];
+    const normalTasks = tasks.filter((t) => !t.isKnowledge);
 
     switch (activeView) {
       case 'today':
-        filtered = tasks.filter(
+        filtered = normalTasks.filter(
           (t) => !t.completed && dateUtils.isToday(t.dueDate),
         );
         break;
 
       case 'tomorrow':
-        filtered = tasks.filter((t) => !t.completed && dateUtils.isTomorrow(t.dueDate));
+        filtered = normalTasks.filter((t) => !t.completed && dateUtils.isTomorrow(t.dueDate));
         break;
 
       case 'this-week':
-        filtered = tasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate));
+        filtered = normalTasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate));
         break;
 
       case 'planned':
         // Tất cả task có dueDate hợp lệ, chưa hoàn thành
-        filtered = tasks.filter((t) => !t.completed && hasValidDueDate(t));
+        filtered = normalTasks.filter((t) => !t.completed && hasValidDueDate(t));
         break;
 
       case 'completed':
         // Task đã hoàn thành, sắp xếp completedAt giảm dần, lấy 100 cái gần nhất
-        filtered = tasks
+        filtered = normalTasks
           .filter((t) => t.completed)
           .sort((a, b) => {
             const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
@@ -684,26 +688,26 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         break;
 
       case 'high-priority':
-        filtered = tasks.filter((t) => !t.completed && t.priority === 'high');
+        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'high');
         break;
 
       case 'medium-priority':
-        filtered = tasks.filter((t) => !t.completed && t.priority === 'medium');
+        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'medium');
         break;
 
       case 'low-priority':
-        filtered = tasks.filter((t) => !t.completed && t.priority === 'low');
+        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'low');
         break;
 
       case 'project':
-        filtered = tasks.filter(
+        filtered = normalTasks.filter(
           (t) => !t.completed && t.projectId === activeProjectId,
         );
         break;
 
       case 'tag':
         // Filter theo tag duoc chon
-        filtered = tasks.filter(
+        filtered = normalTasks.filter(
           (t) => !t.completed && activeTagId !== null && (t.tags || []).includes(activeTagId),
         );
         break;
@@ -718,15 +722,19 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         const folderProjectIds = new Set(
           projects.filter((p) => p.folderId && subtreeFolderIds.has(p.folderId)).map((p) => p.id),
         );
-        filtered = tasks.filter(
+        filtered = normalTasks.filter(
           (t) => !t.completed && t.projectId !== null && folderProjectIds.has(t.projectId),
         );
         break;
       }
 
+      case 'knowledge':
+        filtered = tasks.filter((t) => !!t.isKnowledge);
+        break;
+
       default:
         // Tất cả task chưa hoàn thành
-        filtered = tasks.filter((t) => !t.completed);
+        filtered = normalTasks.filter((t) => !t.completed);
         break;
     }
 

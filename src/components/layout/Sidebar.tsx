@@ -79,6 +79,12 @@ const IconChevron = ({ down }: { down?: boolean }) => (
   </svg>
 );
 
+const IconBook = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 11.55C9.64 9.35 6.48 8 3 8v11c3.48 0 6.64 1.35 9 3.55 2.36-2.2 5.52-3.55 9-3.55V8c-3.48 0-6.64 1.35-9 3.55zM12 2c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+  </svg>
+);
+
 // Cau hinh smart views
 interface NavView {
   id: ViewType;
@@ -93,6 +99,7 @@ const SMART_VIEWS: NavView[] = [
   { id: 'planned',   label: 'Planned',   icon: <IconList /> },
   { id: 'events',    label: 'Events',    icon: <IconStar /> },
   { id: 'completed', label: 'Completed', icon: <IconCheck /> },
+  { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
 ];
 
 // ============================================================
@@ -116,6 +123,7 @@ const Sidebar: React.FC = () => {
     setActiveFolderId,
   } = useTaskContext();
 
+  const normalTasks = tasks.filter((t) => !t.isKnowledge);
   const { settings, setOpenModal } = useAppContext();
   const [listsExpanded, setListsExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
@@ -146,17 +154,17 @@ const Sidebar: React.FC = () => {
 
   // Task count cho moi project (chi dem task chua hoan thanh)
   const getProjectStats = (projectId: string) =>
-    getTasksStats(tasks.filter((t) => t.projectId === projectId && !t.completed));
+    getTasksStats(normalTasks.filter((t) => t.projectId === projectId && !t.completed));
 
   const getFolderStats = (folderId: string) => {
     // Đếm cả cây con (folder lồng nhiều cấp).
     const subtree = new Set(getDescendantFolderIds(folders, folderId));
     const folderProjectIds = projects.filter(p => p.folderId && subtree.has(p.folderId)).map(p => p.id);
-    return getTasksStats(tasks.filter(t => !t.completed && t.projectId && folderProjectIds.includes(t.projectId)));
+    return getTasksStats(normalTasks.filter(t => !t.completed && t.projectId && folderProjectIds.includes(t.projectId)));
   };
 
   const getTagStats = (tagId: string) =>
-    getTasksStats(tasks.filter(t => !t.completed && (t.tags || []).includes(tagId)));
+    getTasksStats(normalTasks.filter(t => !t.completed && (t.tags || []).includes(tagId)));
 
   // Task count cho smart views
   const hasValidDueDate = (task: Task) =>
@@ -171,17 +179,19 @@ const Sidebar: React.FC = () => {
 
     switch (viewId) {
       case 'today':
-        return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(todayStr)));
+        return getTasksStats(normalTasks.filter((t) => !t.completed && t.dueDate?.startsWith(todayStr)));
       case 'tomorrow':
-        return getTasksStats(tasks.filter((t) => !t.completed && t.dueDate?.startsWith(tomorrowStr)));
+        return getTasksStats(normalTasks.filter((t) => !t.completed && t.dueDate?.startsWith(tomorrowStr)));
       case 'this-week':
-        return getTasksStats(tasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate)));
+        return getTasksStats(normalTasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate)));
       case 'planned':
-        return getTasksStats(tasks.filter((t) => !t.completed && hasValidDueDate(t)));
+        return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)));
       case 'completed':
-        return getTasksStats(tasks.filter((t) => t.completed));
+        return getTasksStats(normalTasks.filter((t) => t.completed));
       case 'events':
-        return getTasksStats(tasks.filter((t) => !t.completed && hasValidDueDate(t)));
+        return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)));
+      case 'knowledge':
+        return { count: tasks.filter((t) => !!t.isKnowledge).length, time: 0 };
       default:
         return { count: 0, time: 0 };
     }

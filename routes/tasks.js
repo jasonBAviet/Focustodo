@@ -226,6 +226,7 @@ export function createTasksRouter(pool, auth) {
         tags: 'tags' in body ? JSON.stringify(body.tags) : cur.tags,
         position: 'position' in body ? body.position : cur.position,
         completed_at: 'completed' in body ? (body.completed ? cur.completed_at ?? now : null) : cur.completed_at,
+        is_knowledge: 'isKnowledge' in body ? body.isKnowledge : cur.is_knowledge,
         updated_at: now,
       };
 
@@ -233,13 +234,15 @@ export function createTasksRouter(pool, auth) {
         `UPDATE tasks SET
           title=$1, project_id=$2, priority=$3, due_date=$4, reminder=$5,
           repeat=$6, repeat_custom=$7, note=$8, subtasks=$9, pomodoro_estimate=$10,
-          completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16
-         WHERE id=$17 RETURNING *`,
+          completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16,
+          is_knowledge=$17
+         WHERE id=$18 RETURNING *`,
         [
           updated.title, updated.project_id, updated.priority, updated.due_date,
           updated.reminder, updated.repeat, updated.repeat_custom, updated.note,
           updated.subtasks, updated.pomodoro_estimate, updated.completed,
-          updated.flagged, updated.tags, updated.position, updated.completed_at, updated.updated_at, id,
+          updated.flagged, updated.tags, updated.position, updated.completed_at, updated.updated_at,
+          updated.is_knowledge, id,
         ],
       );
 

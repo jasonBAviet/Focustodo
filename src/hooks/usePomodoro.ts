@@ -5,6 +5,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { PomodoroPhase, PomodoroSession, Settings } from '../types';
 import { dateUtils } from '../utils/dateUtils';
+import { uuid } from '../utils/uuid';
 
 // ----------------------------------------------------------
 // Kiểu trạng thái nội bộ của Pomodoro
@@ -123,7 +124,7 @@ function usePomodoro({
 
     // Tạo session record
     const session: PomodoroSession = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       taskId: current.currentTaskId,
       taskTitle: current.currentTaskTitle,
       type: current.phase as 'focus' | 'short-break' | 'long-break',

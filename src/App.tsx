@@ -6,6 +6,7 @@ import { PomodoroProvider } from './contexts/PomodoroContext';
 import Sidebar from './components/layout/Sidebar';
 import TaskList from './components/task/TaskList';
 import TaskPanel from './components/layout/TaskPanel';
+import KnowledgeHub from './components/knowledge/KnowledgeHub';
 import AddProjectDialog from './components/common/AddProjectDialog';
 import AddFolderDialog from './components/common/AddFolderDialog';
 import AddTagDialog from './components/common/AddTagDialog';
@@ -47,7 +48,7 @@ const AppInner: React.FC = () => {
   const handleShowReport = () => setShowReport((v) => !v);
 
   return (
-    <div className={`app-layout ${!selectedTaskId ? 'panel-hidden' : ''}`}>
+    <div className={`app-layout ${(!selectedTaskId || activeView === 'knowledge') ? 'panel-hidden' : ''}`}>
       {/* Header Actions (Top Right) */}
       <HeaderActions onShowReport={handleShowReport} />
 
@@ -58,15 +59,15 @@ const AppInner: React.FC = () => {
       <main className="main-content">
         {showReport ? (
           <ReportPage onClose={handleShowReport} />
+        ) : activeView === 'knowledge' ? (
+          <KnowledgeHub />
         ) : (
-          <>
-            <TaskList />
-          </>
+          <TaskList />
         )}
       </main>
 
       {/* Right panel (task detail) */}
-      {selectedTaskId && <TaskPanel />}
+      {selectedTaskId && activeView !== 'knowledge' && <TaskPanel />}
 
       {/* Command palette (Ctrl/Cmd+K) + quick-capture */}
       <CommandPalette onToggleReport={handleShowReport} />
