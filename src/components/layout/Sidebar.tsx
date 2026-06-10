@@ -105,7 +105,12 @@ const SMART_VIEWS: NavView[] = [
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  /** Called after a navigation action — used to close the mobile drawer. */
+  onNavigate?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   const {
     tasks,
     projects,
@@ -203,6 +208,7 @@ const Sidebar: React.FC = () => {
     setActiveTagId(null);
     setActiveFolderId(null);
     setSearchQuery('');
+    onNavigate?.();
   };
 
   const handleProjectClick = (projectId: string) => {
@@ -211,6 +217,7 @@ const Sidebar: React.FC = () => {
     setActiveTagId(null);
     setActiveFolderId(null);
     setSearchQuery('');
+    onNavigate?.();
   };
 
   const handleTagClick = (tagId: string) => {
@@ -219,6 +226,7 @@ const Sidebar: React.FC = () => {
     setActiveProjectId(null);
     setActiveFolderId(null);
     setSearchQuery('');
+    onNavigate?.();
   };
 
   const handleFolderFilterClick = (folderId: string) => {
@@ -227,6 +235,7 @@ const Sidebar: React.FC = () => {
     setActiveProjectId(null);
     setActiveTagId(null);
     setSearchQuery('');
+    onNavigate?.();
   };
 
   const toggleFolder = (folderId: string) => {

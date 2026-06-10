@@ -15,14 +15,43 @@ interface ProjectSlice {
   minutes: number;
 }
 
-const ProjectTimeDistribution: React.FC = () => {
+interface ProjectTimeDistributionProps {
+  selectedFolderId?: string;
+  selectedProjectId?: string;
+  selectedTagId?: string;
+}
+
+const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
+  selectedFolderId = 'all',
+  selectedProjectId = 'all',
+  selectedTagId = 'all',
+}) => {
   const { tasks, projects, pomodoroSessions } = useTaskContext();
 
   const slices = useMemo<ProjectSlice[]>(() => {
-    const taskById = new Map(tasks.map((t) => [t.id, t]));
+    // ---- Lọc danh sách task theo bộ lọc chọn ----
+    const filteredTasks = tasks.filter((task) => {
+      if (selectedFolderId !== 'all') {
+        if (!task.projectId) return false;
+        const project = projects.find((p) => p.id === task.projectId);
+        if (!project || project.folderId !== selectedFolderId) return false;
+      }
+      if (selectedProjectId !== 'all') {
+        if (task.projectId !== selectedProjectId) return false;
+      }
+      if (selectedTagId !== 'all') {
+        if (!task.tags || !task.tags.includes(selectedTagId)) return false;
+      }
+      return true;
+    });
+
+    const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
+    const taskById = new Map(filteredTasks.map((t) => [t.id, t]));
     const minutesByProject = new Map<string, number>();
 
-    const focusSessions = pomodoroSessions.filter((s) => s.type === 'focus');
+    const focusSessions = pomodoroSessions
+      .filter((s) => s.type === 'focus')
+      .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
 
     if (focusSessions.length > 0) {
       // Tính từ session thật
@@ -33,7 +62,7 @@ const ProjectTimeDistribution: React.FC = () => {
       });
     } else {
       // Fallback: gom theo task.totalFocusTime
-      tasks.forEach((t) => {
+      filteredTasks.forEach((t) => {
         const mins = t.totalFocusTime ?? 0;
         if (mins <= 0) return;
         const pid = t.projectId ?? 'inbox';
@@ -55,7 +84,7 @@ const ProjectTimeDistribution: React.FC = () => {
       })
       .filter((s) => s.minutes > 0)
       .sort((a, b) => b.minutes - a.minutes);
-  }, [tasks, projects, pomodoroSessions]);
+  }, [tasks, projects, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId]);
 
   if (slices.length === 0) {
     return (

@@ -28,9 +28,24 @@ function rowToTag(r) {
     createdAt: r.created_at ?? null, updatedAt: r.updated_at ?? null,
   };
 }
+function rowToPomodoroRecord(r) {
+  return {
+    id: r.id,
+    taskId: r.task_id ?? null,
+    taskTitle: r.task_title ?? null,
+    startTime: r.start_time,
+    endTime: r.end_time ?? null,
+    breakStart: r.break_start ?? null,
+    breakEnd: r.break_end ?? null,
+    completed: r.completed ?? false,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    isDeleted: r.is_deleted ?? false,
+  };
+}
 
-const MAPPERS = { tasks: rowToTask, projects: rowToProject, folders: rowToFolder, tags: rowToTag };
-const ALL_TYPES = ['tasks', 'projects', 'folders', 'tags'];
+const MAPPERS = { tasks: rowToTask, projects: rowToProject, folders: rowToFolder, tags: rowToTag, pomodoro_records: rowToPomodoroRecord };
+const ALL_TYPES = ['tasks', 'projects', 'folders', 'tags', 'pomodoro_records'];
 
 export function createChangesRouter(pool, auth) {
   const router = Router();

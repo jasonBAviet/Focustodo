@@ -84,17 +84,43 @@ const StatCard: React.FC<StatCardProps> = ({ data }) => {
 interface StatCardsProps {
   accentRed?: string;
   accentBlue?: string;
+  selectedFolderId?: string;
+  selectedProjectId?: string;
+  selectedTagId?: string;
 }
 
 const StatCards: React.FC<StatCardsProps> = ({
   accentRed = '#f25f5c',
   accentBlue = '#4cc9f0',
+  selectedFolderId = 'all',
+  selectedProjectId = 'all',
+  selectedTagId = 'all',
 }) => {
-  const { tasks, pomodoroSessions } = useTaskContext();
+  const { tasks, projects, pomodoroSessions, pomodoroRecords } = useTaskContext();
 
   const stats = useMemo(() => {
-    // ---- Focus Time (phút) - tính từ pomodoro session thật ----
-    const focusSessions = pomodoroSessions.filter((s) => s.type === 'focus');
+    // ---- Lọc danh sách task theo bộ lọc chọn ----
+    const filteredTasks = tasks.filter((task) => {
+      if (selectedFolderId !== 'all') {
+        if (!task.projectId) return false;
+        const project = projects.find((p) => p.id === task.projectId);
+        if (!project || project.folderId !== selectedFolderId) return false;
+      }
+      if (selectedProjectId !== 'all') {
+        if (task.projectId !== selectedProjectId) return false;
+      }
+      if (selectedTagId !== 'all') {
+        if (!task.tags || !task.tags.includes(selectedTagId)) return false;
+      }
+      return true;
+    });
+
+    const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
+
+    // ---- Focus Time (phút) - lọc từ session tập trung ----
+    const focusSessions = pomodoroSessions
+      .filter((s) => s.type === 'focus')
+      .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
 
     const totalFocusTime = focusSessions.reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
@@ -107,15 +133,54 @@ const StatCards: React.FC<StatCardsProps> = ({
       .reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
     // ---- Completed tasks ----
-    const totalCompleted = tasks.filter((t) => t.completed).length;
+    const totalCompleted = filteredTasks.filter((t) => t.completed).length;
 
-    const weekCompleted = tasks.filter(
+    const weekCompleted = filteredTasks.filter(
       (t) => t.completed && isInWeek(t.completedAt),
     ).length;
 
-    const todayCompleted = tasks.filter(
+    const todayCompleted = filteredTasks.filter(
       (t) => t.completed && isToday(t.completedAt),
     ).length;
+
+    // ---- On-time Completion Rate ----
+    const completedTasks = filteredTasks.filter(t => t.completed);
+    const tasksWithDueDate = completedTasks.filter(t => t.dueDate);
+    let onTimeRate = 0;
+    if (tasksWithDueDate.length > 0) {
+      const onTimeTasks = tasksWithDueDate.filter(t => {
+        if (!t.completedAt || !t.dueDate) return false;
+        // Compare dates without time
+        const due = new Date(t.dueDate);
+        due.setHours(23, 59, 59, 999);
+        const comp = new Date(t.completedAt);
+        return comp <= due;
+      });
+      onTimeRate = Math.round((onTimeTasks.length / tasksWithDueDate.length) * 100);
+    } else if (completedTasks.length > 0) {
+      onTimeRate = 100; // all without due dates treated as on time
+    }
+
+    // ---- Estimated vs Actual Ratio ----
+    let estVsAct = 0;
+    const tasksWithEstimate = completedTasks.filter(t => t.pomodoroEstimate && t.pomodoroEstimate > 0);
+    if (tasksWithEstimate.length > 0) {
+      let totalEst = 0;
+      let totalAct = 0;
+      tasksWithEstimate.forEach(t => {
+        totalEst += t.pomodoroEstimate;
+        totalAct += (t.pomodoroCompleted || 0);
+      });
+      estVsAct = totalEst > 0 ? Math.round((totalAct / totalEst) * 100) : 0;
+    }
+
+    // ---- Interruption Rate ----
+    let interruptionRate = 0;
+    const filteredRecords = pomodoroRecords.filter(r => r.taskId && filteredTaskIds.has(r.taskId));
+    if (filteredRecords.length > 0) {
+      const interrupted = filteredRecords.filter(r => !r.completed);
+      interruptionRate = Math.round((interrupted.length / filteredRecords.length) * 100);
+    }
 
     return {
       totalFocusTime,
@@ -124,8 +189,11 @@ const StatCards: React.FC<StatCardsProps> = ({
       totalCompleted,
       weekCompleted,
       todayCompleted,
+      onTimeRate,
+      estVsAct,
+      interruptionRate,
     };
-  }, [tasks, pomodoroSessions]);
+  }, [tasks, projects, pomodoroSessions, pomodoroRecords, selectedFolderId, selectedProjectId, selectedTagId]);
 
   // Định dạng phút -> h hoặc h m
   function fmtMin(minutes: number): string {
@@ -162,6 +230,21 @@ const StatCards: React.FC<StatCardsProps> = ({
       label: 'Completed Today',
       value: String(stats.todayCompleted),
       color: 'blue',
+    },
+    {
+      label: 'On-time Rate',
+      value: `${stats.onTimeRate}%`,
+      color: 'blue',
+    },
+    {
+      label: 'Actual / Est.',
+      value: `${stats.estVsAct}%`,
+      color: 'blue',
+    },
+    {
+      label: 'Interruption Rate',
+      value: `${stats.interruptionRate}%`,
+      color: 'red',
     },
   ];
 

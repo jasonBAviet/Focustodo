@@ -46,7 +46,7 @@ const btnStyle: React.CSSProperties = {
 const AccountSettings: React.FC = () => {
   const { settings } = useAppContext();
   const {
-    tasks, projects, folders, tags, pomodoroSessions, attachments,
+    tasks, projects, folders, tags, pomodoroSessions, pomodoroRecords, attachments,
     selectedTaskId, activeView, activeProjectId, searchQuery,
   } = useTaskContext();
 
@@ -73,7 +73,7 @@ const AccountSettings: React.FC = () => {
     setBusy('save');
     setMessage(null);
     const state: RemoteAppState = {
-      tasks, projects, folders, tags, settings, pomodoroSessions, attachments,
+      tasks, projects, folders, tags, settings, pomodoroSessions, pomodoroRecords, attachments,
       selectedTaskId, activeView, activeProjectId, searchQuery,
     };
     try {
@@ -97,7 +97,7 @@ const AccountSettings: React.FC = () => {
     setBusy('clear');
     const keys = [
       'focus-tasks', 'focus-projects', 'focus-folders', 'focus-tags',
-      'focus-pomodoro-sessions', 'focus-attachments', 'focus-selected-task',
+      'focus-pomodoro-sessions', 'focus-pomodoro-records', 'focus-attachments', 'focus-selected-task',
       'focus-active-view', 'focus-active-project', 'focus-search',
       'focus-settings', 'ftd_webhook_events',
     ];
@@ -137,7 +137,8 @@ const AccountSettings: React.FC = () => {
       <div style={rowStyle}><span>Projects</span><span style={{ color: 'var(--text-primary)' }}>{projects.length}</span></div>
       <div style={rowStyle}><span>Tags</span><span style={{ color: 'var(--text-primary)' }}>{tags.length}</span></div>
       <div style={rowStyle}><span>Folders</span><span style={{ color: 'var(--text-primary)' }}>{folders.length}</span></div>
-      <div style={{ ...rowStyle, borderBottom: 'none' }}><span>Pomodoro sessions</span><span style={{ color: 'var(--text-primary)' }}>{pomodoroSessions.length}</span></div>
+      <div style={rowStyle}><span>Pomodoro sessions</span><span style={{ color: 'var(--text-primary)' }}>{pomodoroSessions.length}</span></div>
+      <div style={{ ...rowStyle, borderBottom: 'none' }}><span>Pomodoro runs</span><span style={{ color: 'var(--text-primary)' }}>{pomodoroRecords.length}</span></div>
 
       {/* Hanh dong */}
       <div style={sectionTitleStyle}>Đồng bộ</div>

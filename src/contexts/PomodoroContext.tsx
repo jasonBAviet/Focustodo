@@ -26,7 +26,7 @@ const PomodoroContext = createContext<PomodoroContextType | undefined>(undefined
 
 export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings } = useAppContext();
-  const { tasks, updateTask, addPomodoroSession } = useTaskContext();
+  const { tasks, updateTask, addPomodoroSession, addPomodoroRecord, updatePomodoroRecord } = useTaskContext();
   const [showModal, setShowModal] = useState(false);
 
   const handleSessionComplete = useCallback((session: PomodoroSession) => {
@@ -44,6 +44,8 @@ export const PomodoroProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     settings,
     onSessionComplete: handleSessionComplete,
     onFocusTimeUpdate: handleFocusTimeUpdate,
+    onPomodoroRecordStart: addPomodoroRecord,
+    onPomodoroRecordUpdate: updatePomodoroRecord,
   });
 
   const activateTask = useCallback((taskId: string, taskTitle: string) => {

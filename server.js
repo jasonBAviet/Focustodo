@@ -213,9 +213,27 @@ async function ensureSchema() {
       file_size INTEGER,
       mime_type TEXT,
       created_at TEXT NOT NULL,
+      updated_at TEXT,
       is_deleted BOOLEAN DEFAULT false
     );
     CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+    CREATE INDEX IF NOT EXISTS idx_attachments_updated_at ON attachments(updated_at);
+
+    CREATE TABLE IF NOT EXISTS pomodoro_records (
+      id TEXT PRIMARY KEY,
+      task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+      task_title TEXT,
+      start_time TEXT NOT NULL,
+      end_time TEXT,
+      break_start TEXT,
+      break_end TEXT,
+      completed BOOLEAN DEFAULT false,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      is_deleted BOOLEAN DEFAULT false
+    );
+    CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);
+    CREATE INDEX IF NOT EXISTS idx_pomodoro_records_updated_at ON pomodoro_records(updated_at);
   `);
 
   // Thêm cột is_deleted cho bảng cũ
@@ -226,6 +244,9 @@ async function ensureSchema() {
     await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
     await pool.query('ALTER TABLE attachments ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false;');
+    await pool.query('ALTER TABLE attachments ADD COLUMN IF NOT EXISTS updated_at TEXT;');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_attachments_updated_at ON attachments(updated_at);');
+    await pool.query('UPDATE attachments SET updated_at = created_at WHERE updated_at IS NULL;');
   } catch (err) {
     console.warn('[safety] Could not add is_deleted column', err.message);
   }
@@ -440,6 +461,23 @@ function rowToAttachment(r) {
     fileSize: r.file_size,
     mimeType: r.mime_type,
     createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+function rowToPomodoroRecord(r) {
+  return {
+    id: r.id,
+    taskId: r.task_id ?? null,
+    taskTitle: r.task_title ?? null,
+    startTime: r.start_time,
+    endTime: r.end_time ?? null,
+    breakStart: r.break_start ?? null,
+    breakEnd: r.break_end ?? null,
+    completed: r.completed ?? false,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    isDeleted: r.is_deleted ?? false,
   };
 }
 
@@ -448,7 +486,7 @@ function rowToAttachment(r) {
 // ============================================================
 app.get('/api/state', async (req, res) => {
   try {
-    const [tasks, projects, folders, tags, settings, ui, sessions, attachments] = await Promise.all([
+    const [tasks, projects, folders, tags, settings, ui, sessions, attachments, pomodoroRecords] = await Promise.all([
       pool.query('SELECT * FROM tasks WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at DESC'),
       pool.query('SELECT * FROM projects WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at ASC'),
       pool.query('SELECT * FROM folders WHERE is_deleted = false OR is_deleted IS NULL ORDER BY position ASC, created_at ASC'),
@@ -457,6 +495,7 @@ app.get('/api/state', async (req, res) => {
       pool.query("SELECT * FROM ui_state WHERE id = 'default'"),
       pool.query('SELECT * FROM system_logs'),
       pool.query('SELECT * FROM attachments WHERE is_deleted = false OR is_deleted IS NULL'),
+      pool.query('SELECT * FROM pomodoro_records WHERE is_deleted = false OR is_deleted IS NULL ORDER BY created_at DESC'),
     ]);
 
     const uiRow = ui.rows[0] ?? {};
@@ -468,6 +507,7 @@ app.get('/api/state', async (req, res) => {
       tags: tags.rows.map(rowToTag),
       settings: settings.rows[0] ? rowToSettings(settings.rows[0]) : null,
       pomodoroSessions: sessions.rows.map(rowToSession),
+      pomodoroRecords: pomodoroRecords.rows.map(rowToPomodoroRecord),
       attachments: attachments.rows.map(rowToAttachment),
       selectedTaskId: uiRow.selected_task_id ?? null,
       activeView: uiRow.active_view ?? 'today',
@@ -609,7 +649,7 @@ async function persistState(incoming) {
       client,
       'attachments',
       incoming.attachments ?? [],
-      ['id', 'task_id', 'file_name', 'file_url', 'file_size', 'mime_type', 'created_at'],
+      ['id', 'task_id', 'file_name', 'file_url', 'file_size', 'mime_type', 'created_at', 'updated_at'],
       (a) => [
         a.id,
         a.taskId,
@@ -618,7 +658,31 @@ async function persistState(incoming) {
         a.fileSize ?? 0,
         a.mimeType ?? '',
         a.createdAt ?? nowIso,
+        a.updatedAt ?? a.createdAt ?? nowIso,
       ],
+      'updated_at',
+    );
+
+    // --- pomodoro_records ---
+    await reconcileTable(
+      client,
+      'pomodoro_records',
+      incoming.pomodoroRecords ?? [],
+      ['id', 'task_id', 'task_title', 'start_time', 'end_time', 'break_start', 'break_end', 'completed', 'created_at', 'updated_at', 'is_deleted'],
+      (pr) => [
+        pr.id,
+        pr.taskId ?? null,
+        pr.taskTitle ?? null,
+        pr.startTime,
+        pr.endTime ?? null,
+        pr.breakStart ?? null,
+        pr.breakEnd ?? null,
+        pr.completed ?? false,
+        pr.createdAt ?? nowIso,
+        pr.updatedAt ?? pr.createdAt ?? nowIso,
+        pr.isDeleted ?? false,
+      ],
+      'updated_at',
     );
 
     // --- xoá mềm tường minh theo deletedIds (nếu client gửi) ---
@@ -628,6 +692,7 @@ async function persistState(incoming) {
     await applyDeletedIds(client, 'folders', del.folders);
     await applyDeletedIds(client, 'tags', del.tags);
     await applyDeletedIds(client, 'attachments', del.attachments);
+    await applyDeletedIds(client, 'pomodoro_records', del.pomodoroRecords);
 
     // --- settings (single row id='default') ---
     if (incoming.settings) {

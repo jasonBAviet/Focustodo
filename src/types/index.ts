@@ -38,6 +38,7 @@ export interface Subtask {
   title: string;
   completed: boolean;
   createdAt: string;
+  completedAt?: string | null;
   attachments?: Omit<Attachment, 'taskId'>[];
 }
 
@@ -108,6 +109,20 @@ export interface PomodoroSession {
   completed: boolean;
 }
 
+export interface PomodoroRecord {
+  id: string;
+  taskId: string | null;
+  taskTitle: string | null;
+  startTime: string;
+  endTime: string | null;
+  breakStart: string | null;
+  breakEnd: string | null;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted?: boolean;
+}
+
 export interface WebhookEvent {
   id: string;
   eventType: 'task.created' | 'task.completed' | 'pomodoro.completed' | 'task.reminded';
@@ -149,6 +164,7 @@ export interface AppState {
   folders: Folder[];
   tags: Tag[];
   pomodoroSessions: PomodoroSession[];
+  pomodoroRecords: PomodoroRecord[];
   attachments: Attachment[];
   webhookEvents: WebhookEvent[];
   settings: Settings;

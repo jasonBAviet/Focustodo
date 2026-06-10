@@ -3,7 +3,7 @@
 // Custom hook quản lý Pomodoro timer với đầy đủ logic chu kỳ
 // ============================================================
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import type { PomodoroPhase, PomodoroSession, Settings } from '../types';
+import type { PomodoroPhase, PomodoroSession, Settings, PomodoroRecord } from '../types';
 import { dateUtils } from '../utils/dateUtils';
 import { uuid } from '../utils/uuid';
 
@@ -27,6 +27,8 @@ interface UsePomodoroParams {
   settings: Settings;
   onSessionComplete: (session: PomodoroSession) => void;
   onFocusTimeUpdate: (taskId: string, seconds: number) => void;
+  onPomodoroRecordStart?: (record: PomodoroRecord) => void;
+  onPomodoroRecordUpdate?: (id: string, updates: Partial<PomodoroRecord>) => void;
 }
 
 // ----------------------------------------------------------
@@ -79,6 +81,8 @@ function usePomodoro({
   settings,
   onSessionComplete,
   onFocusTimeUpdate,
+  onPomodoroRecordStart,
+  onPomodoroRecordUpdate,
 }: UsePomodoroParams): UsePomodoroReturn {
   // Trạng thái ban đầu - bắt đầu ở idle
   const [state, setState] = useState<PomodoroState>({
@@ -99,6 +103,7 @@ function usePomodoro({
   const stateRef = useRef(state);
   const settingsRef = useRef(settings);
   const sessionStartRef = useRef<string>(dateUtils.now());
+  const activeRecordIdRef = useRef<string | null>(null);
 
   // Đồng bộ refs mỗi khi state/settings thay đổi
   useEffect(() => { stateRef.current = state; }, [state]);
@@ -121,6 +126,7 @@ function usePomodoro({
     clearTimer();
     const current = stateRef.current;
     const cfg = settingsRef.current;
+    const now = dateUtils.now();
 
     // Tạo session record
     const session: PomodoroSession = {
@@ -151,6 +157,33 @@ function usePomodoro({
     const nextPhase = getNextPhase(current.phase, newCycleCount, cfg);
     const nextTimeLeft = getPhaseDuration(nextPhase, cfg);
 
+    // Ghi nhận vòng đời chi tiết
+    if (current.phase === 'focus') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        const breakStart = (nextPhase === 'short-break' || nextPhase === 'long-break') ? now : null;
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            endTime: now,
+            breakStart: breakStart,
+            completed: true,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+    } else if (current.phase === 'short-break' || current.phase === 'long-break') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            breakEnd: now,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+      activeRecordIdRef.current = null;
+    }
+
     setState((prev) => ({
       ...prev,
       phase: nextPhase,
@@ -167,13 +200,35 @@ function usePomodoro({
     if (shouldAutoStart) {
       // Dùng setTimeout để đảm bảo state đã được cập nhật
       setTimeout(() => {
-        sessionStartRef.current = dateUtils.now();
+        const startNow = dateUtils.now();
+        sessionStartRef.current = startNow;
+        
+        // Tạo PomodoroRecord mới khi tự động bắt đầu focus
+        if (nextPhase === 'focus') {
+          const recordId = uuid();
+          activeRecordIdRef.current = recordId;
+          if (onPomodoroRecordStart) {
+            onPomodoroRecordStart({
+              id: recordId,
+              taskId: current.currentTaskId,
+              taskTitle: current.currentTaskTitle,
+              startTime: startNow,
+              endTime: null,
+              breakStart: null,
+              breakEnd: null,
+              completed: false,
+              createdAt: startNow,
+              updatedAt: startNow,
+            });
+          }
+        }
+        
         intervalRef.current = setInterval(() => tick(), 1000);
         setState((prev) => ({ ...prev, isRunning: true }));
       }, 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearTimer, onSessionComplete]);
+  }, [clearTimer, onSessionComplete, onPomodoroRecordStart, onPomodoroRecordUpdate]);
 
   // --------------------------------------------------------
   // Tick mỗi giây
@@ -225,11 +280,35 @@ function usePomodoro({
         prev.phase === 'idle'
           ? settingsRef.current.pomodoroLength * 60
           : prev.timeLeft;
-      sessionStartRef.current = dateUtils.now();
+      const now = dateUtils.now();
+      sessionStartRef.current = now;
+
+      // Tạo PomodoroRecord mới khi chuyển từ idle sang focus thủ công
+      if (prev.phase === 'idle') {
+        const recordId = uuid();
+        activeRecordIdRef.current = recordId;
+        if (onPomodoroRecordStart) {
+          setTimeout(() => {
+            onPomodoroRecordStart({
+              id: recordId,
+              taskId: prev.currentTaskId,
+              taskTitle: prev.currentTaskTitle,
+              startTime: now,
+              endTime: null,
+              breakStart: null,
+              breakEnd: null,
+              completed: false,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }, 0);
+        }
+      }
+
       return { ...prev, phase, timeLeft, isRunning: true };
     });
     intervalRef.current = setInterval(() => tick(), 1000);
-  }, [clearTimer, tick]);
+  }, [clearTimer, tick, onPomodoroRecordStart]);
 
   // --------------------------------------------------------
   // pause: tạm dừng đếm ngược
@@ -244,6 +323,32 @@ function usePomodoro({
   // --------------------------------------------------------
   const reset = useCallback(() => {
     clearTimer();
+    const current = stateRef.current;
+    const now = dateUtils.now();
+    if (current.phase === 'focus') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            endTime: now,
+            completed: false,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+    } else if (current.phase === 'short-break' || current.phase === 'long-break') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            breakEnd: now,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+    }
+    activeRecordIdRef.current = null;
+
     setState((prev) => ({
       ...prev,
       phase: 'idle',
@@ -251,13 +356,43 @@ function usePomodoro({
       isRunning: false,
       totalSecondsThisSession: 0,
     }));
-  }, [clearTimer]);
+  }, [clearTimer, onPomodoroRecordUpdate]);
 
   // --------------------------------------------------------
   // skip: bỏ qua phase hiện tại, chuyển sang phase tiếp theo
   // --------------------------------------------------------
   const skip = useCallback(() => {
     clearTimer();
+    const current = stateRef.current;
+    const now = dateUtils.now();
+    
+    if (current.phase === 'focus') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        const nextPhase = getNextPhase(current.phase, current.cycleCount, settingsRef.current);
+        const breakStart = (nextPhase === 'short-break' || nextPhase === 'long-break') ? now : null;
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            endTime: now,
+            breakStart: breakStart,
+            completed: false,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+    } else if (current.phase === 'short-break' || current.phase === 'long-break') {
+      const recordId = activeRecordIdRef.current;
+      if (recordId && onPomodoroRecordUpdate) {
+        setTimeout(() => {
+          onPomodoroRecordUpdate(recordId, {
+            breakEnd: now,
+            updatedAt: now,
+          });
+        }, 0);
+      }
+      activeRecordIdRef.current = null;
+    }
+
     setState((prev) => {
       const nextPhase = getNextPhase(
         prev.phase === 'idle' ? 'focus' : prev.phase,
@@ -272,7 +407,7 @@ function usePomodoro({
         isRunning: false,
       };
     });
-  }, [clearTimer]);
+  }, [clearTimer, onPomodoroRecordUpdate]);
 
   // --------------------------------------------------------
   // setTask: gán task cho phiên hiện tại

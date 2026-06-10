@@ -24,6 +24,9 @@ const AppInner: React.FC = () => {
   const { openModal, settings } = useAppContext();
   const { selectedTaskId, tasks, activeView, activeProjectId, setActiveView, setActiveProjectId } = useTaskContext();
   const [showReport, setShowReport] = useState(false);
+  // Mobile: sidebar is an off-canvas drawer toggled by the hamburger button.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const closeMobileNav = () => setMobileNavOpen(false);
 
   // Webhook integration (shared event log via WebhookProvider)
   const { onTaskReminded } = useWebhookContext();
@@ -48,12 +51,28 @@ const AppInner: React.FC = () => {
   const handleShowReport = () => setShowReport((v) => !v);
 
   return (
-    <div className={`app-layout ${(!selectedTaskId || activeView === 'knowledge') ? 'panel-hidden' : ''}`}>
+    <div className={`app-layout ${(!selectedTaskId || activeView === 'knowledge' || showReport) ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
+      {/* Mobile-only hamburger to open the sidebar drawer */}
+      <button
+        type="button"
+        className="mobile-menu-btn"
+        aria-label="Mở menu"
+        aria-expanded={mobileNavOpen}
+        onClick={() => setMobileNavOpen((v) => !v)}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M3 6h18M3 12h18M3 18h18" />
+        </svg>
+      </button>
+
+      {/* Mobile drawer backdrop (tap to close) */}
+      <div className="mobile-backdrop" onClick={closeMobileNav} aria-hidden="true" />
+
       {/* Header Actions (Top Right) */}
       <HeaderActions onShowReport={handleShowReport} />
 
       {/* Left sidebar */}
-      <Sidebar />
+      <Sidebar onNavigate={closeMobileNav} />
 
       {/* Main content */}
       <main className="main-content">
@@ -67,7 +86,7 @@ const AppInner: React.FC = () => {
       </main>
 
       {/* Right panel (task detail) */}
-      {selectedTaskId && activeView !== 'knowledge' && <TaskPanel />}
+      {selectedTaskId && activeView !== 'knowledge' && !showReport && <TaskPanel />}
 
       {/* Command palette (Ctrl/Cmd+K) + quick-capture */}
       <CommandPalette onToggleReport={handleShowReport} />

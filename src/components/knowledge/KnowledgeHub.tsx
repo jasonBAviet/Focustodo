@@ -6,6 +6,10 @@ import KnowledgeDetail from './KnowledgeDetail';
 const KnowledgeHub: React.FC = () => {
   const { getFilteredTasks, addTask, updateTask } = useTaskContext();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Mobile master-detail: the detail pane is a slide-over shown only after the
+  // user taps a note (on desktop this flag is inert — no effect outside the
+  // mobile media query).
+  const [detailOpenMobile, setDetailOpenMobile] = useState(false);
 
   // Lọc toàn bộ danh sách kiến thức từ Context
   const knowledges = getFilteredTasks(); // getFilteredTasks() sẽ lọc và trả về tasks.filter(t => t.isKnowledge) khi activeView = 'knowledge'
@@ -39,6 +43,7 @@ Dẫn chứng:
     if (newNote) {
       updateTask(newNote.id, { note: template });
       setSelectedId(newNote.id);
+      setDetailOpenMobile(true);
     }
   };
 
@@ -49,17 +54,17 @@ Dẫn chứng:
         <KnowledgeList
           knowledges={knowledges}
           selectedId={activeKnowledge ? activeKnowledge.id : null}
-          onSelect={(id) => setSelectedId(id)}
+          onSelect={(id) => { setSelectedId(id); setDetailOpenMobile(true); }}
           onAdd={handleAddKnowledge}
         />
       </div>
 
       {/* Cột phải: Chi tiết biên tập và xem trước */}
-      <div className="kh-detail-pane">
+      <div className={`kh-detail-pane${detailOpenMobile ? ' is-open' : ''}`}>
         {activeKnowledge ? (
-          <KnowledgeDetail 
-            knowledge={activeKnowledge} 
-            onClose={() => setSelectedId(null)}
+          <KnowledgeDetail
+            knowledge={activeKnowledge}
+            onClose={() => setDetailOpenMobile(false)}
           />
         ) : (
           <div className="kh-welcome-screen">
