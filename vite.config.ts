@@ -83,7 +83,9 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true, // Bat PWA trong che do dev de kiem thu
+        // Tat PWA trong dev mode de tranh xung dot module (duplicate React)
+        // PWA chi hoat dong day du trong production build (npm run build)
+        enabled: false,
       },
     }),
   ],
