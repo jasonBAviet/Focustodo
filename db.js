@@ -31,9 +31,18 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle database client:', err.message);
 });
 
-export function hashPassword(password) {
-  const salt = 'focustodo_salt_secure_123';
-  return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+// Tao salt ngau nhien 32 bytes cho moi user
+export function generateSalt() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Hash mat khau voi salt truyen vao (salt la hex string)
+export function hashPassword(password, salt) {
+  if (!salt) {
+    // Backward compat: salt co dinh cu (chi dung de kiem tra user cu, khong tao moi)
+    salt = 'focustodo_salt_secure_123';
+  }
+  return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
 }
 
 export async function ensureSchema() {
@@ -43,10 +52,18 @@ export async function ensureSchema() {
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      password_salt TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
   `);
+
+  // Them cot password_salt neu chua co (migration an toan)
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT;`);
+  } catch (err) {
+    console.warn('[schema] Khong the them password_salt vao bang users:', err.message);
+  }
 
   // 2. Tao cac bang khac neu chua ton tai
   await pool.query(`
@@ -215,31 +232,37 @@ export async function ensureSchema() {
     }
   }
 
-  // 4. Tao tai khoan mac dinh neu chua co user nao de backfill
+  // 4. Backfill user_id cho du lieu cu neu co user ton tai
+  // Khong tao default user voi mat khau co dinh nua (bao mat)
   try {
     const userCount = await pool.query('SELECT count(*)::int AS n FROM users');
     if (userCount.rows[0].n === 0) {
-      const defaultUserId = 'default_user';
-      const defaultEmail = 'default@focustodo.local';
-      // mat khau mac dinh la 'admin123'
-      const hashedPw = hashPassword('admin123');
-      const now = new Date().toISOString();
-      await pool.query(`
-        INSERT INTO users (id, email, password_hash, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (id) DO NOTHING
-      `, [defaultUserId, defaultEmail, hashedPw, now, now]);
+      // Kiem tra xem co du lieu cu khong co user_id khong
+      const orphanCheck = await pool.query(`SELECT count(*)::int AS n FROM tasks WHERE user_id IS NULL`);
+      if (orphanCheck.rows[0].n > 0) {
+        // Chi tao default user de backfill du lieu co san, mat khau ngau nhien
+        const defaultUserId = 'default_user';
+        const defaultEmail = 'default@focustodo.local';
+        const salt = generateSalt();
+        const randomPw = crypto.randomBytes(24).toString('hex');
+        const hashedPw = hashPassword(randomPw, salt);
+        const now = new Date().toISOString();
+        await pool.query(`
+          INSERT INTO users (id, email, password_hash, password_salt, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (id) DO NOTHING
+        `, [defaultUserId, defaultEmail, hashedPw, salt, now, now]);
 
-      console.log('[schema] Da tao nguoi dung mac dinh de backfill du lieu: ' + defaultEmail);
+        console.log('[schema] Da tao default user de backfill du lieu co san (khong co mat khau ro rang).');
 
-      // Backfill user_id cho du lieu cu dang NULL
-      for (const table of tables) {
-        await pool.query(`UPDATE ${table} SET user_id = $1 WHERE user_id IS NULL`, [defaultUserId]);
+        for (const table of tables) {
+          await pool.query(`UPDATE ${table} SET user_id = $1 WHERE user_id IS NULL`, [defaultUserId]);
+        }
+        console.log('[schema] Da hoan thanh backfill user_id cho cac ban ghi hien tai.');
       }
-      console.log('[schema] Da hoan thanh backfill user_id cho cac ban ghi hien tai.');
     }
   } catch (err) {
-    console.error('[schema] Loi khoi tao nguoi dung mac dinh / backfill:', err.message);
+    console.error('[schema] Loi backfill user_id:', err.message);
   }
 
   // 5. Tao cac Index can thiet

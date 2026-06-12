@@ -46,26 +46,33 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
       }
 
       try {
-        let bodyToSend: unknown = payload;
+        const token = localStorage.getItem('ftd_token');
+        const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 
+        // Neu la Slack webhook: gui qua route backend rieng (URL khong lo ra client)
         if (webhookUrl.includes('hooks.slack.com')) {
           const slackPayload = buildSlackPayload(eventType, data);
-          if (slackPayload) {
-            bodyToSend = slackPayload;
+          if (!slackPayload) {
+            setWebhookEvents((prev) => [eventRecord, ...prev].slice(0, 50));
+            return;
           }
+          const res = await fetch('/api/notify/slack', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader },
+            body: JSON.stringify({ eventType, slackPayload }),
+          });
+          eventRecord.status = res.ok ? 'success' : 'error';
+        } else {
+          // Non-Slack webhook: proxy qua /api/webhook/test (can auth)
+          const res = await fetch('/api/webhook/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader },
+            body: JSON.stringify({ webhookUrl, payload }),
+          });
+          const responseData = await res.json();
+          eventRecord.status = res.ok ? 'success' : 'error';
+          eventRecord.statusCode = responseData.code;
         }
-
-        const res = await fetch('/api/webhook/test', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webhookUrl,
-            payload: bodyToSend,
-          }),
-        });
-        const responseData = await res.json();
-        eventRecord.status = res.ok ? 'success' : 'error';
-        eventRecord.statusCode = responseData.code;
       } catch (err) {
         eventRecord.status = 'error';
         eventRecord.error = err instanceof Error ? err.message : String(err);

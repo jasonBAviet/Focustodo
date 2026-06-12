@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { randomUUID } from 'crypto';
-import { hashPassword, pool } from '../db.js';
+import { hashPassword, generateSalt, pool } from '../db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'focustodo_jwt_secret_key_987654321';
+// Bat loi ngay khi khoi dong neu thieu JWT_SECRET - khong cho phep fallback yeu
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('[SECURITY] JWT_SECRET chua duoc cau hinh trong .env. Server khong the khoi dong.');
+}
 const LEGACY_KEY = process.env.API_KEY ?? '';
 const ADMIN_KEY = process.env.ADMIN_KEY ?? '';
 
@@ -209,24 +213,30 @@ export function createUserAuthRouter() {
       if (!email || !password) {
         return res.status(400).json({ error: 'Email va password la bat buoc.' });
       }
-      if (password.length < 6) {
-        return res.status(400).json({ error: 'Mat khau phai co it nhat 6 ky tu.' });
+      // Mat khau phai it nhat 8 ky tu
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Mat khau phai co it nhat 8 ky tu.' });
+      }
+      // Validate email co ban
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'Email khong hop le.' });
       }
 
-      // Kiem tra email da ton tai chua
       const checkEmail = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
       if (checkEmail.rows.length > 0) {
         return res.status(400).json({ error: 'Email nay da duoc dang ky.' });
       }
 
       const userId = randomUUID();
-      const hashedPw = hashPassword(password);
+      // Tao salt ngau nhien rieng cho tung user
+      const salt = generateSalt();
+      const hashedPw = hashPassword(password, salt);
       const now = new Date().toISOString();
 
       await pool.query(
-        `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [userId, email, hashedPw, now, now]
+        `INSERT INTO users (id, email, password_hash, password_salt, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [userId, email, hashedPw, salt, now, now]
       );
 
       // Khi tao user moi, tu dong seed 4 project mac dinh cho user do
@@ -262,12 +272,29 @@ export function createUserAuthRouter() {
       const r = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
       const user = r.rows[0];
       if (!user) {
+        // Tra cung thong bao de tranh user enumeration
         return res.status(400).json({ error: 'Email hoac mat khau khong dung.' });
       }
 
-      const hashed = hashPassword(password);
+      // Kiem tra mat khau: ho tro ca salt moi (per-user) va salt cu (backward compat)
+      const hashed = hashPassword(password, user.password_salt || null);
       if (user.password_hash !== hashed) {
         return res.status(400).json({ error: 'Email hoac mat khau khong dung.' });
+      }
+
+      // Auto-migrate: neu user con dung salt cu, nang cap sang salt moi khi login thanh cong
+      if (!user.password_salt) {
+        try {
+          const newSalt = generateSalt();
+          const newHash = hashPassword(password, newSalt);
+          await pool.query(
+            'UPDATE users SET password_hash = $1, password_salt = $2, updated_at = $3 WHERE id = $4',
+            [newHash, newSalt, new Date().toISOString(), user.id]
+          );
+        } catch (migrateErr) {
+          // Migration that bai khong chan dang nhap
+          console.warn('[Auth] Khong the migrate password sang salt moi:', migrateErr.message);
+        }
       }
 
       const token = generateToken({ id: user.id, email: user.email });

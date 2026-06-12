@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -8,7 +10,7 @@ import fs from 'fs';
 import { pool, ensureSchema } from './db.js';
 import { createTasksRouter } from './routes/tasks.js';
 import swaggerRouter from './routes/swagger.js';
-import { createAuth, createUserAuthRouter } from './routes/auth.js';
+import { createAuth, createUserAuthRouter, authenticateUser } from './routes/auth.js';
 import { createProjectsRouter } from './routes/projects.js';
 import { createFoldersRouter } from './routes/folders.js';
 import { createTagsRouter } from './routes/tags.js';
@@ -16,6 +18,7 @@ import { createChangesRouter } from './routes/changes.js';
 import { createHooksRouter, createIntegrationsRouter } from './routes/hooks.js';
 import { createEventsRouter, notifyChange } from './routes/events.js';
 import stateRouter from './routes/state.js';
+import notifyRouter from './routes/notify.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -40,18 +43,103 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
+    // Dung exact match thay vi regex partial de tranh bypass
+    const ALLOWED_EXTS = ['.jpeg', '.jpg', '.png', '.gif'];
+    const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/gif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_EXTS.includes(ext) && ALLOWED_MIMES.includes(file.mimetype)) {
       return cb(null, true);
     }
     cb(new Error('Chi cho phep upload anh (.png, .jpg, .jpeg, .gif)'));
   }
 });
 
+// SSRF Protection: chi cho phep goi den HTTPS public URL, chan IP noi bo
+function isSafeWebhookUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  // Chi cho phep https
+  if (parsed.protocol !== 'https:') return false;
+  const host = parsed.hostname.toLowerCase();
+  // Chan IP private va loopback
+  const BLOCKED = [
+    /^localhost$/,
+    /^127\./,
+    /^0\.0\.0\.0$/,
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^::1$/,
+    /^fc00:/,
+    /^fe80:/,
+    /metadata\.google\.internal/,
+  ];
+  if (BLOCKED.some((r) => r.test(host))) return false;
+  return true;
+}
+
 const app = express();
-app.use(cors());
+
+// Security headers (helmet)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'same-site' },
+}));
+
+// CORS chi cho phep origin da dinh nghia
+const getAllowedOrigins = () => {
+  const fromEnv = (process.env.APP_ORIGIN ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const devOrigins = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:4000',
+    'http://127.0.0.1:4000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ];
+  return [...fromEnv, ...devOrigins];
+};
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Cho phep request khong co origin (curl, mobile app)
+    if (!origin) return callback(null, true);
+    if (getAllowedOrigins().includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: Origin "${origin}" khong duoc phep.`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Admin-Key'],
+}));
+
+// Rate limiting cho auth endpoints (10 request / 15 phut)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Qua nhieu yeu cau. Vui long thu lai sau 15 phut.' },
+  skip: (req) => req.method === 'OPTIONS',
+});
+
+// Rate limiting chung (200 request / 1 phut)
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Qua nhieu yeu cau. Vui long thu lai sau.' },
+  skip: (req) => req.method === 'OPTIONS',
+});
+
+app.use(generalLimiter);
 
 // Webhook raw body parser
 app.use('/api/hooks', express.raw({ type: '*/*', limit: '1mb' }));
@@ -70,7 +158,7 @@ app.use((req, res, next) => {
 });
 
 // Dang ky routes
-app.use('/api/auth', createUserAuthRouter());
+app.use('/api/auth', authLimiter, createUserAuthRouter());
 app.use('/api/state', stateRouter);
 app.use('/api/events', createEventsRouter(pool, auth));
 app.use('/api/keys', auth.keysRouter);
@@ -82,10 +170,11 @@ app.use('/api/changes', createChangesRouter(pool, auth));
 app.use('/api/integrations', createIntegrationsRouter(pool, auth));
 app.use('/api/hooks', createHooksRouter(pool));
 app.use('/api/docs', swaggerRouter);
+app.use('/api/notify', notifyRouter);
 
-// Upload endpoint
+// Upload endpoint - yeu cau xac thuc
 app.use('/uploads', express.static(uploadDir));
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', authenticateUser, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Khong co file nao duoc gui len.' });
@@ -98,16 +187,23 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
       mimeType: req.file.mimetype,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Upload]', err);
+    res.status(500).json({ error: 'Loi khi xu ly file upload.' });
   }
 });
 
-// Proxy Webhook endpoint
-app.post('/api/webhook/test', async (req, res) => {
+// Proxy Webhook endpoint - yeu cau xac thuc + SSRF protection
+app.post('/api/webhook/test', authenticateUser, async (req, res) => {
   try {
     const { webhookUrl, payload } = req.body;
     if (!webhookUrl) {
       return res.status(400).json({ error: 'webhookUrl is required' });
+    }
+    // Kiem tra SSRF: chi cho phep HTTPS public URL
+    if (!isSafeWebhookUrl(webhookUrl)) {
+      return res.status(400).json({
+        error: 'webhookUrl khong hop le. Chi chap nhan HTTPS URL den cac server public.'
+      });
     }
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -123,7 +219,7 @@ app.post('/api/webhook/test', async (req, res) => {
     console.error('Webhook proxy error:', error);
     res.status(500).json({
       status: 'error',
-      message: error instanceof Error ? error.message : String(error)
+      message: 'Khong the ket noi den webhook URL da cung cap.'
     });
   }
 });
@@ -132,8 +228,9 @@ app.get('/api/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', db: 'connected' });
-  } catch (err) {
-    res.status(503).json({ status: 'error', db: 'connection_failed', message: err.message });
+  } catch {
+    // Khong tra raw error message ra ngoai
+    res.status(503).json({ status: 'error', db: 'connection_failed' });
   }
 });
 
