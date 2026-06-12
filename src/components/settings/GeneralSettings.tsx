@@ -41,7 +41,7 @@ const btnStyle: React.CSSProperties = {
   fontSize: 'var(--text-sm)',
   cursor: 'pointer',
   transition: 'background var(--transition-fast)',
-  marginRight: 10,
+  marginRight: 8,
 };
 
 const btnPrimaryStyle: React.CSSProperties = {
@@ -53,7 +53,7 @@ const btnPrimaryStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: 100,
-  padding: '7px 10px',
+  padding: '8px 10px',
   background: 'var(--bg-input)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
@@ -73,7 +73,7 @@ const infoRowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '6px 0',
+  padding: '8px 0',
   fontSize: 'var(--text-sm)',
   borderBottom: '1px solid var(--divider)',
 };

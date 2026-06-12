@@ -115,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   };
 
   const indentStyle = (depth: number): React.CSSProperties =>
-    depth > 0 ? { paddingLeft: `calc(var(--space-4) + ${depth * 16}px)` } : {};
+    depth > 0 ? { paddingLeft: `calc(var(--space-4) + ${depth} * var(--space-4))` } : {};
 
   const renderProjectItem = (project: Project, depth = 0) => {
     const isActive = activeView === 'project' && activeProjectId === project.id;
@@ -132,12 +132,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
       >
         <span
           className="project-dot"
-          style={{ backgroundColor: project.color, width: 12, height: 12, borderRadius: '50%', display: 'inline-block' }}
+          style={{ backgroundColor: project.color }}
         />
         <span className="nav-label truncate">{project.name}</span>
         {(count > 0 || time > 0) && (
           <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>{formatMinutes(time)}</span>
             <span>{count}</span>
           </span>
         )}
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
           <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
             {(count > 0 || time > 0) && (
               <>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>{formatMinutes(time)}</span>
                 <span>{count}</span>
               </>
             )}
@@ -248,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
               <span className="nav-label">{view.label}</span>
               {(count > 0 || time > 0) && (
                 <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>{formatMinutes(time)}</span>
                   <span>{count}</span>
                 </span>
               )}
@@ -279,7 +279,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); expandAllFolders(); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '3px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', cursor: 'pointer', padding: '2px 4px', borderRadius: 'var(--radius-xs)' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
                 title="Mở rộng tất cả thư mục"
@@ -289,7 +289,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); collapseAllFolders(); }}
-                style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '3px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', cursor: 'pointer', padding: '2px 4px', borderRadius: 'var(--radius-xs)' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
                 title="Thu gọn tất cả thư mục"
@@ -330,7 +330,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
                   <span className="nav-label truncate">{tag.name}</span>
                   {(count > 0 || time > 0) && (
                     <span className="nav-meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8em' }}>{formatMinutes(time)}</span>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>{formatMinutes(time)}</span>
                       <span>{count}</span>
                     </span>
                   )}
@@ -348,10 +348,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
           className="btn btn--ghost btn--sm"
           onClick={() => setOpenModal('add-project')}
           aria-label="Thêm project mới"
-          style={{ justifyContent: 'flex-start', gap: 'var(--space-2)', flex: 1, paddingLeft: 0, color: '#f25f5c', border: 'none', outline: 'none', boxShadow: 'none' }}
+          style={{ justifyContent: 'flex-start', gap: 'var(--space-2)', flex: 1, paddingLeft: 0, color: 'var(--accent)', border: 'none', outline: 'none', boxShadow: 'none' }}
         >
           <IconPlus />
-          <span style={{ fontSize: '14px', fontWeight: 500 }}>Add Project</span>
+          <span style={{ fontSize: 'var(--text-md)', fontWeight: 500 }}>Add Project</span>
         </button>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button type="button" className="btn btn--ghost btn--icon" onClick={() => setOpenModal('add-tag')} aria-label="Add Tag" style={{ padding: '4px', cursor: 'pointer', background: 'transparent', border: 'none' }}>

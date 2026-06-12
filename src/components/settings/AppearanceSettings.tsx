@@ -106,7 +106,7 @@ const WallpaperCard: React.FC<WallpaperCardProps> = ({ item, selected, onClick }
       padding: '4px 8px',
       background: 'rgba(0,0,0,0.45)',
       color: '#fff',
-      fontSize: 11,
+      fontSize: 'var(--text-xs)',
       textAlign: 'left',
       fontWeight: 500,
     }}>

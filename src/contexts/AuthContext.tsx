@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../utils/capacitorConfig';
+import { saveToken, loadToken, clearToken, loadTokenSync } from '../utils/secureStorage';
 
 interface User {
   id: string;
@@ -19,11 +21,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Khoi tao token dong bo (chi co gia tri tren web, null tren native)
+  const [token, setToken] = useState<string | null>(loadTokenSync);
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('focustodo_token'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Tren native (Android/iOS): doc token tu Capacitor Preferences bat dong bo
+  useEffect(() => {
+    const initToken = async () => {
+      const stored = await loadToken();
+      if (stored !== token) {
+        setToken(stored);
+      }
+    };
+    initToken();
+  // Chi chay 1 lan khi mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Khi token thay doi: xac thuc voi server
   useEffect(() => {
     const fetchMe = async () => {
       if (!token) {
@@ -31,21 +48,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+        const backendUrl = getApiBaseUrl();
         const res = await fetch(`${backendUrl}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: { 'Authorization': `Bearer ${token}` },
         });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
         } else {
           // Token khong hop le hoac het han
-          logout();
+          await handleLogout();
         }
       } catch (err) {
-        console.error('Loi lay thong tin nguoi dung:', err);
+        console.error('[Auth] Loi lay thong tin nguoi dung:', err);
       } finally {
         setLoading(false);
       }
@@ -56,23 +71,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setError(null);
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const backendUrl = getApiBaseUrl();
       const res = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Dang nhap that bai.');
-      }
-      localStorage.setItem('focustodo_token', data.token);
+      if (!res.ok) throw new Error(data.error || 'Dang nhap that bai.');
+      await saveToken(data.token);
       setToken(data.token);
       setUser(data.user);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Loi khong xac dinh';
+      setError(msg);
       throw err;
     }
   };
@@ -80,31 +92,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string) => {
     setError(null);
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const backendUrl = getApiBaseUrl();
       const res = await fetch(`${backendUrl}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Dang ky that bai.');
-      }
-      localStorage.setItem('focustodo_token', data.token);
+      if (!res.ok) throw new Error(data.error || 'Dang ky that bai.');
+      await saveToken(data.token);
       setToken(data.token);
       setUser(data.user);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Loi khong xac dinh';
+      setError(msg);
       throw err;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('focustodo_token');
+  const handleLogout = async () => {
+    await clearToken();
     setToken(null);
     setUser(null);
+  };
+
+  const logout = () => {
+    handleLogout();
   };
 
   return (

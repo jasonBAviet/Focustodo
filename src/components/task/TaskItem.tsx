@@ -9,10 +9,10 @@ const TASK_ITEM_CSS = `
         .task-item {
           display: flex;
           align-items: flex-start;
-          gap: 10px;
-          padding: 10px 14px 12px;
+          gap: var(--space-2-5);
+          padding: var(--space-2-5) var(--space-3);
           border: 1px solid var(--border);
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           background: var(--bg-card, var(--task-bg));
           cursor: pointer;
           transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -38,7 +38,7 @@ const TASK_ITEM_CSS = `
           border: 1.5px solid var(--border-strong);
           background: none; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0; margin-top: 2px;
+          flex-shrink: 0; margin-top: 1px;
           transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
         }
         .task-item__check:hover { border-color: var(--accent); transform: scale(1.1); }
@@ -56,16 +56,16 @@ const TASK_ITEM_CSS = `
         }
         .task-item__body {
           flex: 1; min-width: 0;
-          display: flex; flex-direction: column; gap: 6px;
+          display: flex; flex-direction: column; gap: var(--space-1-5);
         }
         .task-item__row1 {
-          display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+          display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3);
         }
         .task-item__row2 {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;
+          display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5); min-width: 0;
         }
         .task-item__title {
-          font-size: 14px;
+          font-size: var(--text-md);
           line-height: 1.4;
           color: var(--text-primary);
         }
@@ -78,7 +78,7 @@ const TASK_ITEM_CSS = `
           display: flex; align-items: center; gap: 3px;
           background: rgba(255,255,255,0.07);
           border: 1px solid var(--border);
-          padding: 2px 6px; border-radius: 6px;
+          padding: 2px var(--space-1-5); border-radius: var(--radius-sm);
           cursor: pointer;
           transition: background var(--transition-fast), border-color var(--transition-fast);
         }
@@ -87,8 +87,8 @@ const TASK_ITEM_CSS = `
           border-color: var(--border-strong);
         }
         .task-item__due {
-          display: flex; align-items: center; gap: 4px;
-          font-size: 11px; color: var(--text-tertiary);
+          display: flex; align-items: center; gap: var(--space-1);
+          font-size: var(--text-xs); color: var(--text-tertiary);
           flex-shrink: 0; white-space: nowrap; margin-top: 1px;
         }
         .task-item__due.overdue { color: var(--priority-high); font-weight: 500; }
@@ -98,11 +98,11 @@ const TASK_ITEM_CSS = `
           align-self: flex-start;
         }
         .task-item__tag-badge {
-          font-size: 10px;
+          font-size: var(--text-xs);
           font-weight: 400;
           line-height: 1;
-          padding: 2px 8px;
-          border-radius: 999px;
+          padding: 2px var(--space-2);
+          border-radius: var(--radius-full);
           opacity: 0.5;
           cursor: default;
           transition: opacity var(--transition-fast);
@@ -111,7 +111,7 @@ const TASK_ITEM_CSS = `
         .task-item__more-btn {
           opacity: 0;
           background: none; border: none; cursor: pointer;
-          color: var(--text-tertiary); padding: 4px; border-radius: 4px;
+          color: var(--text-tertiary); padding: var(--space-1); border-radius: var(--radius-xs);
           display: flex; align-items: center; flex-shrink: 0; margin-top: 1px;
           transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
         }
@@ -152,7 +152,7 @@ const PomodoroCountdownRing: React.FC<PomodoroCountdownRingProps> = ({ timeLeft,
           style={{ transition: 'stroke-dashoffset 0.8s linear' }}
         />
       </svg>
-      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', minWidth: 18 }}>
+      <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', minWidth: 18 }}>
         {Math.ceil(timeLeft / 60)}m
       </span>
     </div>
@@ -198,9 +198,9 @@ const IconMoreVert: React.FC = () => (
 
 const PriorityDot: React.FC<{ priority: Task['priority'] }> = ({ priority }) => {
   const colors: Record<string, string> = {
-    high: '#f25f5c',
-    medium: '#f4a261',
-    low: '#2ec4b6',
+    high: 'var(--priority-high)',
+    medium: 'var(--priority-medium)',
+    low: 'var(--priority-low)',
     none: 'transparent',
   };
   if (priority === 'none') return null;
@@ -312,7 +312,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
                 {Array.from({ length: Math.min(task.pomodoroEstimate, 4) }).map((_, i) => (
                   <TomatoIconDot key={i} done={i < task.pomodoroCompleted} />
                 ))}
-                <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginLeft: 2 }}>
                   {task.pomodoroCompleted}/{task.pomodoroEstimate}
                 </span>
               </div>

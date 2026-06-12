@@ -287,7 +287,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ x, y, isOpen, onClose
         }
         .tc-item-selected {
           background: var(--bg-card-hover);
-          color: var(--primary);
+          color: var(--accent);
           font-weight: 500;
         }
         .tc-has-submenu {
@@ -374,7 +374,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ x, y, isOpen, onClose
           align-items: center;
         }
         .tc-check-icon {
-          color: var(--primary);
+          color: var(--accent);
           font-weight: bold;
         }
       `}</style>

@@ -47,7 +47,7 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
 
       try {
         const token = localStorage.getItem('ftd_token');
-        const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
 
         // Neu la Slack webhook: gui qua route backend rieng (URL khong lo ra client)
         if (webhookUrl.includes('hooks.slack.com')) {

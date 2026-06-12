@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Focus Todo</string>
+    <string name="title_activity_main">Focus Todo</string>
+    <string name="package_name">com.focustodo.app</string>
+    <string name="custom_url_scheme">com.focustodo.app</string>
+</resources>

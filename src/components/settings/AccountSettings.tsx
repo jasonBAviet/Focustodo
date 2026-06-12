@@ -32,7 +32,7 @@ const rowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '7px 0',
+  padding: '8px 0',
   fontSize: 'var(--text-sm)',
   borderBottom: '1px solid var(--divider)',
 };
@@ -41,7 +41,7 @@ const btnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 6,
-  padding: '8px 14px',
+  padding: '8px 16px',
   borderRadius: 'var(--radius-md)',
   border: '1px solid var(--border)',
   background: 'var(--bg-card)',
@@ -53,9 +53,9 @@ const btnStyle: React.CSSProperties = {
 
 const logoutBtnStyle: React.CSSProperties = {
   ...btnStyle,
-  background: 'rgba(242, 95, 92, 0.1)',
-  color: '#f25f5c',
-  border: '1px solid rgba(242, 95, 92, 0.3)',
+  background: 'var(--accent-soft)',
+  color: 'var(--accent)',
+  border: '1px solid var(--accent-glow)',
 };
 
 const IconChevron = ({ expanded }: { expanded: boolean }) => (

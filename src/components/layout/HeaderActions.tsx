@@ -70,19 +70,19 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: var(--space-2);
           position: absolute;
-          top: 24px;
-          right: 32px;
+          top: var(--space-6);
+          right: var(--space-8);
           z-index: 100;
         }
         .user-email-display {
-          font-size: 13px;
+          font-size: var(--text-sm);
           color: var(--text-tertiary);
-          margin-right: 8px;
-          background: rgba(255, 255, 255, 0.05);
-          padding: 4px 10px;
-          border-radius: 12px;
+          margin-right: var(--space-2);
+          background: var(--glass-bg);
+          padding: var(--space-1) var(--space-2-5);
+          border-radius: var(--radius-full);
           max-width: 150px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -96,7 +96,7 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 6px;
+          padding: var(--space-1-5);
           border-radius: 50%;
           transition: all var(--transition-fast);
         }
@@ -105,8 +105,8 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
           background: var(--bg-card-hover);
         }
         .logout-btn:hover {
-          color: #f25f5c;
-          background: rgba(242, 95, 92, 0.1);
+          color: var(--accent);
+          background: var(--accent-soft);
         }
       `}</style>
     </div>

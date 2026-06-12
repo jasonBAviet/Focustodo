@@ -52,7 +52,7 @@ const btnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 6,
-  padding: '7px 14px',
+  padding: '8px 16px',
   borderRadius: 'var(--radius-md)',
   border: '1px solid var(--border)',
   background: 'var(--bg-card)',
@@ -83,13 +83,13 @@ const EventLogTable: React.FC<{
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
           {events.length} su kien (hien thi 20 gan nhat)
         </span>
-        <button type="button" style={{ ...btnStyle, padding: '4px 10px', fontSize: 12 }} onClick={onClear}>
+        <button type="button" style={{ ...btnStyle, padding: '4px 10px', fontSize: 'var(--text-sm)' }} onClick={onClear}>
           Clear Log
         </button>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
           <thead>
             <tr style={{ background: 'var(--bg-card)' }}>
               <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--divider)' }}>Thoi gian</th>
@@ -117,8 +117,8 @@ const EventLogTable: React.FC<{
                     <span style={{
                       display: 'inline-block',
                       padding: '2px 8px',
-                      borderRadius: 10,
-                      fontSize: 11,
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: 'var(--text-xs)',
                       fontWeight: 600,
                       background: ev.status === 'success' ? 'rgba(6,214,160,0.15)' : 'rgba(242,95,92,0.15)',
                       color: ev.status === 'success' ? '#06d6a0' : '#f25f5c',

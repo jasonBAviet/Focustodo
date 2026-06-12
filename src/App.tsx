@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TaskProvider, useTaskContext } from './contexts/TaskContext';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import { WebhookProvider, useWebhookContext } from './contexts/WebhookContext';
@@ -21,6 +21,8 @@ import OfflineIndicator from './components/pwa/OfflineIndicator';
 import InstallPrompt from './components/pwa/InstallPrompt';
 import { useReminderCheck } from './hooks/useReminderCheck';
 import { useAppRouter } from './hooks/useAppRouter';
+import { useSwipeGesture } from './hooks/useSwipeGesture';
+import { isNativeMobile } from './utils/capacitorConfig';
 import './styles/index.css';
 
 const AppInner: React.FC = () => {
@@ -49,6 +51,13 @@ const AppInner: React.FC = () => {
     setActiveView,
     setActiveProjectId,
     setShowReport
+  });
+
+  // Cu chi vuot de mo/dong sidebar tren thiet bi cam ung
+  useSwipeGesture({
+    isSidebarOpen: mobileNavOpen,
+    onSwipeRight: () => setMobileNavOpen(true),
+    onSwipeLeft: () => setMobileNavOpen(false),
   });
 
   const handleShowReport = () => setShowReport((v) => !v);
@@ -155,12 +164,22 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <AuthProvider>
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
-  </AuthProvider>
-);
+const App: React.FC = () => {
+  // Gan class 'capacitor-native' vao the <html> khi chay trong Capacitor
+  // de kich hoat cac quy tac CSS safe-area va tuy chinh native
+  useEffect(() => {
+    if (isNativeMobile()) {
+      document.documentElement.classList.add('capacitor-native');
+    }
+  }, []);
+
+  return (
+    <AuthProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </AuthProvider>
+  );
+};
 
 export default App;

@@ -18,13 +18,13 @@ const tagRowStyle = (isVisible: boolean, isActive: boolean): React.CSSProperties
   border: isActive ? '1px solid var(--accent)' : '1px solid transparent',
 });
 
-const menuBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', width: '100%', padding: '8px 16px', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--text-sm)', gap: 8, borderRadius: '4px' };
+const menuBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', width: '100%', padding: '8px 16px', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--text-sm)', gap: 8, borderRadius: 'var(--radius-xs)' };
 
 
 const scopeBadgeStyle: React.CSSProperties = {
   fontSize: 'var(--text-xs)',
   padding: '2px 6px',
-  borderRadius: '4px',
+  borderRadius: 'var(--radius-xs)',
   background: 'var(--bg-body)',
   color: 'var(--text-muted)',
   fontWeight: 500,
@@ -200,7 +200,7 @@ const TagsSettings: React.FC = () => {
 
               {/* Tag Name */}
               <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {tag.name} {tag.isVisible === false && <span style={{ fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+                {tag.name} {tag.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
               </span>
 
               {/* Scope Badge */}
@@ -271,7 +271,7 @@ const TagsSettings: React.FC = () => {
       <Dialog isOpen={!!scopeTagId} onClose={() => setScopeTagId(null)} title="Assign Scope for Tag">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetTagForScope && (
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
               Nhãn đang chọn: 
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: targetTagForScope.color }} />

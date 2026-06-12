@@ -1,7 +1,9 @@
 import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '../types';
+import { getApiBaseUrl } from './capacitorConfig';
+import { loadTokenSync } from './secureStorage';
 
 function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
-  const token = localStorage.getItem('focustodo_token');
+  const token = loadTokenSync();
   const headers: Record<string, string> = { ...extraHeaders };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -10,13 +12,13 @@ function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, s
 }
 
 async function apiFetch(path: string, method: string, body?: unknown): Promise<void> {
-  const url = `${import.meta.env.VITE_BACKEND_URL || ''}${path}`;
+  const url = `${getApiBaseUrl()}${path}`;
   const res = await fetch(url, {
     method,
     headers: getHeaders(body ? { 'Content-Type': 'application/json' } : {}),
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
+  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}`);
 }
 
 // ---- Tags ----
@@ -50,7 +52,7 @@ export const deleteFolderRemote = (id: string): Promise<void> =>
   apiFetch(`/api/folders/${encodeURIComponent(id)}`, 'DELETE');
 
 export async function completeTaskRemote(id: string, completed = true): Promise<Task | null> {
-  const url = `${import.meta.env.VITE_BACKEND_URL || ''}/api/tasks/${encodeURIComponent(id)}/complete`;
+  const url = `${getApiBaseUrl()}/api/tasks/${encodeURIComponent(id)}/complete`;
   const res = await fetch(url, {
     method: 'PATCH',
     headers: getHeaders({ 'Content-Type': 'application/json' }),
@@ -107,7 +109,7 @@ export interface ChangesResponse {
 }
 
 function backendBase(): string {
-  return import.meta.env.VITE_BACKEND_URL || '';
+  return getApiBaseUrl();
 }
 
 export async function loadRemoteAppState(): Promise<RemoteAppState | null> {

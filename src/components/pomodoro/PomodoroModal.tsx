@@ -63,7 +63,7 @@ const PomodoroModal: React.FC = () => {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
+          background: 'var(--bg-overlay)',
           zIndex: 9998,
           backdropFilter: 'blur(4px)',
         }}
@@ -77,12 +77,12 @@ const PomodoroModal: React.FC = () => {
           left: '50%',
           transform: 'translate(-50%, -50%)',
           background: 'var(--bg-card)',
-          border: '1.5px solid var(--border)',
-          borderRadius: 24,
-          padding: '24px 32px',
+          border: '1px solid var(--glass-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: 'var(--space-6) var(--space-8)',
           width: 320,
           zIndex: 9999,
-          boxShadow: '0 16px 48px rgba(0, 0, 0, 0.25)',
+          boxShadow: 'var(--shadow-lg)',
           animation: 'pomo-modal-in 0.25s ease',
         }}
       >
@@ -96,7 +96,7 @@ const PomodoroModal: React.FC = () => {
             background: 'transparent',
             border: 'none',
             color: 'var(--text-tertiary)',
-            fontSize: 24,
+            fontSize: 'var(--text-2xl)',
             cursor: 'pointer',
             lineHeight: 1,
             padding: 4,
@@ -109,7 +109,7 @@ const PomodoroModal: React.FC = () => {
         <p
           style={{
             color: 'var(--text-secondary)',
-            fontSize: 12,
+            fontSize: 'var(--text-sm)',
             textAlign: 'center',
             marginBottom: 4,
             marginTop: 0,
@@ -125,11 +125,11 @@ const PomodoroModal: React.FC = () => {
         {/* Phase label */}
         <p
           style={{
-            color: pomo.phase === 'focus' ? accentColor : '#4cc9f0',
-            fontSize: 11,
+            color: pomo.phase === 'focus' ? accentColor : 'var(--stat-blue)',
+            fontSize: 'var(--text-xs)',
             textAlign: 'center',
             fontWeight: 600,
-            margin: '0 0 16px',
+            margin: '0 0 var(--space-4)',
             letterSpacing: 2,
             textTransform: 'uppercase',
           }}
@@ -138,14 +138,14 @@ const PomodoroModal: React.FC = () => {
         </p>
 
         {/* SVG Countdown circle */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-4)', position: 'relative' }}>
           <svg width={128} height={128} style={{ transform: 'rotate(-90deg)' }}>
             {/* Track */}
             <circle cx={64} cy={64} r={CIRCLE_RADIUS}
               stroke="var(--border-strong)" strokeWidth={7} fill="none" />
             {/* Progress */}
             <circle cx={64} cy={64} r={CIRCLE_RADIUS}
-              stroke={pomo.phase === 'focus' ? accentColor : '#4cc9f0'}
+              stroke={pomo.phase === 'focus' ? accentColor : 'var(--stat-blue)'}
               strokeWidth={7}
               fill="none"
               strokeLinecap="round"
@@ -166,7 +166,7 @@ const PomodoroModal: React.FC = () => {
             <span style={{
               color: 'var(--text-primary)',
               fontWeight: 700,
-              fontSize: 28,
+              fontSize: 'var(--text-3xl)',
               fontVariantNumeric: 'tabular-nums',
               letterSpacing: 2,
             }}>
@@ -176,7 +176,7 @@ const PomodoroModal: React.FC = () => {
         </div>
 
         {/* Cycle dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-1-5)', marginBottom: 'var(--space-5)' }}>
           {Array.from({ length: settings.longBreakAfter }).map((_, i) => (
             <span key={i} style={{
               width: 10,
@@ -193,7 +193,7 @@ const PomodoroModal: React.FC = () => {
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2-5)', justifyContent: 'center' }}>
           <button
             onClick={pomo.reset}
             style={{

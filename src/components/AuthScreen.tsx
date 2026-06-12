@@ -158,7 +158,7 @@ const AuthScreen: React.FC = () => {
           min-height: 100vh;
           width: 100vw;
           background: radial-gradient(circle at top left, #1a1b2f, #0c0d14);
-          font-family: 'Inter', sans-serif;
+          font-family: var(--font-main);
           position: fixed;
           top: 0;
           left: 0;
@@ -191,61 +191,61 @@ const AuthScreen: React.FC = () => {
         .auth-card {
           width: 100%;
           max-width: 420px;
-          padding: 40px;
+          padding: var(--space-10);
           background: rgba(20, 21, 38, 0.65);
           backdrop-filter: blur(16px);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-lg);
           z-index: 10;
           transition: all 0.3s ease;
         }
 
         .auth-header {
           text-align: center;
-          margin-bottom: 30px;
+          margin-bottom: var(--space-8);
         }
 
         .auth-header h2 {
-          font-size: 28px;
+          font-size: var(--text-3xl);
           font-weight: 700;
           background: linear-gradient(135deg, #7ec8e3, #4361ee);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          margin: 0 0 10px 0;
+          margin: 0 0 var(--space-2-5) 0;
         }
 
         .auth-header p {
           color: rgba(255, 255, 255, 0.6);
-          font-size: 14px;
+          font-size: var(--text-md);
           margin: 0;
         }
 
         .auth-error {
           background: rgba(242, 95, 92, 0.15);
           border: 1px solid rgba(242, 95, 92, 0.3);
-          border-radius: 8px;
-          padding: 12px;
-          margin-bottom: 20px;
-          font-size: 13px;
-          color: #f25f5c;
+          border-radius: var(--radius-md);
+          padding: var(--space-3);
+          margin-bottom: var(--space-5);
+          font-size: var(--text-base);
+          color: var(--accent);
           text-align: center;
         }
 
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: var(--space-5);
         }
 
         .form-group {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: var(--space-2);
         }
 
         .form-group label {
-          font-size: 12px;
+          font-size: var(--text-sm);
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -254,12 +254,12 @@ const AuthScreen: React.FC = () => {
 
         .form-group input {
           width: 100%;
-          padding: 12px 16px;
+          padding: var(--space-3) var(--space-4);
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
+          border-radius: var(--radius-md);
           color: #ffffff;
-          font-size: 14px;
+          font-size: var(--text-md);
           outline: none;
           box-sizing: border-box;
           transition: border-color 0.2s, background-color 0.2s;
@@ -286,12 +286,13 @@ const AuthScreen: React.FC = () => {
           transform: translateY(-50%);
           background: transparent;
           border: none;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(255, 255, 255, 0.7);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 4px;
+          z-index: 2;
           transition: color 0.2s;
         }
 
@@ -305,8 +306,8 @@ const AuthScreen: React.FC = () => {
           background: linear-gradient(135deg, #4361ee, #3f37c9);
           color: #ffffff;
           border: none;
-          border-radius: 10px;
-          font-size: 15px;
+          border-radius: var(--radius-md);
+          font-size: var(--text-md);
           font-weight: 600;
           cursor: pointer;
           transition: opacity 0.2s, transform 0.1s;
@@ -327,12 +328,12 @@ const AuthScreen: React.FC = () => {
         }
 
         .auth-footer {
-          margin-top: 25px;
+          margin-top: var(--space-6);
           display: flex;
           justify-content: center;
           align-items: center;
-          gap: 8px;
-          font-size: 13px;
+          gap: var(--space-2);
+          font-size: var(--text-base);
           color: rgba(255, 255, 255, 0.5);
         }
 
@@ -343,7 +344,7 @@ const AuthScreen: React.FC = () => {
           font-weight: 600;
           cursor: pointer;
           padding: 0;
-          font-size: 13px;
+          font-size: var(--text-base);
         }
 
         .auth-switch-btn:hover {

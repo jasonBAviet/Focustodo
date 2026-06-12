@@ -10,9 +10,9 @@ import type { Priority } from '../../types';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
-  { value: 'high',   label: 'Cao',        color: '#f25f5c' },
-  { value: 'medium', label: 'Trung bình', color: '#f4a261' },
-  { value: 'low',    label: 'Thấp',       color: '#2ec4b6' },
+  { value: 'high',   label: 'Cao',        color: 'var(--priority-high)' },
+  { value: 'medium', label: 'Trung bình', color: 'var(--priority-medium)' },
+  { value: 'low',    label: 'Thấp',       color: 'var(--priority-low)' },
   { value: 'none',   label: 'Không',      color: '#888' },
 ];
 
@@ -462,7 +462,7 @@ const TaskPanel: React.FC = () => {
         .task-panel-title {
           flex: 1; font-size: var(--text-md); font-weight: 600;
           color: var(--text-primary); line-height: 1.4; word-break: break-word;
-          border-radius: 4px; padding: 2px 4px; margin: -2px -4px;
+          border-radius: var(--radius-xs); padding: 2px 4px; margin: -2px -4px;
           transition: background var(--transition-fast);
         }
         .task-panel-title:hover { background: var(--glass-bg-hover); }
@@ -470,40 +470,40 @@ const TaskPanel: React.FC = () => {
           flex: 1; font-size: var(--text-md); font-weight: 600;
           color: var(--text-primary); line-height: 1.4; font-family: var(--font-main);
           background: var(--bg-input); border: 1px solid var(--accent);
-          border-radius: 4px; padding: 2px 6px; outline: none;
+          border-radius: var(--radius-xs); padding: 2px 6px; outline: none;
         }
         .task-panel-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .panel-created-at { font-size: var(--text-xs); color: var(--text-tertiary); }
         .panel-footer-actions { display: flex; gap: 4px; }
         .panel-add-btn {
           font-size: var(--text-xs); font-weight: 600; color: var(--accent);
-          background: none; border: 1px solid var(--accent); border-radius: 4px;
-          padding: 4px 10px; cursor: pointer;
+          background: none; border: 1px solid var(--accent); border-radius: var(--radius-xs);
+          padding: var(--space-1) var(--space-2-5); cursor: pointer;
           transition: background var(--transition-fast), color var(--transition-fast);
         }
         .panel-add-btn:hover:not(:disabled) { background: var(--accent); color: #fff; }
         .panel-add-btn:disabled { opacity: 0.35; cursor: default; }
         .icon-btn {
           background: none; border: none; cursor: pointer;
-          color: var(--text-tertiary); padding: 4px; border-radius: 4px;
+          color: var(--text-tertiary); padding: var(--space-1); border-radius: var(--radius-xs);
           display: flex; align-items: center; justify-content: center;
           transition: color var(--transition-fast), background var(--transition-fast);
         }
         .icon-btn:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
         .task-panel-tags {
-          padding: 0 var(--panel-padding, 16px);
+          padding: 0 var(--panel-padding);
           border-bottom: 1px solid var(--divider);
         }
 
         /* ---- New task form rows ---- */
         .new-task-title-wrap {
-          padding: 8px var(--panel-padding, 16px) 10px;
+          padding: var(--space-2) var(--panel-padding) var(--space-2-5);
           border-bottom: 1px solid var(--divider);
         }
         .new-task-title-input {
           width: 100%; box-sizing: border-box;
           background: var(--bg-input); border: 1px solid var(--border);
-          border-radius: var(--radius-md); padding: 8px 12px;
+          border-radius: var(--radius-md); padding: var(--space-2) var(--space-3);
           color: var(--text-primary); font-size: var(--text-md); font-weight: 500;
           font-family: var(--font-main); outline: none;
           transition: border-color var(--transition-fast);
@@ -511,8 +511,8 @@ const TaskPanel: React.FC = () => {
         .new-task-title-input:focus { border-color: var(--accent); }
         .new-task-title-input::placeholder { color: var(--text-tertiary); }
         .tp-row {
-          display: flex; align-items: center; gap: 10px;
-          padding: 10px 0; border-bottom: 1px solid var(--divider);
+          display: flex; align-items: center; gap: var(--space-2-5);
+          padding: var(--space-2-5) 0; border-bottom: 1px solid var(--divider);
           font-size: var(--text-sm); min-height: 40px;
           position: relative;
         }
@@ -542,7 +542,7 @@ const TaskPanel: React.FC = () => {
         .tp-popover-item {
           display: flex; align-items: center; gap: 8px;
           width: 100%; padding: 6px 8px; border: none; background: none;
-          cursor: pointer; border-radius: 4px; font-size: var(--text-sm);
+          cursor: pointer; border-radius: var(--radius-xs); font-size: var(--text-sm);
           color: var(--text-secondary); font-family: var(--font-main);
           transition: background var(--transition-fast);
         }
@@ -552,20 +552,20 @@ const TaskPanel: React.FC = () => {
         .pomo-trigger {
           display: flex; align-items: center; gap: 8px;
           background: none; border: none; cursor: pointer;
-          padding: 2px 4px; border-radius: 6px;
+          padding: 2px 4px; border-radius: var(--radius-sm);
           transition: background var(--transition-fast);
         }
         .pomo-trigger:hover { background: var(--bg-card-hover); }
         .pomo-trigger__count {
-          font-weight: 600; font-size: 15px; color: var(--text-primary);
+          font-weight: 600; font-size: var(--text-md); color: var(--text-primary);
           min-width: 18px; text-align: center; font-family: var(--font-main);
         }
         .pomo-trigger__meta { font-size: var(--text-xs); color: var(--text-tertiary); }
-        .tp-note-section { padding: 12px 0; }
+        .tp-note-section { padding: var(--space-3) 0; }
         .tp-note {
           width: 100%; box-sizing: border-box;
           background: var(--bg-input); border: 1px solid var(--border);
-          border-radius: var(--radius-md); padding: 10px 12px;
+          border-radius: var(--radius-md); padding: var(--space-2-5) var(--space-3);
           color: var(--text-primary); font-size: var(--text-sm);
           font-family: var(--font-main); resize: vertical; outline: none;
           line-height: 1.6; transition: border-color var(--transition-fast);

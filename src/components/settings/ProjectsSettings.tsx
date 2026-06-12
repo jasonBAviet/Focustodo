@@ -48,7 +48,7 @@ const viewRowStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: 10,
   marginBottom: 10,
-  padding: '6px 0',
+  padding: '8px 0',
 };
 
 const projectRowStyle: React.CSSProperties = {
@@ -56,7 +56,7 @@ const projectRowStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: 10,
   marginBottom: 8,
-  padding: '7px 10px',
+  padding: '8px 12px',
   borderRadius: 'var(--radius-md)',
   background: 'var(--bg-card)',
 };

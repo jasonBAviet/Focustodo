@@ -30,7 +30,7 @@ const codeBlockStyle: React.CSSProperties = {
   padding: 12,
   borderRadius: 'var(--radius-md)',
   fontFamily: 'Consolas, Monaco, monospace',
-  fontSize: 12,
+  fontSize: 'var(--text-sm)',
   color: '#a9b7c6',
   overflowX: 'auto',
   margin: '8px 0',
@@ -47,7 +47,7 @@ const copyBtnStyle: React.CSSProperties = {
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-sm)',
   color: 'var(--text-secondary)',
-  fontSize: 11,
+  fontSize: 'var(--text-xs)',
   cursor: 'pointer',
   transition: 'all var(--transition-fast)',
 };
@@ -147,7 +147,7 @@ const ApiSchemaDoc: React.FC = () => {
           padding: '8px 12px', 
           borderRadius: 'var(--radius-sm)', 
           fontFamily: 'monospace', 
-          fontSize: 12, 
+          fontSize: 'var(--text-sm)', 
           color: 'var(--accent)',
           border: '1px solid var(--border)',
           wordBreak: 'break-all'
@@ -165,7 +165,7 @@ const ApiSchemaDoc: React.FC = () => {
           background: 'rgba(0, 0, 0, 0.1)', 
           padding: '8px 12px', 
           borderRadius: 'var(--radius-sm)', 
-          fontSize: 12, 
+          fontSize: 'var(--text-sm)', 
           color: 'var(--text-primary)',
           border: '1px solid var(--divider)'
         }}>

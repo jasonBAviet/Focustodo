@@ -41,7 +41,7 @@ const itemRowStyle = (isVisible: boolean, isActive: boolean, depth: number): Rea
   opacity: isVisible ? 1 : 0.55, cursor: 'context-menu', transition: 'background var(--transition-fast), opacity var(--transition-fast)',
 });
 
-const menuBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', width: '100%', padding: '8px 16px', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--text-sm)', gap: 8, borderRadius: '4px' };
+const menuBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', width: '100%', padding: '8px 16px', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--text-sm)', gap: 8, borderRadius: 'var(--radius-xs)' };
 
 
 const ProjectsAndFoldersSettings: React.FC = () => {
@@ -168,7 +168,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
             </svg>
           </span>
           <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 600 }}>
-            {folder.name} {folder.isVisible === false && <span style={{ fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+            {folder.name} {folder.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
           </span>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Thư mục</span>
           <Toggle
@@ -204,7 +204,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           }}
         />
         <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
-          {project.name} {project.isVisible === false && <span style={{ fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+          {project.name} {project.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
         </span>
         <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Dự án</span>
         <Toggle
@@ -304,7 +304,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
       <Dialog isOpen={!!moveProjectState} onClose={() => setMoveProjectState(null)} title="Move Project to Folder">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetProjectForMove && (
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid var(--accent)' }}>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)' }}>
               Dự án đang chọn: <strong>{targetProjectForMove.name}</strong>
             </div>
           )}
@@ -341,7 +341,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
       <Dialog isOpen={!!moveFolderState} onClose={() => setMoveFolderState(null)} title="Move Folder to parent Folder">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetFolderForMove && (
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid var(--accent)' }}>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)' }}>
               Thư mục đang chọn: <strong>{targetFolderForMove.name}</strong>
             </div>
           )}

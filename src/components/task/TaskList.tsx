@@ -13,7 +13,7 @@ import TaskContextMenu from './TaskContextMenu';
 import ContextMenu from '../common/ContextMenu';
 
 const STAT_CARD_CSS = `
-      .stat-card { display: flex; flex-direction: column; gap: 2px; }
+      .stat-card { display: flex; flex-direction: column; gap: var(--space-1); }
       .stat-card__value { font-size: var(--text-2xl); font-weight: 700; line-height: 1; }
       .stat-card__label { font-size: var(--text-xs); color: var(--text-tertiary); }
 `;
@@ -238,7 +238,7 @@ const TaskList: React.FC = () => {
         <h1 className="task-list__title">{viewLabel}</h1>
         <div className="main-header-actions">
           {/* Nút chuyển chế độ xem */}
-          <div className="view-mode-selector" style={{ display: 'flex', gap: 4, marginRight: 8, background: 'var(--bg-input, rgba(0,0,0,0.05))', borderRadius: 8, padding: 2, border: '1px solid var(--border)' }}>
+          <div className="view-mode-selector" style={{ display: 'flex', gap: 4, marginRight: 8, background: 'var(--bg-input, rgba(0,0,0,0.05))', borderRadius: 'var(--radius-md)', padding: 2, border: '1px solid var(--border)' }}>
             <button
               className={`view-mode-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
               onClick={() => setViewMode('list')}
@@ -249,7 +249,7 @@ const TaskList: React.FC = () => {
                 color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -269,7 +269,7 @@ const TaskList: React.FC = () => {
                 color: viewMode === 'calendar' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 cursor: 'pointer',
                 padding: '4px 8px',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -435,8 +435,8 @@ const TaskList: React.FC = () => {
 
       <style>{`
         .task-list-container { display: flex; flex-direction: column; height: 100%; }
-        .main-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        .main-header-actions { display: flex; gap: 8px; align-items: center; }
+        .main-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+        .main-header-actions { display: flex; gap: var(--space-2); align-items: center; }
         .task-list__title {
           font-size: var(--text-2xl);
           font-weight: 600;
@@ -444,7 +444,7 @@ const TaskList: React.FC = () => {
         }
         .task-list__empty {
           display: flex; flex-direction: column; align-items: center;
-          justify-content: center; gap: 12px; padding: 60px 0;
+          justify-content: center; gap: var(--space-3); padding: 60px 0;
           color: var(--text-tertiary); font-size: var(--text-sm);
         }
         .clear-completed-btn {
@@ -467,8 +467,8 @@ const TaskList: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 6px;
-          border-radius: 8px;
+          padding: var(--space-1-5);
+          border-radius: var(--radius-md);
           transition: all var(--transition-fast);
         }
         .sort-btn:hover {
@@ -484,7 +484,7 @@ const TaskList: React.FC = () => {
 
         /* Planned view: dùng gap lớn hơn một chút */
         .planned-view {
-          gap: 8px;
+          gap: var(--space-2);
         }
       `}</style>
     </div>

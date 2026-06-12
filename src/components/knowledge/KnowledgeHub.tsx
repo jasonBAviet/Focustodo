@@ -92,7 +92,7 @@ Dẫn chứng:
           height: 100vh;
           width: 100%;
           overflow: hidden;
-          background: var(--bg);
+          background: var(--bg-main);
         }
         .kh-sidebar-pane {
           width: 380px;
