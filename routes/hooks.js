@@ -80,7 +80,7 @@ export function createHooksRouter(pool) {
         return res.status(400).json({ error: 'Khong map duoc "title" tu payload.' });
       }
 
-      const task = await insertTaskRow(pool, mapped);
+      const task = await insertTaskRow(pool, mapped, ep.user_id || 'default_user');
       pool
         .query('UPDATE webhook_endpoints SET last_used_at = $1 WHERE integration = $2', [new Date().toISOString(), integration])
         .catch(() => {});
@@ -102,11 +102,16 @@ export function createIntegrationsRouter(pool, auth) {
   const router = Router();
   router.use(auth.requireAdmin);
 
-  router.get('/', async (_req, res) => {
+  router.get('/', async (req, res) => {
     try {
+      const userId = req.user?.id ?? 'default_user';
       // Không trả secret thô.
       const r = await pool.query(
-        'SELECT integration, mapping, default_project_id, enabled, created_at, last_used_at, (secret IS NOT NULL AND secret <> \'\') AS has_secret FROM webhook_endpoints ORDER BY created_at DESC',
+        `SELECT integration, mapping, default_project_id, enabled, created_at, last_used_at, (secret IS NOT NULL AND secret <> '') AS has_secret 
+         FROM webhook_endpoints 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC`,
+        [userId]
       );
       res.json({ data: r.rows });
     } catch (err) {
@@ -121,16 +126,18 @@ export function createIntegrationsRouter(pool, auth) {
     const integration = String(body.integration ?? '').trim();
     if (!integration) return res.status(400).json({ error: 'Truong "integration" la bat buoc.' });
     try {
+      const userId = req.user?.id ?? 'default_user';
       const now = new Date().toISOString();
       const secret = body.secret ?? crypto.randomBytes(24).toString('hex');
       await pool.query(
-        `INSERT INTO webhook_endpoints (integration, secret, mapping, default_project_id, enabled, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6)
+        `INSERT INTO webhook_endpoints (integration, secret, mapping, default_project_id, enabled, created_at, user_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
          ON CONFLICT (integration) DO UPDATE SET
            secret = COALESCE(EXCLUDED.secret, webhook_endpoints.secret),
            mapping = EXCLUDED.mapping,
            default_project_id = EXCLUDED.default_project_id,
-           enabled = EXCLUDED.enabled`,
+           enabled = EXCLUDED.enabled,
+           user_id = EXCLUDED.user_id`,
         [
           integration,
           secret,
@@ -138,6 +145,7 @@ export function createIntegrationsRouter(pool, auth) {
           body.defaultProjectId ?? null,
           body.enabled ?? true,
           now,
+          userId,
         ],
       );
       res.status(201).json({
@@ -154,7 +162,11 @@ export function createIntegrationsRouter(pool, auth) {
 
   router.delete('/:integration', async (req, res) => {
     try {
-      const r = await pool.query('DELETE FROM webhook_endpoints WHERE integration = $1 RETURNING integration', [req.params.integration]);
+      const userId = req.user?.id ?? 'default_user';
+      const r = await pool.query(
+        'DELETE FROM webhook_endpoints WHERE integration = $1 AND user_id = $2 RETURNING integration', 
+        [req.params.integration, userId]
+      );
       if (r.rows.length === 0) return res.status(404).json({ error: 'Integration khong tim thay' });
       res.json({ data: { integration: r.rows[0].integration }, message: 'Da xoa integration.' });
     } catch (err) {

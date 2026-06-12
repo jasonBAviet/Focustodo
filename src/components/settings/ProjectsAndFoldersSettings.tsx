@@ -170,7 +170,12 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 600 }}>
             {folder.name} {folder.isVisible === false && <span style={{ fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
           </span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8 }}>Thư mục</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Thư mục</span>
+          <Toggle
+            checked={folder.isVisible !== false}
+            onChange={(val) => updateFolder(folder.id, { isVisible: val })}
+            size="sm"
+          />
         </div>
         {/* Render child folders */}
         {childFolders.map((cf) => renderFolderNode(cf, depth + 1))}
@@ -201,7 +206,12 @@ const ProjectsAndFoldersSettings: React.FC = () => {
         <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
           {project.name} {project.isVisible === false && <span style={{ fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
         </span>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8 }}>Dự án</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Dự án</span>
+        <Toggle
+          checked={project.isVisible !== false}
+          onChange={(val) => updateProject(project.id, { isVisible: val })}
+          size="sm"
+        />
       </div>
     );
   };

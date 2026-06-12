@@ -7,6 +7,7 @@ import { useTaskContext } from '../../contexts/TaskContext';
 import ContextMenu from '../common/ContextMenu';
 import ColorPicker from '../common/ColorPicker';
 import Dialog from '../common/Dialog';
+import Toggle from '../common/Toggle';
 
 const sectionTitleStyle: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, marginTop: 20 };
 
@@ -204,6 +205,19 @@ const TagsSettings: React.FC = () => {
 
               {/* Scope Badge */}
               <span style={scopeBadgeStyle}>{getTagScopeText(tag)}</span>
+
+              {/* Toggle ẩn/hiện ở Sidebar */}
+              <div
+                style={{ display: 'flex', alignItems: 'center', marginLeft: 8 }}
+                onClick={(e) => e.stopPropagation()}
+                title={tag.isVisible !== false ? 'Click để ẩn nhãn trên sidebar' : 'Click để hiện nhãn trên sidebar'}
+              >
+                <Toggle
+                  checked={tag.isVisible !== false}
+                  onChange={(checked) => updateTag(tag.id, { isVisible: checked })}
+                  size="sm"
+                />
+              </div>
             </div>
           ))}
         </div>

@@ -7,6 +7,7 @@ import PomodoroScrollPicker from '../common/PomodoroScrollPicker';
 import { getVisibleTags } from '../../utils/tagScope';
 import { dateUtils } from '../../utils/dateUtils';
 import type { Priority } from '../../types';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
   { value: 'high',   label: 'Cao',        color: '#f25f5c' },
@@ -24,7 +25,9 @@ const TaskPanel: React.FC = () => {
   } = useTaskContext();
 
   const [panelWidth, setPanelWidth] = useState(280);
+  const [hasResized, setHasResized] = useState(false);
   const resizeRef = useRef(false);
+  const isMobile = useIsMobile();
 
   // Existing task editing state
   const [editingTitle, setEditingTitle] = useState(false);
@@ -65,14 +68,22 @@ const TaskPanel: React.FC = () => {
   useEffect(() => { setEditingTitle(false); }, [selectedTaskId]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--panel-width', `${panelWidth}px`);
-  }, [panelWidth]);
+    if (hasResized) {
+      document.documentElement.style.setProperty('--panel-width', `${panelWidth}px`);
+    }
+  }, [panelWidth, hasResized]);
+
+  if (isMobile && !selectedTaskId) {
+    return null;
+  }
 
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = panelWidth;
+    const panelEl = e.currentTarget.parentElement;
+    const startWidth = panelEl ? panelEl.getBoundingClientRect().width : panelWidth;
     resizeRef.current = true;
+    setHasResized(true);
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeRef.current) return;

@@ -479,33 +479,12 @@ const TaskList: React.FC = () => {
         .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
         /* Kéo-thả sắp xếp task trong project view */
-        .task-drag-row { cursor: grab; }
+        .task-drag-row { cursor: grab; flex-shrink: 0; }
         .task-drag-row.dragging { opacity: 0.45; cursor: grabbing; }
 
-        /* Planned view: card container cho moi task item */
+        /* Planned view: dùng gap lớn hơn một chút */
         .planned-view {
-          display: flex;
-          flex-direction: column;
           gap: 8px;
-        }
-        .planned-view .task-item {
-          border-bottom: none;
-          border: 1px solid var(--border);
-          border-radius: 10px;
-          padding: 10px 14px;
-          background: var(--bg-card, var(--task-bg));
-          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-          transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-        }
-        .planned-view .task-item:hover {
-          border-color: var(--border-strong);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-          background: var(--task-bg-hover);
-        }
-        .planned-view .task-item.selected {
-          border-color: var(--accent);
-          box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
-          background: var(--task-bg-selected);
         }
       `}</style>
     </div>

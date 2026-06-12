@@ -130,7 +130,10 @@ body {
 .main-task-area {
   flex: 1;
   overflow-y: auto;
-  padding: 0 var(--space-6);
+  padding: 4px var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* ============================================================
@@ -412,7 +415,7 @@ body {
   }
   .main-stats-row .stat-card__value { font-size: var(--text-lg); }
   .main-stats-row .stat-card__label { font-size: 10px; line-height: 1.2; }
-  .main-task-area { padding: 0 var(--space-4); }
+  .main-task-area { padding: 4px var(--space-4) var(--space-4); }
 
   /* Floating header buttons: tighten so all 4 fit on the right */
   .app-layout .header-actions { top: 14px; right: 12px; gap: 4px; }
@@ -516,7 +519,7 @@ body {
   .kd-attachment-delete,
   .kl-delete-item-btn,
   .subtask-delete,
-  .task-item__pomo-btn { opacity: 1 !important; }
+  .task-item__more-btn { opacity: 1 !important; }
 }
 
 /* Extra-tight phones */
@@ -524,5 +527,5 @@ body {
   .main-stats-row { gap: var(--space-1); }
   .main-stats-row .stat-card__value { font-size: var(--text-base); }
   .main-header { padding-left: var(--space-3); padding-right: var(--space-3); }
-  .main-task-area { padding: 0 var(--space-3); }
+  .main-task-area { padding: 4px var(--space-3) var(--space-3); }
 }

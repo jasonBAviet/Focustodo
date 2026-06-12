@@ -425,8 +425,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: dateUtils.now() } : p)),
     );
+    if (updates.isVisible === false && activeProjectId === id && activeView === 'project') {
+      setActiveView('today');
+      setActiveProjectId(null);
+    }
     updateProjectRemote(id, updates).catch((e) => console.warn('[updateProject]', e));
-  }, [setProjects]);
+  }, [setProjects, activeProjectId, activeView, setActiveView, setActiveProjectId]);
 
   const deleteProject = useCallback((id: string) => {
     deletedIdsRef.current.projects.push(id);
@@ -442,8 +446,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         t.projectId === id ? { ...t, projectId: null, updatedAt: dateUtils.now() } : t,
       ),
     );
+    if (activeProjectId === id && activeView === 'project') {
+      setActiveView('today');
+      setActiveProjectId(null);
+    }
     deleteProjectRemote(id).catch((e) => console.warn('[deleteProject]', e));
-  }, [setProjects, setFolders, setTasks]);
+  }, [setProjects, setFolders, setTasks, activeProjectId, activeView, setActiveView, setActiveProjectId]);
 
   // --------------------------------------------------------
   // Folder actions
@@ -472,8 +480,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const updateFolder = useCallback((id: string, updates: Partial<Folder>) => {
     setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates, updatedAt: dateUtils.now() } : f)));
+    if (updates.isVisible === false && activeFolderId === id && activeView === 'folder') {
+      setActiveView('today');
+      setActiveFolderId(null);
+    }
     updateFolderRemote(id, updates).catch((e) => console.warn('[updateFolder]', e));
-  }, [setFolders]);
+  }, [setFolders, activeFolderId, activeView, setActiveView, setActiveFolderId]);
 
   const deleteFolder = useCallback((id: string) => {
     deletedIdsRef.current.folders.push(id);
@@ -481,8 +493,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     // Đưa folder con lên gốc (parentId=null) thay vì xoá theo.
     setFolders((prev) => prev.filter((f) => f.id !== id).map((f) => (f.parentId === id ? { ...f, parentId: null, updatedAt: now } : f)));
     setProjects((prev) => prev.map((p) => p.folderId === id ? { ...p, folderId: null, updatedAt: now } : p));
+    if (activeFolderId === id && activeView === 'folder') {
+      setActiveView('today');
+      setActiveFolderId(null);
+    }
     deleteFolderRemote(id).catch((e) => console.warn('[deleteFolder]', e));
-  }, [setFolders, setProjects]);
+  }, [setFolders, setProjects, activeFolderId, activeView, setActiveView, setActiveFolderId]);
 
   // --------------------------------------------------------
   // Tag actions
@@ -510,8 +526,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const updateTag = useCallback((id: string, updates: Partial<Tag>) => {
     setTags((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: dateUtils.now() } : t)));
+    if (updates.isVisible === false && activeTagId === id && activeView === 'tag') {
+      setActiveView('today');
+      setActiveTagId(null);
+    }
     updateTagRemote(id, updates).catch((e) => console.warn('[updateTag]', e));
-  }, [setTags]);
+  }, [setTags, activeTagId, activeView, setActiveView, setActiveTagId]);
 
   const deleteTag = useCallback((id: string) => {
     deletedIdsRef.current.tags.push(id);
@@ -519,8 +539,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTasks((prev) => prev.map((task) =>
       task.tags.includes(id) ? { ...task, tags: task.tags.filter(tid => tid !== id), updatedAt: dateUtils.now() } : task
     ));
+    if (activeTagId === id && activeView === 'tag') {
+      setActiveView('today');
+      setActiveTagId(null);
+    }
     deleteTagRemote(id).catch((e) => console.warn('[deleteTag]', e));
-  }, [setTags, setTasks]);
+  }, [setTags, setTasks, activeTagId, activeView, setActiveView, setActiveTagId]);
 
   // --------------------------------------------------------
   // Lấy tên project theo id

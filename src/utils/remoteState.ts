@@ -1,13 +1,19 @@
 import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '../types';
 
-// ----------------------------------------------------------
-// Helper fetch nhỏ — fire-and-forget, caller .catch() riêng.
-// ----------------------------------------------------------
+function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const token = localStorage.getItem('focustodo_token');
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 async function apiFetch(path: string, method: string, body?: unknown): Promise<void> {
   const url = `${import.meta.env.VITE_BACKEND_URL || ''}${path}`;
   const res = await fetch(url, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: getHeaders(body ? { 'Content-Type': 'application/json' } : {}),
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
@@ -43,13 +49,11 @@ export const updateFolderRemote = (id: string, u: Partial<Folder>): Promise<void
 export const deleteFolderRemote = (id: string): Promise<void> =>
   apiFetch(`/api/folders/${encodeURIComponent(id)}`, 'DELETE');
 
-// Hoàn thành task qua endpoint granular để server sinh occurrence kế tiếp
-// (1 điểm sinh duy nhất cho task lặp). Trả task vừa sinh (nếu có).
 export async function completeTaskRemote(id: string, completed = true): Promise<Task | null> {
   const url = `${import.meta.env.VITE_BACKEND_URL || ''}/api/tasks/${encodeURIComponent(id)}/complete`;
   const res = await fetch(url, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ completed }),
   });
   if (!res.ok) throw new Error(`complete failed: ${res.statusText}`);
@@ -79,8 +83,6 @@ export interface RemoteAppState {
   activeView: ViewType;
   activeProjectId: string | null;
   searchQuery: string;
-  // Xoá mềm tường minh — server chỉ xoá theo danh sách này (reconcile đã thành
-  // upsert-only nên KHÔNG còn xoá theo vắng-mặt).
   deletedIds?: DeletedIds;
 }
 
@@ -110,7 +112,9 @@ function backendBase(): string {
 
 export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
   const url = `${backendBase()}/api/state`;
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: getHeaders()
+  });
   if (!response.ok) {
     throw new Error(`Remote state request failed: ${response.statusText}`);
   }
@@ -141,17 +145,17 @@ export async function saveRemoteAppState(state: RemoteAppState): Promise<void> {
   const url = `${backendBase()}/api/state`;
   await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ state }),
   });
 }
 
-// Delta feed: lấy thay đổi (gồm tombstone) kể từ mốc `since` (ISO). Dùng để
-// bắt kịp dữ liệu app ngoài ghi vào mà không cần reload.
 export async function fetchChanges(since: string | null): Promise<ChangesResponse | null> {
   const qs = since ? `?since=${encodeURIComponent(since)}` : '';
   const url = `${backendBase()}/api/changes${qs}`;
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: getHeaders()
+  });
   if (!response.ok) {
     throw new Error(`Changes request failed: ${response.statusText}`);
   }

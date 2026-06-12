@@ -7,23 +7,21 @@ import {
   VALID_REPEATS,
 } from './taskHelpers.js';
 
-// ============================================================
-// Public Task API - nhan/cung cap task cho he thong ben ngoai.
-// Auth + scope do server truyền vào (routes/auth.js).
-// ============================================================
 export function createTasksRouter(pool, auth) {
   const router = Router();
   const requireRead = auth.requireScope('tasks:read');
   const requireWrite = auth.requireScope('tasks:write');
 
-  // ----------------------------------------------------------
-  // GET /api/tasks  (query: projectId, priority, completed, dueDate, limit, offset)
-  // ----------------------------------------------------------
+  // GET /api/tasks
   router.get('/', requireRead, async (req, res) => {
     try {
+      const userId = req.user.id;
       const conditions = [];
       const params = [];
       const { projectId, priority, completed, dueDate, limit = 100, offset = 0 } = req.query;
+
+      params.push(userId);
+      conditions.push(`user_id = $${params.length}`);
 
       if (projectId) {
         params.push(projectId);
@@ -45,15 +43,25 @@ export function createTasksRouter(pool, auth) {
         conditions.push(`due_date = $${params.length}`);
       }
       conditions.push(`(is_deleted = false OR is_deleted IS NULL)`);
+      
       const where = `WHERE ${conditions.join(' AND ')}`;
       const limitVal = Math.min(Number(limit) || 100, 500);
       const offsetVal = Number(offset) || 0;
 
+      // limits va offset parameters o cuoi cung
+      params.push(limitVal);
+      const limitParamIdx = params.length;
+      params.push(offsetVal);
+      const offsetParamIdx = params.length;
+
       const result = await pool.query(
-        `SELECT * FROM tasks ${where} ORDER BY position ASC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-        [...params, limitVal, offsetVal],
+        `SELECT * FROM tasks ${where} ORDER BY position ASC, created_at DESC LIMIT $${limitParamIdx} OFFSET $${offsetParamIdx}`,
+        params,
       );
-      const countResult = await pool.query(`SELECT count(*)::int AS total FROM tasks ${where}`, params);
+      
+      // params cho count chi can user_id, projectId, priority, completed, dueDate
+      const countParams = params.slice(0, params.length - 2);
+      const countResult = await pool.query(`SELECT count(*)::int AS total FROM tasks ${where}`, countParams);
 
       res.json({
         data: result.rows.map(rowToTask),
@@ -67,11 +75,9 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
-  // POST /api/tasks/reorder  { projectId?, orderedIds[] }
-  // (định nghĩa trước /:id để tránh nhầm route)
-  // ----------------------------------------------------------
+  // POST /api/tasks/reorder
   router.post('/reorder', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const { orderedIds } = req.body ?? {};
     if (!Array.isArray(orderedIds)) {
       return res.status(400).json({ error: 'orderedIds[] la bat buoc.' });
@@ -81,7 +87,10 @@ export function createTasksRouter(pool, auth) {
       await client.query('BEGIN');
       const now = new Date().toISOString();
       for (let i = 0; i < orderedIds.length; i++) {
-        await client.query('UPDATE tasks SET position = $1, updated_at = $2 WHERE id = $3', [i, now, orderedIds[i]]);
+        await client.query(
+          'UPDATE tasks SET position = $1, updated_at = $2 WHERE id = $3 AND user_id = $4',
+          [i, now, orderedIds[i], userId]
+        );
       }
       await client.query('COMMIT');
       res.json({ status: 'ok', count: orderedIds.length });
@@ -94,14 +103,13 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
   // GET /api/tasks/:id
-  // ----------------------------------------------------------
   router.get('/:id', requireRead, async (req, res) => {
     try {
+      const userId = req.user.id;
       const result = await pool.query(
-        'SELECT * FROM tasks WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)',
-        [req.params.id],
+        'SELECT * FROM tasks WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)',
+        [req.params.id, userId],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Task khong tim thay' });
       res.json({ data: rowToTask(result.rows[0]) });
@@ -111,10 +119,9 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
-  // POST /api/tasks - tao task moi
-  // ----------------------------------------------------------
+  // POST /api/tasks
   router.post('/', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const body = req.body ?? {};
     if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
       return res.status(400).json({ error: 'Truong "title" la bat buoc va khong duoc rong.' });
@@ -127,12 +134,12 @@ export function createTasksRouter(pool, auth) {
     }
     try {
       if (body.projectId) {
-        const proj = await pool.query('SELECT id FROM projects WHERE id = $1', [body.projectId]);
+        const proj = await pool.query('SELECT id FROM projects WHERE id = $1 AND user_id = $2', [body.projectId, userId]);
         if (proj.rows.length === 0) {
-          return res.status(400).json({ error: `Project "${body.projectId}" khong ton tai.` });
+          return res.status(400).json({ error: `Project "${body.projectId}" khong ton tai hoac khong thuoc quyen so huu.` });
         }
       }
-      const task = await insertTaskRow(pool, body);
+      const task = await insertTaskRow(pool, body, userId);
       res.status(201).json({ data: task });
     } catch (err) {
       if (err.code === '23505') {
@@ -143,20 +150,17 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
-  // PATCH /api/tasks/:id/complete  { completed?: boolean }
-  // Hoàn thành (mặc định true). Nếu chuyển false->true và task lặp -> sinh
-  // occurrence kế tiếp (1 điểm sinh duy nhất; idempotent theo transition).
-  // ----------------------------------------------------------
+  // PATCH /api/tasks/:id/complete
   router.patch('/:id/complete', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const { id } = req.params;
     const completed = req.body?.completed !== false;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const existing = await client.query(
-        'SELECT * FROM tasks WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)',
-        [id],
+        'SELECT * FROM tasks WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)',
+        [id, userId],
       );
       if (existing.rows.length === 0) {
         await client.query('ROLLBACK');
@@ -168,13 +172,13 @@ export function createTasksRouter(pool, auth) {
       const completedAt = completed ? cur.completed_at ?? now : null;
 
       const upd = await client.query(
-        'UPDATE tasks SET completed = $1, completed_at = $2, updated_at = $3 WHERE id = $4 RETURNING *',
-        [completed, completedAt, now, id],
+        'UPDATE tasks SET completed = $1, completed_at = $2, updated_at = $3 WHERE id = $4 AND user_id = $5 RETURNING *',
+        [completed, completedAt, now, id, userId],
       );
 
       let spawned = null;
       if (completed && !wasCompleted && cur.repeat && cur.repeat !== 'none') {
-        spawned = await spawnNextOccurrence(client, cur);
+        spawned = await spawnNextOccurrence(client, cur, userId);
       }
       await client.query('COMMIT');
       res.json({ data: rowToTask(upd.rows[0]), spawned });
@@ -187,10 +191,9 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
-  // PUT /api/tasks/:id - cap nhat task (partial)
-  // ----------------------------------------------------------
+  // PUT /api/tasks/:id
   router.put('/:id', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const { id } = req.params;
     const body = req.body ?? {};
     if (body.priority && !VALID_PRIORITIES.includes(body.priority)) {
@@ -201,8 +204,8 @@ export function createTasksRouter(pool, auth) {
     }
     try {
       const existing = await pool.query(
-        'SELECT * FROM tasks WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)',
-        [id],
+        'SELECT * FROM tasks WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)',
+        [id, userId],
       );
       if (existing.rows.length === 0) return res.status(404).json({ error: 'Task khong tim thay' });
 
@@ -236,20 +239,19 @@ export function createTasksRouter(pool, auth) {
           repeat=$6, repeat_custom=$7, note=$8, subtasks=$9, pomodoro_estimate=$10,
           completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16,
           is_knowledge=$17
-         WHERE id=$18 RETURNING *`,
+         WHERE id=$18 AND user_id=$19 RETURNING *`,
         [
           updated.title, updated.project_id, updated.priority, updated.due_date,
           updated.reminder, updated.repeat, updated.repeat_custom, updated.note,
           updated.subtasks, updated.pomodoro_estimate, updated.completed,
           updated.flagged, updated.tags, updated.position, updated.completed_at, updated.updated_at,
-          updated.is_knowledge, id,
+          updated.is_knowledge, id, userId,
         ],
       );
 
-      // Nếu PUT này hoàn thành 1 task lặp (false->true) -> cũng sinh occurrence.
       let spawned = null;
       if ('completed' in body && body.completed === true && !wasCompleted && cur.repeat && cur.repeat !== 'none') {
-        spawned = await spawnNextOccurrence(pool, cur);
+        spawned = await spawnNextOccurrence(pool, cur, userId);
       }
       res.json({ data: rowToTask(result.rows[0]), spawned });
     } catch (err) {
@@ -258,15 +260,14 @@ export function createTasksRouter(pool, auth) {
     }
   });
 
-  // ----------------------------------------------------------
-  // DELETE /api/tasks/:id (soft-delete + bump updated_at cho changes-feed)
-  // ----------------------------------------------------------
+  // DELETE /api/tasks/:id
   router.delete('/:id', requireWrite, async (req, res) => {
     try {
+      const userId = req.user.id;
       const now = new Date().toISOString();
       const result = await pool.query(
-        'UPDATE tasks SET is_deleted = true, updated_at = $2 WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL) RETURNING id',
-        [req.params.id, now],
+        'UPDATE tasks SET is_deleted = true, updated_at = $2 WHERE id = $1 AND user_id = $3 AND (is_deleted = false OR is_deleted IS NULL) RETURNING id',
+        [req.params.id, now, userId],
       );
       if (result.rows.length === 0) return res.status(404).json({ error: 'Task khong tim thay' });
       res.json({ data: { id: result.rows[0].id }, message: 'Da xoa task thanh cong.' });

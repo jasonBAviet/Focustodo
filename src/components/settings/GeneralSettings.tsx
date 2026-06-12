@@ -5,7 +5,6 @@
 import React, { useRef, useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useTaskContext } from '../../contexts/TaskContext';
-import type { Priority } from '../../types';
 import { exportTasks } from '../../utils/exportUtils';
 import { importFromCSV, readFileAsText } from '../../utils/importUtils';
 
@@ -150,22 +149,6 @@ const GeneralSettings: React.FC = () => {
   };
 
   // ----------------------------------------------------------
-  // Tao du lieu mockup
-  // ----------------------------------------------------------
-  const handleGenerateMockData = () => {
-    const projects = ['inbox', 'work', 'study', 'personal'];
-    const priorities: Priority[] = ['none', 'low', 'medium', 'high'];
-    for (let i = 1; i <= 100; i++) {
-      const title = `Task Mockup ${i}`;
-      const proj = projects[Math.floor(Math.random() * projects.length)];
-      const prio = priorities[Math.floor(Math.random() * priorities.length)];
-      const estimate = Math.floor(Math.random() * 8) + 1; // 1 den 8 pomodoro
-      addTask(title, proj, prio, estimate);
-    }
-    alert('Đã tạo thành công 100 task mockup!');
-  };
-
-  // ----------------------------------------------------------
   // Focus Goal
   // ----------------------------------------------------------
   const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,12 +178,6 @@ const GeneralSettings: React.FC = () => {
           Nhập từ CSV
         </button>
         
-        <button type="button" style={btnStyle} onClick={handleGenerateMockData}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M12 4v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4m10 0V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2m10 0h-10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Tạo Mockup 100 Tasks
-        </button>
 
         {/* Input file an */}
         <input

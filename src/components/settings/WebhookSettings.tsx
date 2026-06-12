@@ -7,6 +7,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { useWebhookContext } from '../../contexts/WebhookContext';
 import type useWebhook from '../../hooks/useWebhook';
 import Toggle from '../common/Toggle';
+import ApiSchemaDoc from './ApiSchemaDoc';
 
 // ----------------------------------------------------------
 // Styles
@@ -237,6 +238,11 @@ const WebhookSettings: React.FC = () => {
         onChange={(e) => updateSettings({ externalApiUrl: e.target.value })}
         disabled={!settings.externalApiEnabled}
       />
+
+      <div style={dividerStyle} />
+
+      {/* Section API Schema */}
+      <ApiSchemaDoc />
 
       <div style={dividerStyle} />
 

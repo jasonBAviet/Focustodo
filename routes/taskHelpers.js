@@ -1,12 +1,5 @@
 import { randomUUID } from 'crypto';
 
-// ============================================================
-// Helper dùng chung cho task: mapping, vị trí, tạo task, sinh task lặp.
-// Tách ra để routes/tasks.js, recurring và routes/hooks.js cùng dùng một
-// đường tạo task (đảm bảo có position + updated_at + nổi trong /api/changes).
-// `db` có thể là pool hoặc một client trong transaction.
-// ============================================================
-
 export function rowToTask(r) {
   return {
     id: r.id,
@@ -36,28 +29,28 @@ export function rowToTask(r) {
 export const VALID_PRIORITIES = ['high', 'medium', 'low', 'none'];
 export const VALID_REPEATS = ['none', 'daily', 'weekly', 'monthly', 'custom'];
 
-// position kế tiếp trong phạm vi 1 dự án (NULL = inbox/no-project).
-export async function nextTaskPosition(db, projectId) {
+// position kế tiếp trong phạm vi 1 dự án của một user
+export async function nextTaskPosition(db, projectId, userId) {
   const r = await db.query(
     `SELECT COALESCE(MAX(position), -1) + 1 AS pos FROM tasks
-     WHERE project_id IS NOT DISTINCT FROM $1 AND (is_deleted = false OR is_deleted IS NULL)`,
-    [projectId ?? null],
+     WHERE project_id IS NOT DISTINCT FROM $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)`,
+    [projectId ?? null, userId],
   );
   return r.rows[0].pos;
 }
 
-// Tạo 1 task mới từ input (camelCase). Tự gán id/position/timestamps.
-export async function insertTaskRow(db, input) {
+// Tạo 1 task mới từ input (camelCase) kèm userId.
+export async function insertTaskRow(db, input, userId) {
   const now = new Date().toISOString();
   const projectId = input.projectId ?? null;
-  const position = input.position ?? (await nextTaskPosition(db, projectId));
+  const position = input.position ?? (await nextTaskPosition(db, projectId, userId));
   const id = input.id ?? randomUUID();
   const result = await db.query(
     `INSERT INTO tasks
        (id, title, project_id, priority, due_date, reminder, repeat, repeat_custom,
         note, subtasks, pomodoro_estimate, pomodoro_completed, total_focus_time,
-        completed, flagged, tags, position, created_at, completed_at, updated_at, is_knowledge)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+        completed, flagged, tags, position, created_at, completed_at, updated_at, is_knowledge, user_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
      RETURNING *`,
     [
       id,
@@ -81,12 +74,12 @@ export async function insertTaskRow(db, input) {
       null,
       now,
       input.isKnowledge ?? false,
+      userId
     ],
   );
   return rowToTask(result.rows[0]);
 }
 
-// ----- Recurring: tính ngày due kế tiếp -----
 function parseDate(s) {
   if (!s) return null;
   const d = new Date(s);
@@ -94,12 +87,10 @@ function parseDate(s) {
 }
 
 function fmtDate(d) {
-  // YYYY-MM-DD theo UTC để tránh trôi do timezone.
   return d.toISOString().slice(0, 10);
 }
 
 export function computeNextDue(dueDate, repeat, repeatCustom) {
-  // repeat='custom' + RRULE string (RFC5545 subset) -> engine RRULE.
   if (repeat === 'custom' && repeatCustom && /FREQ=/i.test(repeatCustom)) {
     return nextOccurrenceFromRRule(repeatCustom, dueDate);
   }
@@ -134,8 +125,7 @@ export function computeNextDue(dueDate, repeat, repeatCustom) {
   return fmtDate(d);
 }
 
-// ----- RRULE engine (subset RFC5545): FREQ, INTERVAL, BYDAY, UNTIL -----
-const RRULE_WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']; // index = getUTCDay()
+const RRULE_WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 function parseRRule(str) {
   const clean = String(str).replace(/^RRULE:/i, '').trim();
@@ -155,8 +145,6 @@ function parseUntil(v) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Tính occurrence kế tiếp NGAY SAU `fromDate` theo RRULE. Trả YYYY-MM-DD hoặc
-// null (rule không hợp lệ hoặc đã vượt UNTIL -> dừng lặp).
 export function nextOccurrenceFromRRule(rruleStr, fromDate) {
   const p = parseRRule(rruleStr);
   const freq = (p.FREQ || '').toUpperCase();
@@ -186,7 +174,6 @@ export function nextOccurrenceFromRRule(rruleStr, fromDate) {
       if (later !== undefined) {
         next.setUTCDate(d.getUTCDate() + (later - cur));
       } else {
-        // Sang tuần kế (cách interval tuần), tới BYDAY đầu tiên.
         next.setUTCDate(d.getUTCDate() + (7 - cur) + days[0] + (interval - 1) * 7);
       }
     }
@@ -203,9 +190,7 @@ export function nextOccurrenceFromRRule(rruleStr, fromDate) {
   return fmtDate(next);
 }
 
-// Sinh occurrence kế tiếp cho task lặp. `task` là row DB (snake_case) hoặc
-// object camelCase. Trả task mới (camelCase) hoặc null nếu không lặp.
-export async function spawnNextOccurrence(db, task) {
+export async function spawnNextOccurrence(db, task, userId) {
   const repeat = task.repeat ?? 'none';
   if (repeat === 'none') return null;
   const dueDate = task.due_date ?? task.dueDate ?? null;
@@ -223,9 +208,9 @@ export async function spawnNextOccurrence(db, task) {
     repeat,
     repeatCustom,
     note: task.note ?? '',
-    subtasks: [], // reset checklist cho lần lặp mới
+    subtasks: [],
     pomodoroEstimate: task.pomodoro_estimate ?? task.pomodoroEstimate ?? 1,
     flagged: false,
     tags: Array.isArray(tags) ? tags : [],
-  });
+  }, userId);
 }

@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 
-// ============================================================
-// Public Tags API (scoped: tags:read / tags:write)
-// ============================================================
 function rowToTag(r) {
   return {
     id: r.id,
@@ -22,10 +19,13 @@ export function createTagsRouter(pool, auth) {
   const requireRead = auth.requireScope('tags:read');
   const requireWrite = auth.requireScope('tags:write');
 
-  router.get('/', requireRead, async (_req, res) => {
+  // GET /api/tags
+  router.get('/', requireRead, async (req, res) => {
     try {
+      const userId = req.user.id;
       const r = await pool.query(
-        'SELECT * FROM tags WHERE is_deleted = false OR is_deleted IS NULL ORDER BY created_at ASC',
+        'SELECT * FROM tags WHERE user_id = $1 AND (is_deleted = false OR is_deleted IS NULL) ORDER BY created_at ASC',
+        [userId]
       );
       res.json({ data: r.rows.map(rowToTag) });
     } catch (err) {
@@ -34,11 +34,13 @@ export function createTagsRouter(pool, auth) {
     }
   });
 
+  // GET /api/tags/:id
   router.get('/:id', requireRead, async (req, res) => {
     try {
+      const userId = req.user.id;
       const r = await pool.query(
-        'SELECT * FROM tags WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)',
-        [req.params.id],
+        'SELECT * FROM tags WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)',
+        [req.params.id, userId],
       );
       if (r.rows.length === 0) return res.status(404).json({ error: 'Tag khong tim thay' });
       res.json({ data: rowToTag(r.rows[0]) });
@@ -48,7 +50,9 @@ export function createTagsRouter(pool, auth) {
     }
   });
 
+  // POST /api/tags
   router.post('/', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const body = req.body ?? {};
     if (!body.name || typeof body.name !== 'string' || body.name.trim() === '') {
       return res.status(400).json({ error: 'Truong "name" la bat buoc.' });
@@ -57,8 +61,9 @@ export function createTagsRouter(pool, auth) {
       const now = new Date().toISOString();
       const id = body.id ?? randomUUID();
       const r = await pool.query(
-        `INSERT INTO tags (id, name, color, project_id, folder_id, is_visible, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$7) RETURNING *`,
-        [id, body.name.trim(), body.color ?? '#7ec8e3', body.projectId ?? null, body.folderId ?? null, body.isVisible ?? true, now],
+        `INSERT INTO tags (id, name, color, project_id, folder_id, is_visible, created_at, updated_at, user_id) 
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7,$8) RETURNING *`,
+        [id, body.name.trim(), body.color ?? '#7ec8e3', body.projectId ?? null, body.folderId ?? null, body.isVisible ?? true, now, userId],
       );
       res.status(201).json({ data: rowToTag(r.rows[0]) });
     } catch (err) {
@@ -68,23 +73,25 @@ export function createTagsRouter(pool, auth) {
     }
   });
 
+  // PUT /api/tags/:id
   router.put('/:id', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const { id } = req.params;
     const body = req.body ?? {};
     try {
       const existing = await pool.query(
-        'SELECT * FROM tags WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL)',
-        [id],
+        'SELECT * FROM tags WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)',
+        [id, userId],
       );
       if (existing.rows.length === 0) return res.status(404).json({ error: 'Tag khong tim thay' });
       const cur = existing.rows[0];
       const now = new Date().toISOString();
-      // Cho phép xoá phạm vi bằng cách gửi null tường minh ('key' in body).
       const projectId = 'projectId' in body ? body.projectId : cur.project_id;
       const folderId = 'folderId' in body ? body.folderId : cur.folder_id;
       const r = await pool.query(
-        `UPDATE tags SET name=$1, color=$2, project_id=$3, folder_id=$4, is_visible=$5, updated_at=$6 WHERE id=$7 RETURNING *`,
-        [body.name ?? cur.name, body.color ?? cur.color, projectId ?? null, folderId ?? null, 'isVisible' in body ? body.isVisible : cur.is_visible, now, id],
+        `UPDATE tags SET name=$1, color=$2, project_id=$3, folder_id=$4, is_visible=$5, updated_at=$6 
+         WHERE id=$7 AND user_id=$8 RETURNING *`,
+        [body.name ?? cur.name, body.color ?? cur.color, projectId ?? null, folderId ?? null, 'isVisible' in body ? body.isVisible : cur.is_visible, now, id, userId],
       );
       res.json({ data: rowToTag(r.rows[0]) });
     } catch (err) {
@@ -93,26 +100,26 @@ export function createTagsRouter(pool, auth) {
     }
   });
 
-  // DELETE: soft-delete tag, gỡ tag id khỏi tasks.tags (mirror client).
+  // DELETE: soft-delete tag
   router.delete('/:id', requireWrite, async (req, res) => {
+    const userId = req.user.id;
     const { id } = req.params;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const now = new Date().toISOString();
       const r = await client.query(
-        'UPDATE tags SET is_deleted = true, updated_at = $2 WHERE id = $1 AND (is_deleted = false OR is_deleted IS NULL) RETURNING id',
-        [id, now],
+        'UPDATE tags SET is_deleted = true, updated_at = $2 WHERE id = $1 AND user_id = $3 AND (is_deleted = false OR is_deleted IS NULL) RETURNING id',
+        [id, now, userId],
       );
       if (r.rows.length === 0) {
         await client.query('ROLLBACK');
         return res.status(404).json({ error: 'Tag khong tim thay' });
       }
-      // jsonb "- text" gỡ phần tử mảng bằng giá trị; chỉ đụng task có chứa tag.
       await client.query(
         `UPDATE tasks SET tags = COALESCE(tags,'[]'::jsonb) - $1, updated_at = $2
-         WHERE tags @> to_jsonb($1::text)`,
-        [id, now],
+         WHERE tags @> to_jsonb($1::text) AND user_id = $3`,
+        [id, now, userId],
       );
       await client.query('COMMIT');
       res.json({ data: { id }, message: 'Da xoa tag.' });

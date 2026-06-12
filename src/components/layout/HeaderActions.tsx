@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../../contexts/AppContext';
-
+import { useAuth } from '../../contexts/AuthContext';
 
 const IconChart = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -33,12 +33,19 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconLogout = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+  </svg>
+);
+
 interface HeaderActionsProps {
   onShowReport: () => void;
 }
 
 const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
   const { setOpenModal, isDark, updateSettings } = useAppContext();
+  const { logout, user } = useAuth();
 
   const toggleTheme = () => {
     updateSettings({ darkMode: isDark ? 'light' : 'dark' });
@@ -46,8 +53,9 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
 
   return (
     <div className="header-actions">
-      <button className="ha-btn" title="Report" onClick={onShowReport}><IconChart /></button>
-      <button className="ha-btn" title="Notifications"><IconBell /></button>
+      {user && <span className="user-email-display">{user.email}</span>}
+      <button className="ha-btn" title="Báo cáo" onClick={onShowReport}><IconChart /></button>
+      <button className="ha-btn" title="Thông báo"><IconBell /></button>
       <button
         className="ha-btn"
         title={isDark ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
@@ -55,7 +63,8 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
       >
         {isDark ? <IconSun /> : <IconMoon />}
       </button>
-      <button className="ha-btn" title="Settings" onClick={() => setOpenModal('settings')}><IconSettings /></button>
+      <button className="ha-btn" title="Cài đặt" onClick={() => setOpenModal('settings')}><IconSettings /></button>
+      <button className="ha-btn logout-btn" title="Đăng xuất" onClick={logout}><IconLogout /></button>
 
       <style>{`
         .header-actions {
@@ -66,6 +75,18 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
           top: 24px;
           right: 32px;
           z-index: 100;
+        }
+        .user-email-display {
+          font-size: 13px;
+          color: var(--text-tertiary);
+          margin-right: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 4px 10px;
+          border-radius: 12px;
+          max-width: 150px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         .ha-btn {
           background: transparent;
@@ -82,6 +103,10 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
         .ha-btn:hover {
           color: var(--text-primary);
           background: var(--bg-card-hover);
+        }
+        .logout-btn:hover {
+          color: #f25f5c;
+          background: rgba(242, 95, 92, 0.1);
         }
       `}</style>
     </div>

@@ -96,7 +96,7 @@
   --scrollbar-thumb-hover: rgba(255,255,255,0.2);
 
   --sidebar-width: 220px;
-  --panel-width: 280px;
+  --panel-width: clamp(240px, 25%, 520px);
 
   /* Sidebar items */
   --sidebar-item-hover: rgba(255, 255, 255, 0.05);
