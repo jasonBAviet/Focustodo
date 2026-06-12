@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Nen tron mau toi -->
+  <rect width="512" height="512" rx="112" fill="#141416"/>
+  <!-- Vong tron ngoai - glow -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#f25f5c" stroke-width="12" opacity="0.2"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#f25f5c" stroke-width="6" opacity="0.4"/>
+  <!-- Mat dong ho -->
+  <circle cx="256" cy="256" r="150" fill="#1e1e24"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#f25f5c" stroke-width="10"/>
+  <!-- Vach 12 vi tri -->
+  <circle cx="256" cy="116" r="8" fill="#f25f5c"/>
+  <circle cx="363" cy="149" r="5" fill="#606078"/>
+  <circle cx="396" cy="256" r="8" fill="#9090a8"/>
+  <circle cx="363" cy="363" r="5" fill="#606078"/>
+  <circle cx="256" cy="396" r="8" fill="#9090a8"/>
+  <circle cx="149" cy="363" r="5" fill="#606078"/>
+  <circle cx="116" cy="256" r="8" fill="#9090a8"/>
+  <circle cx="149" cy="149" r="5" fill="#606078"/>
+  <!-- Kim phut - len 12 gio -->
+  <line x1="256" y1="256" x2="256" y2="128" stroke="#f0f0f5" stroke-width="12" stroke-linecap="round"/>
+  <!-- Kim gio - 3 gio -->
+  <line x1="256" y1="256" x2="314" y2="290" stroke="#f25f5c" stroke-width="14" stroke-linecap="round"/>
+  <!-- Tam trung tam -->
+  <circle cx="256" cy="256" r="16" fill="#f25f5c"/>
+  <circle cx="256" cy="256" r="8" fill="#141416"/>
+  <!-- Chu FOCUS o duoi -->
+  <text x="256" y="474" text-anchor="middle" font-family="-apple-system, SF Pro Display, Helvetica Neue, sans-serif" font-size="52" font-weight="800" fill="#f25f5c" letter-spacing="10">FOCUS</text>
+</svg>

@@ -32,6 +32,8 @@ import { uuid } from '../utils/uuid';
 import {
   loadRemoteAppState, saveRemoteAppState, fetchChanges, completeTaskRemote,
   createProjectRemote, updateProjectRemote, deleteProjectRemote,
+  createFolderRemote, updateFolderRemote, deleteFolderRemote,
+  createTagRemote, updateTagRemote, deleteTagRemote,
 } from '../utils/remoteState';
 import type { RemoteAppState, DeletedIds, ChangesResponse } from '../utils/remoteState';
 import { getDescendantFolderIds } from '../utils/folderUtils';

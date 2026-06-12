@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import { useAppContext } from '../../contexts/AppContext';
-import type { Task, ViewType, Project, Folder } from '../../types';
-import { dateUtils } from '../../utils/dateUtils';
-import { getRootFolders, getChildFolders, getDescendantFolderIds } from '../../utils/folderUtils';
+import type { ViewType, Project, Folder } from '../../types';
+import { getRootFolders, getChildFolders } from '../../utils/folderUtils';
 import { getContextTags } from '../../utils/tagScope';
 import {
   formatMinutes,
@@ -13,20 +12,12 @@ import {
   getViewStats,
 } from '../../utils/sidebarStats';
 import {
-  IconClock,
-  IconSun,
-  IconCalendar,
-  IconList,
-  IconStar,
-  IconCheck,
   IconPlus,
   IconFolder,
   IconTag,
   IconFolderPlus,
   IconTagPlus,
   IconChevron,
-  IconBook,
-  IconUnassigned,
   SMART_VIEWS,
 } from './SidebarIcons';
 

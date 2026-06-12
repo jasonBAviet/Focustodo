@@ -17,6 +17,8 @@ import PomodoroWidget from './components/pomodoro/PomodoroWidget';
 import PomodoroModal from './components/pomodoro/PomodoroModal';
 import HeaderActions from './components/layout/HeaderActions';
 import CommandPalette from './components/common/CommandPalette';
+import OfflineIndicator from './components/pwa/OfflineIndicator';
+import InstallPrompt from './components/pwa/InstallPrompt';
 import { useReminderCheck } from './hooks/useReminderCheck';
 import { useAppRouter } from './hooks/useAppRouter';
 import './styles/index.css';
@@ -89,6 +91,10 @@ const AppInner: React.FC = () => {
 
       <PomodoroWidget />
       <PomodoroModal />
+
+      {/* Cac component PWA: hien thi trang thai mang va goi y cai dat */}
+      <OfflineIndicator />
+      <InstallPrompt />
 
       {openModal === 'settings' && (
         <React.Suspense fallback={null}>
