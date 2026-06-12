@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useTaskContext } from '../../contexts/TaskContext';
 import StatCards from './StatCards';
@@ -10,13 +10,7 @@ import PomodoroRecords from './PomodoroRecords';
 import ProjectTimeDistribution from './ProjectTimeDistribution';
 import TagTimeDistribution from './TagTimeDistribution';
 import PeakHoursHeatmap from './PeakHoursHeatmap';
-
-const PERIODS: { value: ChartPeriod; label: string }[] = [
-  { value: 'daily', label: 'Day' },
-  { value: 'weekly', label: 'Week' },
-  { value: 'monthly', label: 'Month' },
-  { value: 'yearly', label: 'Year' },
-];
+import { getPeriodRange, getPeriodLabel, toDateString, parseDateString } from './reportHelpers';
 
 interface ReportPageProps {
   onClose?: () => void;
@@ -26,18 +20,19 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
   const { settings } = useAppContext();
   const { folders, projects, tags } = useTaskContext();
 
-  // Thống kê đếm ngược Pomodoro
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('daily');
-  const [chartDate, setChartDate] = useState(new Date());
+  // Trạng thái bộ lọc thời gian toàn cục
+  const [period, setPeriod] = useState<ChartPeriod>('weekly'); // Mặc định là tuần
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Thống kê hoàn thành Task/Subtask
-  const [completionPeriod, setCompletionPeriod] = useState<ChartPeriod>('daily');
-  const [completionDate, setCompletionDate] = useState(new Date());
-
-  // Trạng thái bộ lọc toàn cục
+  // Trạng thái bộ lọc phân loại toàn cục
   const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [selectedTagId, setSelectedTagId] = useState<string>('all');
+
+  // Tính startDate, endDate
+  const { start: startDate, end: endDate } = useMemo(() => {
+    return getPeriodRange(period, currentDate);
+  }, [period, currentDate]);
 
   // Danh sách dự án hiển thị trong dropdown (phụ thuộc vào folder được chọn)
   const filteredProjectsForSelect = useMemo(() => {
@@ -61,32 +56,6 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
     setSelectedTagId(e.target.value);
   };
 
-  const handleChartNavigate = useCallback((dir: -1 | 1) => {
-    setChartDate((prev) => {
-      const d = new Date(prev);
-      switch (chartPeriod) {
-        case 'daily': d.setDate(d.getDate() + dir); break;
-        case 'weekly': d.setDate(d.getDate() + dir * 7); break;
-        case 'monthly': d.setMonth(d.getMonth() + dir); break;
-        case 'yearly': d.setFullYear(d.getFullYear() + dir); break;
-      }
-      return d;
-    });
-  }, [chartPeriod]);
-
-  const handleCompletionNavigate = useCallback((dir: -1 | 1) => {
-    setCompletionDate((prev) => {
-      const d = new Date(prev);
-      switch (completionPeriod) {
-        case 'daily': d.setDate(d.getDate() + dir); break;
-        case 'weekly': d.setDate(d.getDate() + dir * 7); break;
-        case 'monthly': d.setMonth(d.getMonth() + dir); break;
-        case 'yearly': d.setFullYear(d.getFullYear() + dir); break;
-      }
-      return d;
-    });
-  }, [completionPeriod]);
-
   return (
     <div className="report-page">
       {/* Header */}
@@ -98,7 +67,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           title="Đóng báo cáo"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M4 4l10 10M14 4L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M4 4l10 10M14 4l-10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
         </button>
       </div>
@@ -134,6 +103,31 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
             ))}
           </select>
         </div>
+
+        <div>
+          <label style={labelStyle}>Chu kỳ</label>
+          <select value={period} onChange={(e) => setPeriod(e.target.value as ChartPeriod)} style={selectStyle}>
+            <option value="daily">Ngày</option>
+            <option value="weekly">Tuần</option>
+            <option value="monthly">Tháng</option>
+            <option value="yearly">Năm</option>
+          </select>
+        </div>
+
+        <div>
+          <label style={labelStyle}>Bộ chọn ngày</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}>
+            <input
+              type="date"
+              value={toDateString(currentDate)}
+              onChange={(e) => setCurrentDate(parseDateString(e.target.value))}
+              style={datePickerStyle}
+            />
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              ({getPeriodLabel(period, currentDate)})
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Body container wrapper */}
@@ -143,31 +137,19 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           selectedFolderId={selectedFolderId}
           selectedProjectId={selectedProjectId}
           selectedTagId={selectedTagId}
+          startDate={startDate}
+          endDate={endDate}
+          period={period}
         />
 
         {/* Cấp độ 2: Xu hướng & Tăng trưởng (Grid of 2 charts) */}
         <div className="report-grid-2">
           {/* Focus Time Chart */}
           <div className="report-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 className="report-card-title" style={{ marginBottom: 0 }}>Thời gian tập trung</h3>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {PERIODS.map((p) => (
-                  <button
-                    key={p.value}
-                    className="report-period-btn"
-                    data-active={chartPeriod === p.value}
-                    onClick={() => setChartPeriod(p.value)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <h3 className="report-card-title">Thời gian tập trung</h3>
             <FocusTimeChart
-              period={chartPeriod}
-              currentDate={chartDate}
-              onNavigate={handleChartNavigate}
+              period={period}
+              currentDate={currentDate}
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
@@ -176,25 +158,10 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
 
           {/* Task Completion & Growth Chart */}
           <div className="report-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 className="report-card-title" style={{ marginBottom: 0 }}>Hiệu suất & Tăng trưởng công việc</h3>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {PERIODS.map((p) => (
-                  <button
-                    key={p.value}
-                    className="report-period-btn"
-                    data-active={completionPeriod === p.value}
-                    onClick={() => setCompletionPeriod(p.value)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <h3 className="report-card-title">Hiệu suất & Tăng trưởng công việc</h3>
             <TaskCompletionChart
-              period={completionPeriod}
-              currentDate={completionDate}
-              onNavigate={handleCompletionNavigate}
+              period={period}
+              currentDate={currentDate}
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
@@ -210,6 +177,8 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
+              startDate={startDate}
+              endDate={endDate}
             />
           </div>
           
@@ -219,6 +188,8 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
+              startDate={startDate}
+              endDate={endDate}
             />
           </div>
 
@@ -228,6 +199,8 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
+              startDate={startDate}
+              endDate={endDate}
             />
           </div>
 
@@ -241,32 +214,14 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
               selectedFolderId={selectedFolderId}
               selectedProjectId={selectedProjectId}
               selectedTagId={selectedTagId}
+              startDate={startDate}
+              endDate={endDate}
             />
           </div>
         </div>
       </div>
 
       <style>{`
-        .report-period-btn {
-          padding: 4px 10px;
-          border-radius: var(--radius-full);
-          border: 1px solid var(--border);
-          background: transparent;
-          color: var(--text-secondary);
-          font-size: var(--text-xs);
-          font-family: var(--font-main);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-        .report-period-btn[data-active="true"] {
-          background: var(--accent);
-          border-color: var(--accent);
-          color: #fff;
-        }
-        .report-period-btn:hover:not([data-active="true"]) {
-          border-color: var(--border-strong);
-          color: var(--text-primary);
-        }
         .report-page {
           height: 100vh; overflow-y: auto;
           background: var(--bg-main);
@@ -292,7 +247,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
         }
         .report-filters {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 16px;
           padding: 16px 32px 20px;
           border-bottom: 1px solid var(--divider);
@@ -305,9 +260,6 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           grid-template-columns: 1fr 1fr;
           gap: 20px;
           margin-top: 20px;
-        }
-        .report-col-left, .report-col-right {
-          display: flex; flex-direction: column; gap: 16px;
         }
         .report-card {
           background: var(--bg-card);
@@ -357,6 +309,18 @@ const selectStyle: React.CSSProperties = {
   outline: 'none',
   transition: 'border-color 0.2s',
   cursor: 'pointer',
+};
+
+const datePickerStyle: React.CSSProperties = {
+  padding: '8px 10px',
+  borderRadius: '8px',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-main)',
+  color: 'var(--text-primary)',
+  fontSize: 'var(--text-sm)',
+  outline: 'none',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
 };
 
 export default ReportPage;

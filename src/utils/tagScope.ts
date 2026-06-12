@@ -24,13 +24,15 @@ export function getVisibleTags(
   projects: Project[],
   ctx: TagScopeContext,
 ): Tag[] {
+  const activeTags = tags.filter((t) => t.isVisible !== false);
+
   // Ngữ cảnh dự án.
   if (ctx.projectId) {
     const project = projects.find((p) => p.id === ctx.projectId);
     const folderChain = project?.folderId
       ? new Set(getAncestorFolderIds(folders, project.folderId))
       : new Set<string>();
-    return tags.filter(
+    return activeTags.filter(
       (t) =>
         isGlobalTag(t) ||
         t.projectId === ctx.projectId ||
@@ -46,7 +48,7 @@ export function getVisibleTags(
     const projectIdsInSubtree = new Set(
       projects.filter((p) => p.folderId && subtree.has(p.folderId)).map((p) => p.id),
     );
-    return tags.filter(
+    return activeTags.filter(
       (t) =>
         isGlobalTag(t) ||
         (!!t.folderId && scopeFolders.has(t.folderId)) ||
@@ -55,7 +57,7 @@ export function getVisibleTags(
   }
 
   // Không có ngữ cảnh -> hiện tất cả.
-  return tags;
+  return activeTags;
 }
 
 // Quy đổi state điều hướng (activeView/activeProjectId/activeFolderId) -> ngữ cảnh,

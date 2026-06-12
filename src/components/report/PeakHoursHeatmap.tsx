@@ -7,12 +7,16 @@ interface PeakHoursHeatmapProps {
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+  startDate: Date;
+  endDate: Date;
 }
 
 const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
+  startDate,
+  endDate,
 }) => {
   const { tasks, pomodoroSessions, projects } = useTaskContext();
   const isMobile = useIsMobile();
@@ -21,10 +25,10 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
     return getPeakHoursData(
       tasks,
       pomodoroSessions,
-      { selectedFolderId, selectedProjectId, selectedTagId },
+      { selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate },
       projects
     );
-  }, [tasks, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId, projects]);
+  }, [tasks, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId, projects, startDate, endDate]);
 
   const maxMinutes = Math.max(...hoursData, 1); // Avoid div by zero
 
@@ -37,7 +41,7 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
           <rect x="4" y="4" width="32" height="32" rx="4" stroke="var(--border-strong)" strokeWidth="1.5" />
           <path d="M12 20h4v8h-4zM18 14h4v14h-4zM24 17h4v11h-4z" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>No Data</span>
+        <span>Không có dữ liệu</span>
       </div>
     );
   }
@@ -53,12 +57,8 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
         {hoursData.map((minutes, hour) => {
           const intensity = minutes / maxMinutes; // 0.0 to 1.0
           
-          // Use primary accent color, e.g. #f25f5c or #06d6a0
-          // Convert to rgb for opacity, or use HSL
           let bg = 'var(--glass-bg)';
           if (intensity > 0) {
-            // Using a nice green/blue or accent color. Let's use accent:
-            // Since we don't have the exact accent here easily as rgb, let's use a nice teal
             const alpha = 0.2 + (0.8 * intensity); // 0.2 to 1.0 opacity
             bg = `rgba(6, 214, 160, ${alpha})`;
           }

@@ -269,6 +269,8 @@ async function ensureSchema() {
     // GĐ5: nhãn theo phạm vi dự án / thư mục (null = dùng chung).
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS project_id TEXT;');
     await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS folder_id TEXT;');
+    await pool.query('ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_visible BOOLEAN DEFAULT true;');
+    await pool.query('ALTER TABLE folders ADD COLUMN IF NOT EXISTS is_visible BOOLEAN DEFAULT true;');
 
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at);');
@@ -410,6 +412,7 @@ function rowToFolder(r) {
     projectIds: r.project_ids ?? [],
     parentId: r.parent_id ?? null,
     position: r.position ?? 0,
+    isVisible: r.is_visible ?? true,
     createdAt: r.created_at ?? null,
     updatedAt: r.updated_at ?? null,
   };
@@ -422,6 +425,7 @@ function rowToTag(r) {
     color: r.color ?? '#7ec8e3',
     projectId: r.project_id ?? null,
     folderId: r.folder_id ?? null,
+    isVisible: r.is_visible ?? true,
     createdAt: r.created_at ?? null,
     updatedAt: r.updated_at ?? null,
   };
@@ -623,10 +627,10 @@ async function persistState(incoming) {
       client,
       'folders',
       incoming.folders ?? [],
-      ['id', 'name', 'color', 'project_ids', 'parent_id', 'position', 'created_at', 'updated_at'],
+      ['id', 'name', 'color', 'project_ids', 'parent_id', 'position', 'is_visible', 'created_at', 'updated_at'],
       (f) => [
         f.id, f.name ?? '', f.color ?? '#7ec8e3',
-        JSON.stringify(f.projectIds ?? []), f.parentId ?? null, f.position ?? 0, f.createdAt ?? null,
+        JSON.stringify(f.projectIds ?? []), f.parentId ?? null, f.position ?? 0, f.isVisible ?? true, f.createdAt ?? null,
         f.updatedAt ?? f.createdAt ?? nowIso,
       ],
       'updated_at',
@@ -637,8 +641,11 @@ async function persistState(incoming) {
       client,
       'tags',
       incoming.tags ?? [],
-      ['id', 'name', 'color', 'project_id', 'folder_id', 'created_at', 'updated_at'],
-      (t) => [t.id, t.name ?? '', t.color ?? '#7ec8e3', t.projectId ?? null, t.folderId ?? null, t.createdAt ?? null, t.updatedAt ?? t.createdAt ?? nowIso],
+      ['id', 'name', 'color', 'project_id', 'folder_id', 'is_visible', 'created_at', 'updated_at'],
+      (t) => [
+        t.id, t.name ?? '', t.color ?? '#7ec8e3', t.projectId ?? null, t.folderId ?? null, t.isVisible ?? true, t.createdAt ?? null,
+        t.updatedAt ?? t.createdAt ?? nowIso,
+      ],
       'updated_at',
     );
 

@@ -7,23 +7,28 @@ interface TagTimeDistributionProps {
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+  startDate: Date;
+  endDate: Date;
 }
 
 const TagTimeDistribution: React.FC<TagTimeDistributionProps> = ({
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
+  startDate,
+  endDate,
 }) => {
-  const { tasks, tags, projects } = useTaskContext();
+  const { tasks, tags, projects, pomodoroSessions } = useTaskContext();
 
   const slices = useMemo(() => {
     return getTagTimeDistribution(
       tasks,
       tags,
-      { selectedFolderId, selectedProjectId, selectedTagId },
-      projects
+      { selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate },
+      projects,
+      pomodoroSessions
     );
-  }, [tasks, tags, selectedFolderId, selectedProjectId, selectedTagId, projects]);
+  }, [tasks, tags, selectedFolderId, selectedProjectId, selectedTagId, projects, startDate, endDate, pomodoroSessions]);
 
   if (slices.length === 0) {
     return (
@@ -32,7 +37,7 @@ const TagTimeDistribution: React.FC<TagTimeDistributionProps> = ({
           <rect x="4" y="4" width="32" height="32" rx="4" stroke="var(--border-strong)" strokeWidth="1.5" />
           <path d="M12 20h4v8h-4zM18 14h4v14h-4zM24 17h4v11h-4z" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>No Data</span>
+        <span>Không có dữ liệu</span>
       </div>
     );
   }

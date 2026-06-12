@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ContextMenuProps {
   x: number;
@@ -54,7 +55,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, isOpen, onClose, childr
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={menuRef}
       style={{
@@ -76,7 +77,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, isOpen, onClose, childr
       onContextMenu={(e) => e.preventDefault()}
     >
       {children}
-    </div>
+    </div>,
+    document.body
   );
 };
 

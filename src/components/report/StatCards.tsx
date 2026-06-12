@@ -1,52 +1,24 @@
 // ============================================================
 // FOCUS TO-DO - StatCards
-// 6 thẻ thống kê trên đầu trang Report
+// Thống kê trên đầu trang Report, được lọc theo khoảng thời gian global
 // ============================================================
 import React, { useMemo } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
-import { useAppContext } from '../../contexts/AppContext';
 import { dateUtils } from '../../utils/dateUtils';
+import type { ChartPeriod } from './FocusTimeChart';
 
-// ----------------------------------------------------------
-// Helpers tính thời gian tuần hiện tại
-// ----------------------------------------------------------
-function getWeekRange(): { start: Date; end: Date } {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun
-  const startOfWeek = new Date(now);
-  // Tuần bắt đầu từ Thứ Hai
-  const diff = day === 0 ? -6 : 1 - day;
-  startOfWeek.setDate(now.getDate() + diff);
-  startOfWeek.setHours(0, 0, 0, 0);
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
-  return { start: startOfWeek, end: endOfWeek };
-}
-
-function isInWeek(dateStr: string | null): boolean {
+function isInRange(dateStr: string | null, start: Date, end: Date): boolean {
   if (!dateStr) return false;
   const d = new Date(dateStr);
-  const { start, end } = getWeekRange();
   return d >= start && d <= end;
 }
 
-function isToday(dateStr: string | null): boolean {
-  return dateUtils.isToday(dateStr);
-}
-
-// ----------------------------------------------------------
-// Kiểu dữ liệu card
-// ----------------------------------------------------------
 interface StatCardData {
   label: string;
   value: string;
   color: 'red' | 'blue';
 }
 
-// ----------------------------------------------------------
-// StatCard component đơn lẻ
-// ----------------------------------------------------------
 interface StatCardProps {
   data: StatCardData;
   accentRed: string;
@@ -66,12 +38,9 @@ const StatCard: React.FC<StatCardProps> = ({ data }) => {
       flexDirection: 'column',
       gap: 8,
     }}>
-
-      {/* Value */}
       <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 26, lineHeight: 1 }}>
         {data.value}
       </div>
-      {/* Label */}
       <div style={{ color: 'var(--text-tertiary)', fontSize: 11, letterSpacing: 0.5, lineHeight: 1.4 }}>
         {data.label}
       </div>
@@ -79,15 +48,15 @@ const StatCard: React.FC<StatCardProps> = ({ data }) => {
   );
 };
 
-// ----------------------------------------------------------
-// StatCards - component chính
-// ----------------------------------------------------------
 interface StatCardsProps {
   accentRed?: string;
   accentBlue?: string;
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+  startDate: Date;
+  endDate: Date;
+  period: ChartPeriod;
 }
 
 const StatCards: React.FC<StatCardsProps> = ({
@@ -96,9 +65,11 @@ const StatCards: React.FC<StatCardsProps> = ({
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
+  startDate,
+  endDate,
+  period,
 }) => {
   const { tasks, projects, pomodoroSessions, pomodoroRecords } = useTaskContext();
-  const { settings } = useAppContext();
 
   const stats = useMemo(() => {
     // ---- Lọc danh sách task theo bộ lọc chọn ----
@@ -119,43 +90,74 @@ const StatCards: React.FC<StatCardsProps> = ({
 
     const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
 
-    // ---- Total Focus Time (phút): nguồn sự thật = task.totalFocusTime ----
-    // (thời gian thực, không bị cap 200 như session)
+    // ---- Total Focus Time (phút) tích lũy ----
     const totalFocusTime = filteredTasks.reduce((acc, t) => acc + (t.totalFocusTime ?? 0), 0);
 
-    // ---- Week/Today: chỉ session mới có mốc thời gian (startTime) ----
+    // ---- Lọc session focus thuộc bộ lọc dự án/nhãn ----
     const focusSessions = pomodoroSessions
       .filter((s) => s.type === 'focus')
       .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
 
-    const weekFocusTime = focusSessions
-      .filter((s) => isInWeek(s.startTime))
+    // Focus time trong kỳ
+    const periodFocusTime = focusSessions
+      .filter((s) => isInRange(s.startTime, startDate, endDate))
       .reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
-    const todayFocusTime = focusSessions
-      .filter((s) => isToday(s.startTime))
-      .reduce((acc, s) => acc + (s.duration ?? 0), 0);
+    // ---- Task Created trong kỳ ----
+    const periodCreated = filteredTasks.filter(
+      (t) => isInRange(t.createdAt, startDate, endDate)
+    ).length;
 
     // ---- Completed tasks ----
     const totalCompleted = filteredTasks.filter((t) => t.completed).length;
 
-    const weekCompleted = filteredTasks.filter(
-      (t) => t.completed && isInWeek(t.completedAt),
+    const periodCompleted = filteredTasks.filter(
+      (t) => t.completed && isInRange(t.completedAt, startDate, endDate)
     ).length;
 
-    const todayCompleted = filteredTasks.filter(
-      (t) => t.completed && isToday(t.completedAt),
+    // ---- Knowledge Created trong kỳ ----
+    const periodKnowledgeCreated = filteredTasks.filter(
+      (t) => t.isKnowledge && isInRange(t.createdAt, startDate, endDate)
     ).length;
 
-    // ---- On-time Completion Rate ----
-    // Chỉ tính trên task đã hoàn thành CÓ dueDate; không có thì hiển thị '—'
-    const completedTasks = filteredTasks.filter(t => t.completed);
-    const tasksWithDueDate = completedTasks.filter(t => t.dueDate);
+    // ---- Overdue Tasks tính đến ngày endDate ----
+    const overdueCount = filteredTasks.filter((t) => {
+      if (t.completed || !t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      due.setHours(23, 59, 59, 999);
+      return due < endDate;
+    }).length;
+
+    // ---- Lead Time (Thời gian hoàn thành trung bình) ----
+    const completedTasksInPeriod = filteredTasks.filter(
+      (t) => t.completed && t.completedAt && isInRange(t.completedAt, startDate, endDate)
+    );
+    let avgCompletionTimeStr = '—';
+    if (completedTasksInPeriod.length > 0) {
+      let totalMs = 0;
+      completedTasksInPeriod.forEach(t => {
+        if (t.completedAt) {
+          const created = new Date(t.createdAt).getTime();
+          const completed = new Date(t.completedAt).getTime();
+          totalMs += Math.max(0, completed - created);
+        }
+      });
+      const avgDays = totalMs / (1000 * 60 * 60 * 24) / completedTasksInPeriod.length;
+      if (avgDays < 1) {
+        const avgHours = Math.round(avgDays * 24 * 10) / 10;
+        avgCompletionTimeStr = `${avgHours} giờ`;
+      } else {
+        const avgDaysRounded = Math.round(avgDays * 10) / 10;
+        avgCompletionTimeStr = `${avgDaysRounded} ngày`;
+      }
+    }
+
+    // ---- On-time Completion Rate trong kỳ ----
+    const tasksWithDueDate = completedTasksInPeriod.filter(t => t.dueDate);
     let onTimeRate: number | null = null;
     if (tasksWithDueDate.length > 0) {
       const onTimeTasks = tasksWithDueDate.filter(t => {
         if (!t.completedAt || !t.dueDate) return false;
-        // Compare dates without time
         const due = new Date(t.dueDate);
         due.setHours(23, 59, 59, 999);
         const comp = new Date(t.completedAt);
@@ -164,26 +166,10 @@ const StatCards: React.FC<StatCardsProps> = ({
       onTimeRate = Math.round((onTimeTasks.length / tasksWithDueDate.length) * 100);
     }
 
-    // ---- Actual vs Estimated (theo phút thực) ----
-    // actual = Σ totalFocusTime; est = Σ (pomodoroEstimate × pomodoroLength)
-    let estVsAct: number | null = null;
-    const tasksWithEstimate = completedTasks.filter(t => t.pomodoroEstimate && t.pomodoroEstimate > 0);
-    if (tasksWithEstimate.length > 0) {
-      const pomoLen = settings.pomodoroLength || 25;
-      let totalEstMin = 0;
-      let totalActMin = 0;
-      tasksWithEstimate.forEach(t => {
-        totalEstMin += t.pomodoroEstimate * pomoLen;
-        totalActMin += (t.totalFocusTime ?? 0);
-      });
-      estVsAct = totalEstMin > 0 ? Math.round((totalActMin / totalEstMin) * 100) : null;
-    }
-
-    // ---- Interruption Rate ----
-    // Chỉ xét record đã KẾT THÚC (có endTime); loại record đang chạy
+    // ---- Interruption Rate trong kỳ ----
     let interruptionRate: number | null = null;
     const finishedRecords = pomodoroRecords.filter(
-      r => r.taskId && filteredTaskIds.has(r.taskId) && r.endTime,
+      r => r.taskId && filteredTaskIds.has(r.taskId) && r.endTime && isInRange(r.startTime, startDate, endDate)
     );
     if (finishedRecords.length > 0) {
       const interrupted = finishedRecords.filter(r => !r.completed);
@@ -192,66 +178,73 @@ const StatCards: React.FC<StatCardsProps> = ({
 
     return {
       totalFocusTime,
-      weekFocusTime,
-      todayFocusTime,
+      periodFocusTime,
+      periodCreated,
       totalCompleted,
-      weekCompleted,
-      todayCompleted,
+      periodCompleted,
+      periodKnowledgeCreated,
+      overdueCount,
+      avgCompletionTimeStr,
       onTimeRate,
-      estVsAct,
       interruptionRate,
     };
-  }, [tasks, projects, pomodoroSessions, pomodoroRecords, settings.pomodoroLength, selectedFolderId, selectedProjectId, selectedTagId]);
+  }, [tasks, projects, pomodoroSessions, pomodoroRecords, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
 
-  // Định dạng phút -> h hoặc h m
   function fmtMin(minutes: number): string {
     return dateUtils.formatDuration(Math.round(minutes));
   }
 
+  // Nhãn động dựa trên period
+  let periodLabel = 'Trong kỳ';
+  if (period === 'daily') periodLabel = 'Ngày này';
+  else if (period === 'weekly') periodLabel = 'Tuần này';
+  else if (period === 'monthly') periodLabel = 'Tháng này';
+  else if (period === 'yearly') periodLabel = 'Năm này';
+
   const cards: StatCardData[] = [
     {
-      label: 'Total Focus Time',
+      label: `Thời gian tập trung (${periodLabel})`,
+      value: fmtMin(stats.periodFocusTime),
+      color: 'red',
+    },
+    {
+      label: 'Tổng thời gian tập trung',
       value: fmtMin(stats.totalFocusTime),
       color: 'red',
     },
     {
-      label: 'Focus Time This Week',
-      value: fmtMin(stats.weekFocusTime),
-      color: 'red',
+      label: `Số task mới tạo (${periodLabel})`,
+      value: String(stats.periodCreated),
+      color: 'blue',
     },
     {
-      label: 'Focus Time Today',
-      value: fmtMin(stats.todayFocusTime),
-      color: 'red',
+      label: `Task đã hoàn thành (${periodLabel})`,
+      value: String(stats.periodCompleted),
+      color: 'blue',
     },
     {
-      label: 'Total Completed Tasks',
+      label: 'Tổng task đã hoàn thành',
       value: String(stats.totalCompleted),
       color: 'blue',
     },
     {
-      label: 'Completed This Week',
-      value: String(stats.weekCompleted),
+      label: `Kiến thức đã tạo (${periodLabel})`,
+      value: String(stats.periodKnowledgeCreated),
       color: 'blue',
     },
     {
-      label: 'Completed Today',
-      value: String(stats.todayCompleted),
+      label: `Lead Time TB (${periodLabel})`,
+      value: stats.avgCompletionTimeStr,
       color: 'blue',
     },
     {
-      label: 'On-time Rate',
+      label: `Tỉ lệ đúng hạn (${periodLabel})`,
       value: stats.onTimeRate === null ? '—' : `${stats.onTimeRate}%`,
       color: 'blue',
     },
     {
-      label: 'Actual / Est.',
-      value: stats.estVsAct === null ? '—' : `${stats.estVsAct}%`,
-      color: 'blue',
-    },
-    {
-      label: 'Interruption Rate',
-      value: stats.interruptionRate === null ? '—' : `${stats.interruptionRate}%`,
+      label: 'Số task trễ hạn (Cuối kỳ)',
+      value: String(stats.overdueCount),
       color: 'red',
     },
   ];

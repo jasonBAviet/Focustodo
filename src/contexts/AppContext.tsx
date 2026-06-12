@@ -25,6 +25,8 @@ interface AppContextType {
   setOpenModal: (name: string | null) => void;
   isReportOpen: boolean;
   setIsReportOpen: (v: boolean) => void;
+  viewMode: 'list' | 'calendar';
+  setViewMode: (v: 'list' | 'calendar') => void;
 }
 
 // ----------------------------------------------------------
@@ -54,6 +56,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Trạng thái UI - không cần lưu localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar'>('focus-view-mode', 'list');
 
   // Xác định isDark từ settings hiện tại
   const [isDark, setIsDark] = useState<boolean>(() =>
@@ -115,8 +118,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setOpenModal,
       isReportOpen,
       setIsReportOpen,
+      viewMode,
+      setViewMode,
     }),
-    [settings, updateSettings, isDark, openModal, isReportOpen],
+    [settings, updateSettings, isDark, openModal, isReportOpen, viewMode, setViewMode],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

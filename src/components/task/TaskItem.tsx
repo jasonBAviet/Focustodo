@@ -1,10 +1,11 @@
 import React, { useCallback } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
 import { usePomodoroContext } from '../../contexts/PomodoroContext';
-import type { Task } from '../../types';
+import type { Task, Tag } from '../../types';
 import { dateUtils } from '../../utils/dateUtils';
 import { IconPomodoro } from '../common/IconPomodoro';
 import { useInjectedStyle } from '../../hooks/useInjectedStyle';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // CSS inject 1 lần vào <head> (xem useInjectedStyle) thay vì 1 tag <style>/task.
 const TASK_ITEM_CSS = `
@@ -81,6 +82,36 @@ const TASK_ITEM_CSS = `
           flex-shrink: 0;
         }
         .task-item__pomo-btn:hover { color: var(--accent); }
+        .task-item__tags-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 4px;
+          flex-wrap: wrap;
+        }
+        .task-item__project-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: var(--text-secondary);
+          border: 1px solid;
+          border-radius: 12px;
+          padding: 1px 6px;
+          background: transparent;
+          line-height: 1;
+        }
+        .task-item__project-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .task-item__tag-badge {
+          font-size: 11px;
+          font-weight: 500;
+          line-height: 1;
+        }
 `;
 
 interface TaskItemProps {
@@ -159,8 +190,9 @@ const CheckCircle: React.FC<{ checked: boolean; onChange: () => void }> = ({ che
 );
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) => {
-  const { completeTask, restoreTask, setSelectedTaskId } = useTaskContext();
+  const { completeTask, restoreTask, setSelectedTaskId, projects, tags } = useTaskContext();
   const pomo = usePomodoroContext();
+  const isMobile = useIsMobile();
   useInjectedStyle('task-item', TASK_ITEM_CSS);
 
   const handleToggle = useCallback(() => {
@@ -190,6 +222,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
 
   const subtasksDone = task.subtasks.filter((s) => s.completed).length;
   const hasSubtasks = task.subtasks.length > 0;
+
+  const project = task.projectId ? projects.find((p) => p.id === task.projectId) : null;
+  const taskTags = (task.tags || [])
+    .map((id) => tags.find((t) => t.id === id))
+    .filter((t): t is Tag => !!t);
 
   return (
     <div
@@ -226,6 +263,21 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
             </span>
           )}
         </div>
+        {!isMobile && (project || taskTags.length > 0) && (
+          <div className="task-item__tags-row">
+            {project && (
+              <span className="task-item__project-badge" style={{ borderColor: project.color }}>
+                <span className="task-item__project-dot" style={{ background: project.color }} />
+                {project.name}
+              </span>
+            )}
+            {taskTags.map((tag) => (
+              <span key={tag.id} className="task-item__tag-badge" style={{ color: tag.color }}>
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {task.dueDate && !task.completed && (

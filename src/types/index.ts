@@ -21,7 +21,8 @@ export type ViewType =
   | 'project'
   | 'tag'
   | 'folder'
-  | 'knowledge';
+  | 'knowledge'
+  | 'unassigned';
 
 export interface Attachment {
   id: string;
@@ -86,6 +87,7 @@ export interface Folder {
   projectIds: string[];
   parentId?: string | null; // thư mục cha (lồng nhiều cấp); null = gốc
   position?: number;
+  isVisible?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -96,6 +98,7 @@ export interface Tag {
   color: string;
   projectId?: string | null; // nhãn thuộc dự án (null = không gắn)
   folderId?: string | null; // nhãn thuộc thư mục (null = không gắn); cả hai null = dùng chung
+  isVisible?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -228,6 +231,7 @@ export const DEFAULT_SETTINGS: Settings = {
     'high-priority': false,
     'medium-priority': false,
     'low-priority': false,
+    'unassigned': true,
   },
 };
 

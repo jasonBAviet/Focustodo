@@ -85,6 +85,11 @@ const IconBook = () => (
     <path d="M12 11.55C9.64 9.35 6.48 8 3 8v11c3.48 0 6.64 1.35 9 3.55 2.36-2.2 5.52-3.55 9-3.55V8c-3.48 0-6.64 1.35-9 3.55zM12 2c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
   </svg>
 );
+const IconUnassigned = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+  </svg>
+);
 
 // Cau hinh smart views
 interface NavView {
@@ -94,13 +99,14 @@ interface NavView {
 }
 
 const SMART_VIEWS: NavView[] = [
-  { id: 'today',     label: 'Today',     icon: <IconClock /> },
-  { id: 'tomorrow',  label: 'Tomorrow',  icon: <IconSun /> },
-  { id: 'this-week', label: 'This Week', icon: <IconCalendar /> },
-  { id: 'planned',   label: 'Planned',   icon: <IconList /> },
-  { id: 'events',    label: 'Events',    icon: <IconStar /> },
-  { id: 'completed', label: 'Completed', icon: <IconCheck /> },
-  { id: 'knowledge', label: 'Knowledge', icon: <IconBook /> },
+  { id: 'today',      label: 'Today',          icon: <IconClock /> },
+  { id: 'tomorrow',   label: 'Tomorrow',        icon: <IconSun /> },
+  { id: 'this-week',  label: 'This Week',       icon: <IconCalendar /> },
+  { id: 'planned',    label: 'Planned',         icon: <IconList /> },
+  { id: 'events',     label: 'Events',          icon: <IconStar /> },
+  { id: 'completed',  label: 'Completed',       icon: <IconCheck /> },
+  { id: 'knowledge',  label: 'Knowledge',       icon: <IconBook /> },
+  { id: 'unassigned', label: 'Chưa phân loại',  icon: <IconUnassigned /> },
 ];
 
 // ============================================================
@@ -169,8 +175,18 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
     return getTasksStats(normalTasks.filter(t => !t.completed && t.projectId && folderProjectIds.includes(t.projectId)));
   };
 
-  const getTagStats = (tagId: string) =>
-    getTasksStats(normalTasks.filter(t => !t.completed && (t.tags || []).includes(tagId)));
+  const getTagStats = (tagId: string) => {
+    // Scope đếm task theo ngữ cảnh đang xem
+    let pool = normalTasks;
+    if (activeView === 'project' && activeProjectId) {
+      pool = normalTasks.filter((t) => t.projectId === activeProjectId);
+    } else if (activeView === 'folder' && activeFolderId) {
+      const subtree = new Set(getDescendantFolderIds(folders, activeFolderId));
+      const folderPids = new Set(projects.filter((p) => p.folderId && subtree.has(p.folderId)).map((p) => p.id));
+      pool = normalTasks.filter((t) => t.projectId !== null && folderPids.has(t.projectId));
+    }
+    return getTasksStats(pool.filter((t) => !t.completed && (t.tags ?? []).includes(tagId)));
+  };
 
   // Task count cho smart views
   const hasValidDueDate = (task: Task) =>
@@ -198,6 +214,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)));
       case 'knowledge':
         return { count: tasks.filter((t) => !!t.isKnowledge).length, time: 0 };
+      case 'unassigned':
+        return getTasksStats(
+          normalTasks.filter((t) => !t.completed && !t.projectId && (t.tags ?? []).length === 0),
+        );
       default:
         return { count: 0, time: 0 };
     }
@@ -279,8 +299,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
     const isExpanded = expandedFolders[folder.id];
     const isFolderActive = activeView === 'folder' && activeFolderId === folder.id;
     const { count, time } = getFolderStats(folder.id);
-    const childFolders = getChildFolders(folders, folder.id);
-    const childProjects = projects.filter((p) => p.folderId === folder.id);
+    const childFolders = getChildFolders(folders.filter(f => f.isVisible !== false), folder.id);
+    const childProjects = projects.filter((p) => p.folderId === folder.id && p.isVisible !== false);
     const hasChildren = childFolders.length > 0 || childProjects.length > 0;
     return (
       <React.Fragment key={folder.id}>
@@ -409,10 +429,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         {listsExpanded && (
           <>
             {/* Render Folders (lồng nhiều cấp) + project con của chúng */}
-            {getRootFolders(folders).map((folder) => renderFolder(folder, 0))}
+            {getRootFolders(folders.filter(f => f.isVisible !== false)).map((folder) => renderFolder(folder, 0))}
 
             {/* Render Standalone Projects (không thuộc folder nào) */}
-            {projects.filter(p => !p.folderId).map(p => renderProjectItem(p, 0))}
+            {projects.filter(p => !p.folderId && p.isVisible !== false).map(p => renderProjectItem(p, 0))}
 
             {/* Render Tags — lọc theo dự án/thư mục đang xem (view khác hiện tất cả) */}
             {getContextTags(tags, folders, projects, activeView, activeProjectId, activeFolderId).map((tag) => {

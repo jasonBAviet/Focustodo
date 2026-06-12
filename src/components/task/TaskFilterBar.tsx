@@ -46,10 +46,13 @@ const TaskFilterBar: React.FC = () => {
   const toggleProject = (id: string) =>
     setFilters((f) => ({ ...f, projectIds: toggleArrayItem(f.projectIds, id) }));
 
+  // Khi đang ở project/folder/tag view, bộ lọc "Project" không có hiệu lực
+  const showProjectFilter = activeView !== 'project' && activeView !== 'folder' && activeView !== 'tag';
+
   const activeCount =
     (filters.text.trim() ? 1 : 0) +
     (filters.tagIds.length > 0 ? 1 : 0) +
-    (filters.projectIds.length > 0 ? 1 : 0) +
+    (showProjectFilter && filters.projectIds.length > 0 ? 1 : 0) +
     (filters.createdFrom || filters.createdTo ? 1 : 0) +
     (filters.dueFrom || filters.dueTo ? 1 : 0);
 
@@ -117,37 +120,39 @@ const TaskFilterBar: React.FC = () => {
         )}
       </div>
 
-      {/* Project */}
-      <div className="tfb-item">
-        <button
-          className={`tfb-btn ${filters.projectIds.length > 0 ? 'active' : ''}`}
-          onClick={() => toggleMenu('project')}
-        >
-          {projectLabel} <IconChevron />
-        </button>
-        {openMenu === 'project' && (
-          <div className="tfb-menu">
-            {projects.length === 0 ? (
-              <p className="tfb-empty">Chưa có project nào</p>
-            ) : (
-              projects.map((p) => {
-                const checked = filters.projectIds.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    className={`tfb-menu-item ${checked ? 'checked' : ''}`}
-                    onClick={() => toggleProject(p.id)}
-                  >
-                    <span className="tfb-dot" style={{ background: p.color }} />
-                    <span className="tfb-menu-text">{p.name}</span>
-                    {checked && <span className="tfb-check">✓</span>}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
+      {/* Project — ẩn khi đang ở project/folder/tag view (đã scope sẵn) */}
+      {showProjectFilter && (
+        <div className="tfb-item">
+          <button
+            className={`tfb-btn ${filters.projectIds.length > 0 ? 'active' : ''}`}
+            onClick={() => toggleMenu('project')}
+          >
+            {projectLabel} <IconChevron />
+          </button>
+          {openMenu === 'project' && (
+            <div className="tfb-menu">
+              {projects.length === 0 ? (
+                <p className="tfb-empty">Chưa có project nào</p>
+              ) : (
+                projects.map((p) => {
+                  const checked = filters.projectIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      className={`tfb-menu-item ${checked ? 'checked' : ''}`}
+                      onClick={() => toggleProject(p.id)}
+                    >
+                      <span className="tfb-dot" style={{ background: p.color }} />
+                      <span className="tfb-menu-text">{p.name}</span>
+                      {checked && <span className="tfb-check">✓</span>}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Ngày tạo */}
       <div className="tfb-item">

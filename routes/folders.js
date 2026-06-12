@@ -12,6 +12,7 @@ function rowToFolder(r) {
     projectIds: r.project_ids ?? [],
     parentId: r.parent_id ?? null,
     position: r.position ?? 0,
+    isVisible: r.is_visible ?? true,
     createdAt: r.created_at ?? null,
     updatedAt: r.updated_at ?? null,
   };
@@ -81,9 +82,9 @@ export function createFoldersRouter(pool, auth) {
         'SELECT COALESCE(MAX(position), -1) + 1 AS pos FROM folders WHERE is_deleted = false OR is_deleted IS NULL',
       );
       const r = await pool.query(
-        `INSERT INTO folders (id, name, color, project_ids, parent_id, position, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$7) RETURNING *`,
-        [id, body.name.trim(), body.color ?? '#7ec8e3', JSON.stringify(body.projectIds ?? []), body.parentId ?? null, posQ.rows[0].pos, now],
+        `INSERT INTO folders (id, name, color, project_ids, parent_id, position, is_visible, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8) RETURNING *`,
+        [id, body.name.trim(), body.color ?? '#7ec8e3', JSON.stringify(body.projectIds ?? []), body.parentId ?? null, posQ.rows[0].pos, body.isVisible ?? true, now],
       );
       res.status(201).json({ data: rowToFolder(r.rows[0]) });
     } catch (err) {
@@ -110,13 +111,14 @@ export function createFoldersRouter(pool, auth) {
         return res.status(400).json({ error: 'Folder khong the la cha cua chinh no.' });
       }
       const r = await pool.query(
-        `UPDATE folders SET name=$1, color=$2, project_ids=$3, parent_id=$4, position=$5, updated_at=$6 WHERE id=$7 RETURNING *`,
+        `UPDATE folders SET name=$1, color=$2, project_ids=$3, parent_id=$4, position=$5, is_visible=$6, updated_at=$7 WHERE id=$8 RETURNING *`,
         [
           body.name ?? cur.name,
           body.color ?? cur.color,
           'projectIds' in body ? JSON.stringify(body.projectIds) : cur.project_ids,
           nextParent ?? null,
           'position' in body ? body.position : cur.position,
+          'isVisible' in body ? body.isVisible : cur.is_visible,
           now,
           id,
         ],

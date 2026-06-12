@@ -1,8 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - ProjectTimeDistribution
-// Phân bổ thời gian focus theo từng project (dữ liệu thật).
-// Ưu tiên tính từ pomodoro session (focus) -> task -> project,
-// nếu chưa có session thì fallback theo task.totalFocusTime.
+// Phân bổ thời gian focus theo từng project (dữ liệu thật trong khoảng thời gian).
 // ============================================================
 import React, { useMemo } from 'react';
 import { useTaskContext } from '../../contexts/TaskContext';
@@ -19,38 +17,56 @@ interface ProjectTimeDistributionProps {
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+  startDate: Date;
+  endDate: Date;
 }
 
 const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
+  startDate,
+  endDate,
 }) => {
-  const { tasks, projects } = useTaskContext();
+  const { tasks, projects, pomodoroSessions } = useTaskContext();
 
   const slices = useMemo<ProjectSlice[]>(() => {
-    // ---- Lọc danh sách task theo bộ lọc chọn ----
-    const filteredTasks = tasks.filter((task) => {
-      if (selectedFolderId !== 'all') {
-        if (!task.projectId) return false;
-        const project = projects.find((p) => p.id === task.projectId);
-        if (!project || project.folderId !== selectedFolderId) return false;
-      }
-      if (selectedProjectId !== 'all') {
-        if (task.projectId !== selectedProjectId) return false;
-      }
-      if (selectedTagId !== 'all') {
-        if (!task.tags || !task.tags.includes(selectedTagId)) return false;
-      }
-      return true;
+    // 1. Lọc các sessions trong khoảng thời gian [startDate, endDate]
+    const sessionsInPeriod = pomodoroSessions.filter(s => {
+      if (!s.startTime || s.type !== 'focus') return false;
+      const sDate = new Date(s.startTime);
+      return sDate >= startDate && sDate <= endDate;
     });
 
-    // Nguồn sự thật: gom task.totalFocusTime (thời gian thực) theo dự án
+    // 2. Gom nhóm phút tập trung theo task
+    const minutesByTask = new Map<string, number>();
+    sessionsInPeriod.forEach(s => {
+      if (s.taskId) {
+        minutesByTask.set(s.taskId, (minutesByTask.get(s.taskId) ?? 0) + (s.duration ?? 0));
+      }
+    });
+
+    // 3. Lọc task và gom phút theo dự án
     const minutesByProject = new Map<string, number>();
-    filteredTasks.forEach((t) => {
-      const mins = t.totalFocusTime ?? 0;
+    
+    tasks.forEach(task => {
+      const mins = minutesByTask.get(task.id) ?? 0;
       if (mins <= 0) return;
-      const pid = t.projectId ?? 'inbox';
+
+      // Áp dụng bộ lọc dự án/thư mục/nhãn cho task
+      if (selectedFolderId !== 'all') {
+        if (!task.projectId) return;
+        const project = projects.find((p) => p.id === task.projectId);
+        if (!project || project.folderId !== selectedFolderId) return;
+      }
+      if (selectedProjectId !== 'all') {
+        if (task.projectId !== selectedProjectId) return;
+      }
+      if (selectedTagId !== 'all') {
+        if (!task.tags || !task.tags.includes(selectedTagId)) return;
+      }
+
+      const pid = task.projectId ?? 'inbox';
       minutesByProject.set(pid, (minutesByProject.get(pid) ?? 0) + mins);
     });
 
@@ -68,7 +84,7 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
       })
       .filter((s) => s.minutes > 0)
       .sort((a, b) => b.minutes - a.minutes);
-  }, [tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
+  }, [tasks, projects, pomodoroSessions, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
 
   if (slices.length === 0) {
     return (
@@ -77,7 +93,7 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
           <rect x="4" y="4" width="32" height="32" rx="4" stroke="var(--border-strong)" strokeWidth="1.5" />
           <path d="M12 20h4v8h-4zM18 14h4v14h-4zM24 17h4v11h-4z" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>No Data</span>
+        <span>Không có dữ liệu</span>
       </div>
     );
   }

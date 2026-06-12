@@ -1,7 +1,7 @@
 // ============================================================
 // FOCUS TO-DO - tagDistributionHelpers
 // ============================================================
-import type { Task, Tag } from '../../types';
+import type { Task, Tag, PomodoroSession } from '../../types';
 
 export interface TagSlice {
   id: string;
@@ -17,12 +17,39 @@ export function getTagTimeDistribution(
     selectedFolderId: string;
     selectedProjectId: string;
     selectedTagId: string;
+    startDate?: Date;
+    endDate?: Date;
   },
-  projects: any[]
+  projects: any[],
+  pomodoroSessions: PomodoroSession[]
 ): TagSlice[] {
-  const { selectedFolderId, selectedProjectId, selectedTagId } = filters;
+  const { selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate } = filters;
 
-  // Lọc danh sách task theo bộ lọc
+  // 1. Tính số phút tập trung cho mỗi task trong khoảng thời gian [startDate, endDate]
+  const minutesByTask = new Map<string, number>();
+
+  if (startDate && endDate) {
+    const sessionsInPeriod = pomodoroSessions.filter(s => {
+      if (!s.startTime || s.type !== 'focus') return false;
+      const sDate = new Date(s.startTime);
+      return sDate >= startDate && sDate <= endDate;
+    });
+
+    sessionsInPeriod.forEach(s => {
+      if (s.taskId) {
+        minutesByTask.set(s.taskId, (minutesByTask.get(s.taskId) ?? 0) + (s.duration ?? 0));
+      }
+    });
+  } else {
+    // Fallback: dùng task.totalFocusTime nếu không lọc thời gian
+    tasks.forEach(t => {
+      if (t.totalFocusTime && t.totalFocusTime > 0) {
+        minutesByTask.set(t.id, t.totalFocusTime);
+      }
+    });
+  }
+
+  // 2. Lọc danh sách task theo các bộ lọc khác
   const filteredTasks = tasks.filter((task) => {
     if (selectedFolderId !== 'all') {
       if (!task.projectId) return false;
@@ -38,11 +65,10 @@ export function getTagTimeDistribution(
     return true;
   });
 
-  // Nguồn sự thật: gom task.totalFocusTime (thời gian thực) theo nhãn.
-  // 1 task có nhiều nhãn -> chia đều thời gian để tổng không bị nhân lên.
+  // 3. Gom nhóm phút theo nhãn (chia đều nếu task có nhiều nhãn)
   const minutesByTag = new Map<string, number>(); // tagId -> minutes
   filteredTasks.forEach((t) => {
-    const mins = t.totalFocusTime ?? 0;
+    const mins = minutesByTask.get(t.id) ?? 0;
     if (mins <= 0) return;
     const tTags = t.tags && t.tags.length > 0 ? t.tags : ['untagged'];
     const minsPerTag = mins / tTags.length;

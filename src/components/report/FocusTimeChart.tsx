@@ -7,14 +7,12 @@ import { useTaskContext } from '../../contexts/TaskContext';
 import type { ChartPeriod, BarData } from './focusTimeChartHelpers';
 import {
   buildBarData,
-  getPeriodLabel,
   drawChart
 } from './focusTimeChartHelpers';
 
 interface FocusTimeChartProps {
   period: ChartPeriod;
   currentDate: Date;
-  onNavigate: (dir: -1 | 1) => void;
   accentColor?: string;
   selectedFolderId?: string;
   selectedProjectId?: string;
@@ -24,7 +22,6 @@ interface FocusTimeChartProps {
 const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
   period,
   currentDate,
-  onNavigate,
   accentColor = '#f25f5c',
   selectedFolderId = 'all',
   selectedProjectId = 'all',
@@ -124,28 +121,6 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Header navigation */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 4px',
-      }}>
-        <button
-          onClick={() => onNavigate(-1)}
-          style={navBtnStyle()}
-        >
-          ‹
-        </button>
-        <span style={{ color: '#ccc', fontSize: 13, fontWeight: 600 }}>
-          {getPeriodLabel(period, currentDate)}
-        </span>
-        <button
-          onClick={() => onNavigate(1)}
-          style={navBtnStyle()}
-        >
-          ›
-        </button>
-      </div>
-
       {/* Canvas area */}
       <div ref={containerRef} style={{
         position: 'relative',
@@ -196,24 +171,6 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
     </div>
   );
 };
-
-function navBtnStyle(): React.CSSProperties {
-  return {
-    background: 'var(--glass-bg)',
-    border: 'none',
-    borderRadius: 8,
-    color: 'var(--text-secondary)',
-    fontSize: 18,
-    width: 28,
-    height: 28,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 1,
-    padding: 0,
-  };
-}
 
 export type { ChartPeriod };
 export default FocusTimeChart;

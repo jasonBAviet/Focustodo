@@ -7,7 +7,8 @@ import Dialog from '../common/Dialog';
 import { useAppContext } from '../../contexts/AppContext';
 import AppearanceSettings from './AppearanceSettings';
 import PomodoroTimerSettings from './PomodoroTimerSettings';
-import ProjectsSettings from './ProjectsSettings';
+import ProjectsAndFoldersSettings from './ProjectsAndFoldersSettings';
+import TagsSettings from './TagsSettings';
 import WebhookSettings from './WebhookSettings';
 import GeneralSettings from './GeneralSettings';
 import AccountSettings from './AccountSettings';
@@ -15,7 +16,7 @@ import AccountSettings from './AccountSettings';
 // ----------------------------------------------------------
 // Kieu du lieu Tab
 // ----------------------------------------------------------
-type TabId = 'account' | 'general' | 'pomodoro' | 'projects' | 'appearance' | 'webhook';
+type TabId = 'account' | 'general' | 'pomodoro' | 'projects' | 'tags' | 'appearance' | 'webhook';
 
 interface TabItem {
   id: TabId;
@@ -65,6 +66,12 @@ const IconWebhook = () => (
   </svg>
 );
 
+const IconTags = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.41l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.41zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/>
+  </svg>
+);
+
 // ----------------------------------------------------------
 // Danh sach Tab
 // ----------------------------------------------------------
@@ -72,7 +79,8 @@ const TABS: TabItem[] = [
   { id: 'account',    label: 'Account',       icon: <IconAccount /> },
   { id: 'general',   label: 'General',        icon: <IconGeneral /> },
   { id: 'pomodoro',  label: 'Pomodoro Timer', icon: <IconPomodoro /> },
-  { id: 'projects',  label: 'Projects',       icon: <IconProjects /> },
+  { id: 'projects',  label: 'Projects & Folders', icon: <IconProjects /> },
+  { id: 'tags',      label: 'Tags',           icon: <IconTags /> },
   { id: 'appearance',label: 'Appearance',     icon: <IconAppearance /> },
   { id: 'webhook',   label: 'Webhook',        icon: <IconWebhook /> },
 ];
@@ -85,7 +93,8 @@ function renderTabContent(tab: TabId): React.ReactNode {
     case 'account':    return <AccountSettings />;
     case 'general':    return <GeneralSettings />;
     case 'pomodoro':   return <PomodoroTimerSettings />;
-    case 'projects':   return <ProjectsSettings />;
+    case 'projects':   return <ProjectsAndFoldersSettings />;
+    case 'tags':       return <TagsSettings />;
     case 'appearance': return <AppearanceSettings />;
     case 'webhook':    return <WebhookSettings />;
     default:           return null;

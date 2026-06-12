@@ -29,7 +29,10 @@ import type {
 import useLocalStorage from '../hooks/useLocalStorage';
 import { dateUtils } from '../utils/dateUtils';
 import { uuid } from '../utils/uuid';
-import { loadRemoteAppState, saveRemoteAppState, fetchChanges, completeTaskRemote } from '../utils/remoteState';
+import {
+  loadRemoteAppState, saveRemoteAppState, fetchChanges, completeTaskRemote,
+  createProjectRemote, updateProjectRemote, deleteProjectRemote,
+} from '../utils/remoteState';
 import type { RemoteAppState, DeletedIds, ChangesResponse } from '../utils/remoteState';
 import { getDescendantFolderIds } from '../utils/folderUtils';
 import { useAppContext } from './AppContext';
@@ -414,6 +417,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     if (folderId) {
       setFolders((prev) => prev.map(f => f.id === folderId ? { ...f, projectIds: [...f.projectIds, newProject.id], updatedAt: now } : f));
     }
+    createProjectRemote(newProject).catch((e) => console.warn('[addProject]', e));
     return newProject;
   }, [setProjects, setFolders]);
 
@@ -421,6 +425,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: dateUtils.now() } : p)),
     );
+    updateProjectRemote(id, updates).catch((e) => console.warn('[updateProject]', e));
   }, [setProjects]);
 
   const deleteProject = useCallback((id: string) => {
@@ -437,6 +442,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         t.projectId === id ? { ...t, projectId: null, updatedAt: dateUtils.now() } : t,
       ),
     );
+    deleteProjectRemote(id).catch((e) => console.warn('[deleteProject]', e));
   }, [setProjects, setFolders, setTasks]);
 
   // --------------------------------------------------------
@@ -450,6 +456,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       color,
       projectIds: [],
       parentId,
+      isVisible: true,
       createdAt: now,
       updatedAt: now,
     };
@@ -459,11 +466,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         .reduce((m, f) => Math.max(m, f.position ?? 0), -1) + 1;
       return [...prev, { ...newFolder, position: pos }];
     });
+    createFolderRemote(newFolder).catch((e) => console.warn('[addFolder]', e));
     return newFolder;
   }, [setFolders]);
 
   const updateFolder = useCallback((id: string, updates: Partial<Folder>) => {
     setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates, updatedAt: dateUtils.now() } : f)));
+    updateFolderRemote(id, updates).catch((e) => console.warn('[updateFolder]', e));
   }, [setFolders]);
 
   const deleteFolder = useCallback((id: string) => {
@@ -472,6 +481,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     // Đưa folder con lên gốc (parentId=null) thay vì xoá theo.
     setFolders((prev) => prev.filter((f) => f.id !== id).map((f) => (f.parentId === id ? { ...f, parentId: null, updatedAt: now } : f)));
     setProjects((prev) => prev.map((p) => p.folderId === id ? { ...p, folderId: null, updatedAt: now } : p));
+    deleteFolderRemote(id).catch((e) => console.warn('[deleteFolder]', e));
   }, [setFolders, setProjects]);
 
   // --------------------------------------------------------
@@ -489,15 +499,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       color,
       projectId: scope?.projectId ?? null,
       folderId: scope?.folderId ?? null,
+      isVisible: true,
       createdAt: now,
       updatedAt: now,
     };
     setTags((prev) => [...prev, newTag]);
+    createTagRemote(newTag).catch((e) => console.warn('[addTag]', e));
     return newTag;
   }, [setTags]);
 
   const updateTag = useCallback((id: string, updates: Partial<Tag>) => {
     setTags((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: dateUtils.now() } : t)));
+    updateTagRemote(id, updates).catch((e) => console.warn('[updateTag]', e));
   }, [setTags]);
 
   const deleteTag = useCallback((id: string) => {
@@ -506,6 +519,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTasks((prev) => prev.map((task) =>
       task.tags.includes(id) ? { ...task, tags: task.tags.filter(tid => tid !== id), updatedAt: dateUtils.now() } : task
     ));
+    deleteTagRemote(id).catch((e) => console.warn('[deleteTag]', e));
   }, [setTags, setTasks]);
 
   // --------------------------------------------------------
@@ -791,6 +805,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         filtered = tasks.filter((t) => !!t.isKnowledge);
         break;
 
+      case 'unassigned':
+        // Task chưa được gán dự án VÀ chưa có nhãn nào, chưa hoàn thành
+        filtered = normalTasks.filter(
+          (t) => !t.completed && !t.projectId && (t.tags ?? []).length === 0,
+        );
+        break;
+
       default:
         // Tất cả task chưa hoàn thành
         filtered = normalTasks.filter((t) => !t.completed);
@@ -826,8 +847,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    // Lọc theo project (OR - thuộc một trong các project đã chọn)
-    if (filters.projectIds.length > 0) {
+    // Lọc theo project — bỏ qua khi đang ở project/folder/tag view
+    // (view đó đã scope sẵn; áp thêm sẽ gây rỗng nếu filter thuộc project khác)
+    if (
+      filters.projectIds.length > 0 &&
+      activeView !== 'project' &&
+      activeView !== 'folder' &&
+      activeView !== 'tag'
+    ) {
       filtered = filtered.filter(
         (t) => t.projectId !== null && filters.projectIds.includes(t.projectId),
       );

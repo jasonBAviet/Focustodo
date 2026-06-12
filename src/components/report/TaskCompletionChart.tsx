@@ -11,14 +11,12 @@ import {
   buildWeeklyData,
   buildMonthlyData,
   buildYearlyData,
-  getPeriodLabel,
   drawChart
 } from './taskCompletionChartHelpers';
 
 interface TaskCompletionChartProps {
   period: ChartPeriod;
   currentDate: Date;
-  onNavigate: (dir: -1 | 1) => void;
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
@@ -27,7 +25,6 @@ interface TaskCompletionChartProps {
 const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
   period,
   currentDate,
-  onNavigate,
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
@@ -137,18 +134,6 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Header navigation */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 4px',
-      }}>
-        <button onClick={() => onNavigate(-1)} style={navBtnStyle()}>‹</button>
-        <span style={{ color: '#ccc', fontSize: 13, fontWeight: 600 }}>
-          {getPeriodLabel(period, currentDate)}
-        </span>
-        <button onClick={() => onNavigate(1)} style={navBtnStyle()}>›</button>
-      </div>
-
       {/* Canvas Area */}
       <div ref={containerRef} style={{
         position: 'relative',
@@ -216,24 +201,6 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
     </div>
   );
 };
-
-function navBtnStyle(): React.CSSProperties {
-  return {
-    background: 'var(--glass-bg)',
-    border: 'none',
-    borderRadius: 8,
-    color: 'var(--text-secondary)',
-    fontSize: 18,
-    width: 28,
-    height: 28,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: 1,
-    padding: 0,
-  };
-}
 
 export type { ChartPeriod };
 export default TaskCompletionChart;

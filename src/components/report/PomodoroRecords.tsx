@@ -25,12 +25,16 @@ interface PomodoroRecordsProps {
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+  startDate: Date;
+  endDate: Date;
 }
 
 const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
+  startDate,
+  endDate,
 }) => {
   const { pomodoroSessions, pomodoroRecords, projects, tasks } = useTaskContext();
   const [viewMode, setViewMode] = useState<'runs' | 'sessions'>('runs');
@@ -38,6 +42,13 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
   // Áp dụng bộ lọc cho Pomodoro Records (Runs)
   const filteredRecords = useMemo(() => {
     return pomodoroRecords.filter((r) => {
+      if (r.startTime) {
+        const rDate = new Date(r.startTime);
+        if (rDate < startDate || rDate > endDate) return false;
+      } else {
+        return false;
+      }
+
       const task = tasks.find((t) => t.id === r.taskId);
       if (!task) return false;
 
@@ -57,11 +68,18 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
 
       return true;
     });
-  }, [pomodoroRecords, tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
+  }, [pomodoroRecords, tasks, projects, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
 
   // Áp dụng bộ lọc cho Pomodoro Sessions (Logs)
   const filteredSessions = useMemo(() => {
     return pomodoroSessions.filter((s) => {
+      if (s.startTime) {
+        const sDate = new Date(s.startTime);
+        if (sDate < startDate || sDate > endDate) return false;
+      } else {
+        return false;
+      }
+
       const task = tasks.find((t) => t.id === s.taskId);
       if (!task) return false;
 
@@ -81,7 +99,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
 
       return true;
     });
-  }, [pomodoroSessions, tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
+  }, [pomodoroSessions, tasks, projects, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
 
   const recentSessions = filteredSessions.slice(0, 50);
   const recentRecords = filteredRecords.slice(0, 50);

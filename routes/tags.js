@@ -11,6 +11,7 @@ function rowToTag(r) {
     color: r.color ?? '#7ec8e3',
     projectId: r.project_id ?? null,
     folderId: r.folder_id ?? null,
+    isVisible: r.is_visible ?? true,
     createdAt: r.created_at ?? null,
     updatedAt: r.updated_at ?? null,
   };
@@ -56,8 +57,8 @@ export function createTagsRouter(pool, auth) {
       const now = new Date().toISOString();
       const id = body.id ?? randomUUID();
       const r = await pool.query(
-        `INSERT INTO tags (id, name, color, project_id, folder_id, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$6) RETURNING *`,
-        [id, body.name.trim(), body.color ?? '#7ec8e3', body.projectId ?? null, body.folderId ?? null, now],
+        `INSERT INTO tags (id, name, color, project_id, folder_id, is_visible, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$7) RETURNING *`,
+        [id, body.name.trim(), body.color ?? '#7ec8e3', body.projectId ?? null, body.folderId ?? null, body.isVisible ?? true, now],
       );
       res.status(201).json({ data: rowToTag(r.rows[0]) });
     } catch (err) {
@@ -82,8 +83,8 @@ export function createTagsRouter(pool, auth) {
       const projectId = 'projectId' in body ? body.projectId : cur.project_id;
       const folderId = 'folderId' in body ? body.folderId : cur.folder_id;
       const r = await pool.query(
-        `UPDATE tags SET name=$1, color=$2, project_id=$3, folder_id=$4, updated_at=$5 WHERE id=$6 RETURNING *`,
-        [body.name ?? cur.name, body.color ?? cur.color, projectId ?? null, folderId ?? null, now, id],
+        `UPDATE tags SET name=$1, color=$2, project_id=$3, folder_id=$4, is_visible=$5, updated_at=$6 WHERE id=$7 RETURNING *`,
+        [body.name ?? cur.name, body.color ?? cur.color, projectId ?? null, folderId ?? null, 'isVisible' in body ? body.isVisible : cur.is_visible, now, id],
       );
       res.json({ data: rowToTag(r.rows[0]) });
     } catch (err) {

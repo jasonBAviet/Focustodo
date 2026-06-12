@@ -10,10 +10,12 @@ export function getPeakHoursData(
     selectedFolderId: string;
     selectedProjectId: string;
     selectedTagId: string;
+    startDate?: Date;
+    endDate?: Date;
   },
   projects: any[]
 ): number[] {
-  const { selectedFolderId, selectedProjectId, selectedTagId } = filters;
+  const { selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate } = filters;
 
   const filteredTasks = tasks.filter((task) => {
     if (selectedFolderId !== 'all') {
@@ -41,10 +43,15 @@ export function getPeakHoursData(
     if (!session.taskId || !filteredTaskIds.has(session.taskId)) return;
 
     try {
-      const startDate = new Date(session.startTime);
-      if (isNaN(startDate.getTime())) return;
+      const sDate = new Date(session.startTime);
+      if (isNaN(sDate.getTime())) return;
 
-      const startHour = startDate.getHours();
+      // Lọc theo khoảng thời gian nếu có
+      if (startDate && endDate) {
+        if (sDate < startDate || sDate > endDate) return;
+      }
+
+      const startHour = sDate.getHours();
       hours[startHour] += (session.duration ?? 0);
     } catch (e) {
       // ignore invalid dates
