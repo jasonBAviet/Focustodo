@@ -5,5 +5,12 @@
 # dependencies & build artifacts
 node_modules/
 dist/
+dev-dist/
 *.tsbuildinfo
 public/uploads/
+deploy.zip
+archived/
+
+# local reference files
+.local/
+focus-todo/

@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -46,11 +52,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Chien luoc cache cho tai nguyen tinh: Cache First
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,ico}'],
         runtimeCaching: [
           {
-            // API: Network First - Uu tien doc du lieu moi tu mang
             urlPattern: /^https?:\/\/.*\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
@@ -58,7 +62,7 @@ export default defineConfig({
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 24 * 60 * 60, // 24 gio
+                maxAgeSeconds: 24 * 60 * 60,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -66,14 +70,13 @@ export default defineConfig({
             },
           },
           {
-            // Font va icon tu CDN: Cache First
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 nam
+                maxAgeSeconds: 365 * 24 * 60 * 60,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -83,8 +86,6 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        // Tat PWA trong dev mode de tranh xung dot module (duplicate React)
-        // PWA chi hoat dong day du trong production build (npm run build)
         enabled: false,
       },
     }),

@@ -213,6 +213,18 @@ export async function ensureSchema() {
       updated_at TEXT NOT NULL,
       is_deleted BOOLEAN DEFAULT false
     );
+
+    CREATE TABLE IF NOT EXISTS webhook_subscribers (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      events TEXT[] DEFAULT ARRAY['task.created','task.updated','task.deleted','task.completed'],
+      enabled BOOLEAN DEFAULT true,
+      secret TEXT,
+      created_at TEXT,
+      last_triggered_at TEXT
+    );
   `);
 
   // 3. Them cot user_id vao cac bang neu chua co
@@ -273,6 +285,7 @@ export async function ensureSchema() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_subscribers_user_id ON webhook_subscribers(user_id);');
   } catch (err) {
     console.warn('[safety] Khong the tao cac index:', err.message);
   }

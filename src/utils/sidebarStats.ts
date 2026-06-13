@@ -1,6 +1,6 @@
-import type { Task, Project, Folder, ViewType, Settings } from '../types';
-import { dateUtils } from './dateUtils';
-import { getDescendantFolderIds } from './folderUtils';
+import type { Task, Project, Folder, ViewType, Settings } from '@/types';
+import { dateUtils } from '@/utils/dateUtils';
+import { getDescendantFolderIds } from '@/utils/folderUtils';
 
 export const formatMinutes = (minutes: number): string => {
   const h = Math.floor(minutes / 60);

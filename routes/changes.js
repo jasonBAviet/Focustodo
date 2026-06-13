@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { rowToTask } from './taskHelpers.js';
+import { rowToTask } from '../src/backend/modules/tasks/task.service.js';
 
 // ============================================================
 // Delta feed: GET /api/changes?since=<ISO>&types=tasks,projects,folders,tags
@@ -60,17 +60,20 @@ export function createChangesRouter(pool, auth) {
     const changes = {};
     const deletedIds = {};
     try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
       for (const table of types) {
         const mapper = MAPPERS[table];
         let rows;
         if (since) {
           rows = await pool.query(
-            `SELECT * FROM ${table} WHERE updated_at > $1 ORDER BY updated_at ASC LIMIT 2000`,
-            [since],
+            `SELECT * FROM ${table} WHERE updated_at > $1 AND user_id = $2 ORDER BY updated_at ASC LIMIT 2000`,
+            [since, userId],
           );
         } else {
           rows = await pool.query(
-            `SELECT * FROM ${table} WHERE is_deleted = false OR is_deleted IS NULL ORDER BY updated_at ASC LIMIT 2000`,
+            `SELECT * FROM ${table} WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY updated_at ASC LIMIT 2000`,
+            [userId],
           );
         }
         const live = [];

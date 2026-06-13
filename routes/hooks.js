@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import crypto from 'crypto';
-import { insertTaskRow } from './taskHelpers.js';
+import { taskService } from '../src/backend/modules/tasks/task.service.js';
 
 // ============================================================
 // Inbound webhook receiver: POST /api/hooks/:integration
@@ -11,7 +11,7 @@ import { insertTaskRow } from './taskHelpers.js';
 // ============================================================
 
 function verifyHmac(secret, rawBuf, signatureHeader) {
-  if (!secret) return true; // endpoint không đặt secret -> bỏ qua xác thực
+  if (!secret) return false; // bat buoc phai co secret va xac thuc chu ky
   if (!signatureHeader) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBuf).digest('hex');
   const provided = String(signatureHeader).replace(/^sha256=/i, '').trim();
@@ -63,6 +63,9 @@ export function createHooksRouter(pool) {
 
       // req.body là Buffer (express.raw). Có thể rỗng nếu không có body.
       const rawBuf = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
+      if (!ep.secret) {
+        return res.status(503).json({ error: `Endpoint "${integration}" chua cau hinh secret. Vui long cap nhat secret qua /api/integrations truoc khi su dung.` });
+      }
       const signature = req.headers['x-signature'] || req.headers['x-hub-signature-256'];
       if (!verifyHmac(ep.secret, rawBuf, signature)) {
         return res.status(401).json({ error: 'Chu ky HMAC khong hop le.' });
@@ -80,7 +83,10 @@ export function createHooksRouter(pool) {
         return res.status(400).json({ error: 'Khong map duoc "title" tu payload.' });
       }
 
-      const task = await insertTaskRow(pool, mapped, ep.user_id || 'default_user');
+      if (!ep.user_id) {
+        return res.status(400).json({ error: `Endpoint "${integration}" chua cau hinh user_id. Vui long cap nhat qua /api/integrations.` });
+      }
+      const { data: task } = await taskService.createTask(ep.user_id, mapped);
       pool
         .query('UPDATE webhook_endpoints SET last_used_at = $1 WHERE integration = $2', [new Date().toISOString(), integration])
         .catch(() => {});

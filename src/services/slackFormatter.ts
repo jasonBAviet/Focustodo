@@ -1,4 +1,4 @@
-import type { Task } from '../types';
+import type { Task } from '@/types';
 
 function buildSlackMessageForReminder(task: Task): Record<string, unknown> {
   const priorityColor = {

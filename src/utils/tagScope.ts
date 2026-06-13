@@ -1,5 +1,5 @@
-import type { Tag, Project, Folder, ViewType } from '../types';
-import { getAncestorFolderIds, getDescendantFolderIds } from './folderUtils';
+import type { Tag, Project, Folder, ViewType } from '@/types';
+import { getAncestorFolderIds, getDescendantFolderIds } from '@/utils/folderUtils';
 
 // ============================================================
 // Phạm vi nhãn (tag) theo Dự án / Thư mục.

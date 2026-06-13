@@ -1,6 +1,6 @@
-import type { Task, Priority, RepeatType, Subtask } from '../types';
-import { dateUtils } from './dateUtils';
-import { uuid } from './uuid';
+import type { Task, Priority, RepeatType, Subtask } from '@/types';
+import { dateUtils } from '@/utils/dateUtils';
+import { uuid } from '@/utils/uuid';
 
 interface ParsedCSVTask {
   title: string;

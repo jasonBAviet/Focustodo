@@ -2,7 +2,8 @@
 // Khi mat mang, cac thao tac ghi duoc luu vao hang doi nay
 // Khi co mang tro lai, hang doi tu dong gui len API
 
-import { getAll, upsert, deleteById, STORES } from './offlineDB';
+import { getAll, upsert, deleteById, STORES } from '@/utils/offlineDB';
+import { loadToken } from '@/utils/secureStorage';
 
 export type SyncOperation = 'CREATE' | 'UPDATE' | 'DELETE';
 export type SyncEntity = 'tasks' | 'projects' | 'folders' | 'tags';
@@ -94,9 +95,15 @@ async function syncItem(item: SyncQueueItem): Promise<void> {
     method = 'DELETE';
   }
 
+  const token = await loadToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: operation !== 'DELETE' ? JSON.stringify(payload) : undefined,
   });
 

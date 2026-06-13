@@ -2,7 +2,7 @@
 // Wrapper luu tru an toan, tu dong dung Capacitor Preferences tren mobile
 // va localStorage tren web. Giao dien thong nhat cho ca hai moi truong.
 
-import { isNativeMobile } from './capacitorConfig';
+import { isNativeMobile } from '@/utils/capacitorConfig';
 
 const TOKEN_KEY = 'focustodo_token';
 

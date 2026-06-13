@@ -1,5 +1,5 @@
-import { dateUtils } from './dateUtils';
-import type { Task } from '../types';
+import { dateUtils } from '@/utils/dateUtils';
+import type { Task } from '@/types';
 
 export interface CSVRow {
   ID: string;

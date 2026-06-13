@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { TaskProvider, useTaskContext } from './contexts/TaskContext';
-import { AppProvider, useAppContext } from './contexts/AppContext';
-import { WebhookProvider, useWebhookContext } from './contexts/WebhookContext';
-import { PomodoroProvider } from './contexts/PomodoroContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import AuthScreen from './components/AuthScreen';
-import Sidebar from './components/layout/Sidebar';
-import TaskList from './components/task/TaskList';
-import TaskPanel from './components/layout/TaskPanel';
-import KnowledgeHub from './components/knowledge/KnowledgeHub';
-import AddProjectDialog from './components/common/AddProjectDialog';
-import AddFolderDialog from './components/common/AddFolderDialog';
-import AddTagDialog from './components/common/AddTagDialog';
-import ReportPage from './components/report/ReportPage';
-import PomodoroWidget from './components/pomodoro/PomodoroWidget';
-import PomodoroModal from './components/pomodoro/PomodoroModal';
-import HeaderActions from './components/layout/HeaderActions';
-import CommandPalette from './components/common/CommandPalette';
-import OfflineIndicator from './components/pwa/OfflineIndicator';
-import InstallPrompt from './components/pwa/InstallPrompt';
-import { useReminderCheck } from './hooks/useReminderCheck';
-import { useAppRouter } from './hooks/useAppRouter';
-import { useSwipeGesture } from './hooks/useSwipeGesture';
-import { isNativeMobile } from './utils/capacitorConfig';
+import { TaskProvider, useTaskContext } from '@/features/tasks/TaskContext';
+import { AppProvider, useAppContext } from '@/core/contexts/AppContext';
+import { WebhookProvider, useWebhookContext } from '@/core/contexts/WebhookContext';
+import { PomodoroProvider } from '@/features/pomodoro/PomodoroContext';
+import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
+import AuthScreen from '@/features/auth/components/AuthScreen';
+import Sidebar from '@/shared/layout/Sidebar';
+import TaskList from '@/features/tasks/components/TaskList';
+import TaskPanel from '@/shared/layout/TaskPanel';
+import KnowledgeHub from '@/features/knowledge/components/KnowledgeHub';
+import AddProjectDialog from '@/shared/components/AddProjectDialog';
+import AddFolderDialog from '@/shared/components/AddFolderDialog';
+import AddTagDialog from '@/shared/components/AddTagDialog';
+import ReportPage from '@/features/reports/components/ReportPage';
+import PomodoroWidget from '@/features/pomodoro/components/PomodoroWidget';
+import PomodoroModal from '@/features/pomodoro/components/PomodoroModal';
+import HeaderActions from '@/shared/layout/HeaderActions';
+import CommandPalette from '@/shared/components/CommandPalette';
+import OfflineIndicator from '@/shared/pwa/OfflineIndicator';
+import InstallPrompt from '@/shared/pwa/InstallPrompt';
+import { useReminderCheck } from '@/shared/hooks/useReminderCheck';
+import { useAppRouter } from '@/shared/hooks/useAppRouter';
+import { useSwipeGesture } from '@/shared/hooks/useSwipeGesture';
+import { isNativeMobile } from '@/utils/capacitorConfig';
 import './styles/index.css';
 
 const AppInner: React.FC = () => {
@@ -115,7 +115,7 @@ const AppInner: React.FC = () => {
 };
 
 const SettingsDialogLazy = React.lazy(
-  () => import('./components/settings/SettingsDialog')
+  () => import('@/features/settings/components/SettingsDialog')
 );
 
 const AppContent: React.FC = () => {

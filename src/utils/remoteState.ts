@@ -1,6 +1,6 @@
-import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '../types';
-import { getApiBaseUrl } from './capacitorConfig';
-import { loadTokenSync } from './secureStorage';
+import type { Project, Task, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
+import { getApiBaseUrl } from '@/utils/capacitorConfig';
+import { loadTokenSync } from '@/utils/secureStorage';
 
 function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
   const token = loadTokenSync();

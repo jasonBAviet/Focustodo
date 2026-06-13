@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser } from './auth.js';
+import { authenticateUser } from '../src/backend/modules/auth/auth.middleware.js';
 
 const router = Router();
 
