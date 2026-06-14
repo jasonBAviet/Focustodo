@@ -3,10 +3,12 @@ import { authController } from './auth.controller.js';
 import { authenticateUser, requireAdmin, requireScope } from './auth.middleware.js';
 
 // Route danh cho ung dung (SPA) dang ky / dang nhap
-export function createUserAuthRouter() {
+// authLimiter chi ap dung cho /login va /register (chong brute-force)
+// /keys khong can rate limit strict
+export function createUserAuthRouter(authLimiter) {
   const router = Router();
-  router.post('/register', authController.register);
-  router.post('/login', authController.login);
+  router.post('/register', authLimiter, authController.register);
+  router.post('/login', authLimiter, authController.login);
   router.get('/me', authenticateUser, authController.getMe);
   // API keys cua chinh user (scope: tasks)
   router.get('/keys', authenticateUser, authController.getUserApiKeys.bind(authController));

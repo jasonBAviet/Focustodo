@@ -30,7 +30,7 @@ export function useTaskFilters({
 
   const getFilteredTasks = useCallback((): Task[] => {
     let filtered: Task[] = [];
-    const normalTasks = tasks.filter((t) => !t.isKnowledge);
+    const normalTasks = tasks;
 
     switch (activeView) {
       case 'today':
@@ -69,9 +69,9 @@ export function useTaskFilters({
         break;
       case 'project':
         if (activeProjectId) {
-          filtered = tasks.filter((t) => !t.completed && t.projectId === activeProjectId);
+          filtered = normalTasks.filter((t) => !t.completed && t.projectId === activeProjectId);
         } else {
-          filtered = tasks.filter((t) => !t.completed);
+          filtered = normalTasks.filter((t) => !t.completed);
         }
         break;
       case 'unassigned':
@@ -98,6 +98,9 @@ export function useTaskFilters({
           filtered = normalTasks.filter((t) => !t.completed);
         }
         break;
+      case 'knowledge':
+        filtered = [];
+        break;
       case 'events':
         filtered = [];
         break;
@@ -117,10 +120,20 @@ export function useTaskFilters({
       filtered = filtered.filter((t) => t.title.toLowerCase().includes(txt) || t.note?.toLowerCase().includes(txt));
     }
     if (filters.tagIds.length > 0) {
-      filtered = filtered.filter((t) => filters.tagIds.some((tagId) => t.tags.includes(tagId)));
+      const realTagIds = filters.tagIds.filter((id) => id !== '__no_tag__');
+      const wantNoTag = filters.tagIds.includes('__no_tag__');
+      filtered = filtered.filter((t) =>
+        (wantNoTag && t.tags.length === 0) ||
+        realTagIds.some((tagId) => t.tags.includes(tagId))
+      );
     }
     if (filters.projectIds.length > 0) {
-      filtered = filtered.filter((t) => t.projectId && filters.projectIds.includes(t.projectId));
+      const realProjectIds = filters.projectIds.filter((id) => id !== '__no_project__');
+      const wantNoProject = filters.projectIds.includes('__no_project__');
+      filtered = filtered.filter((t) =>
+        (wantNoProject && !t.projectId) ||
+        (t.projectId && realProjectIds.includes(t.projectId))
+      );
     }
     if (filters.createdFrom) {
       const from = new Date(filters.createdFrom).getTime();

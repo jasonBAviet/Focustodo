@@ -60,11 +60,34 @@ export interface Task {
   completed: boolean;
   flagged: boolean;
   tags: string[];
-  position?: number; // thứ tự kéo-thả trong dự án
+  position?: number; // drag-and-drop order in project
   createdAt: string;
   completedAt: string | null;
   updatedAt: string;
-  isKnowledge?: boolean;
+  attachments?: Attachment[];
+}
+
+export interface Knowledge {
+  id: string;
+  title: string;
+  projectId: string | null;
+  priority: Priority;
+  dueDate: string | null;
+  reminder: string | null;
+  repeat: RepeatType;
+  repeatCustom: string | null;
+  note: string;
+  subtasks: Subtask[];
+  pomodoroEstimate: number;
+  pomodoroCompleted: number;
+  totalFocusTime: number; // in minutes
+  completed: boolean;
+  flagged: boolean;
+  tags: string[];
+  position?: number;
+  createdAt: string;
+  completedAt: string | null;
+  updatedAt: string;
   attachments?: Attachment[];
 }
 
@@ -85,7 +108,7 @@ export interface Folder {
   name: string;
   color: string;
   projectIds: string[];
-  parentId?: string | null; // thư mục cha (lồng nhiều cấp); null = gốc
+  parentId?: string | null; // parent folder (nested); null = root
   position?: number;
   isVisible?: boolean;
   createdAt: string;
@@ -96,8 +119,8 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
-  projectId?: string | null; // nhãn thuộc dự án (null = không gắn)
-  folderId?: string | null; // nhãn thuộc thư mục (null = không gắn); cả hai null = dùng chung
+  projectId?: string | null; // tag belongs to project (null = unassigned)
+  folderId?: string | null; // tag belongs to folder (null = unassigned); both null = global
   isVisible?: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -161,10 +184,14 @@ export interface Settings {
   dailyFocusGoalHours: number;
   // Visible views in sidebar
   visibleViews: Record<string, boolean>;
+  // Calendar preferences
+  calendarScale: 'month' | 'week' | 'day';
+  calendarDateField: 'dueDate' | 'createdAt';
 }
 
 export interface AppState {
   tasks: Task[];
+  knowledges: Knowledge[];
   projects: Project[];
   folders: Folder[];
   tags: Tag[];
@@ -195,8 +222,8 @@ export interface ReportStats {
 }
 
 // ----------------------------------------------------------
-// Đọc biến môi trường Vite (được inject lúc build/dev)
-// Các biến VITE_* trong file .env sẽ được thay thế tại compile time
+// Read Vite environment variables (injected at build/dev)
+// VITE_* variables in .env will be replaced at compile time
 // ----------------------------------------------------------
 const _envWebhookUrl: string = import.meta.env.VITE_SLACK_WEBHOOK_URL ?? '';
 const _envExternalApiUrl: string = import.meta.env.VITE_EXTERNAL_API_URL ?? '';
@@ -213,12 +240,14 @@ export const DEFAULT_SETTINGS: Settings = {
   darkMode: 'dark',
   themeWallpaper: 'dark-forest',
   accentColor: '#f25f5c',
-  // Nếu .env có giá trị thì dùng, ngược lại để trống
+  // If .env has value then use, otherwise leave empty
   webhookUrl: _envWebhookUrl,
   webhookEnabled: _envWebhookUrl.length > 0,
   externalApiUrl: _envExternalApiUrl,
   externalApiEnabled: _envExternalApiUrl.length > 0,
   dailyFocusGoalHours: 3,
+  calendarScale: 'month',
+  calendarDateField: 'dueDate',
   visibleViews: {
     today: true,
     tomorrow: true,
@@ -236,10 +265,10 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
-  high: { label: 'Uu tien cao', color: '#f25f5c' },
-  medium: { label: 'Uu tien trung binh', color: '#f4a261' },
-  low: { label: 'Uu tien thap', color: '#2ec4b6' },
-  none: { label: 'Khong uu tien', color: '#888' },
+  high: { label: 'High priority', color: '#f25f5c' },
+  medium: { label: 'Medium priority', color: '#f4a261' },
+  low: { label: 'Low priority', color: '#2ec4b6' },
+  none: { label: 'No priority', color: '#888' },
 };
 
 export const PROJECT_COLORS = [

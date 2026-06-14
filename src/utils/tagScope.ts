@@ -2,9 +2,9 @@ import type { Tag, Project, Folder, ViewType } from '@/types';
 import { getAncestorFolderIds, getDescendantFolderIds } from '@/utils/folderUtils';
 
 // ============================================================
-// Phạm vi nhãn (tag) theo Dự án / Thư mục.
-// Nhãn "dùng chung" (không gắn projectId lẫn folderId) luôn hiện.
-// Nhãn gắn thư mục kế thừa xuống cây con (dự án con + thư mục con).
+// Tag scope by Project / Folder.
+// Global tags (no projectId or folderId) always visible.
+// Folder-bound tags inherit down the subtree (child projects + child folders).
 // ============================================================
 
 export function isGlobalTag(tag: Tag): boolean {
@@ -16,8 +16,8 @@ export interface TagScopeContext {
   folderId?: string | null;
 }
 
-// Trả về danh sách nhãn liên quan tới ngữ cảnh hiện tại.
-// Không có ngữ cảnh (cả projectId lẫn folderId rỗng) -> trả về tất cả nhãn.
+// Returns tags related to the current context.
+// No context (both projectId and folderId are empty) -> return all tags.
 export function getVisibleTags(
   tags: Tag[],
   folders: Folder[],
@@ -26,7 +26,7 @@ export function getVisibleTags(
 ): Tag[] {
   const activeTags = tags.filter((t) => t.isVisible !== false);
 
-  // Ngữ cảnh dự án.
+  // Project context.
   if (ctx.projectId) {
     const project = projects.find((p) => p.id === ctx.projectId);
     const folderChain = project?.folderId
@@ -40,7 +40,7 @@ export function getVisibleTags(
     );
   }
 
-  // Ngữ cảnh thư mục.
+  // Folder context.
   if (ctx.folderId) {
     const subtree = new Set(getDescendantFolderIds(folders, ctx.folderId));
     const ancestors = getAncestorFolderIds(folders, ctx.folderId);
@@ -56,12 +56,12 @@ export function getVisibleTags(
     );
   }
 
-  // Không có ngữ cảnh -> hiện tất cả.
+  // No context -> show all.
   return activeTags;
 }
 
-// Quy đổi state điều hướng (activeView/activeProjectId/activeFolderId) -> ngữ cảnh,
-// rồi lọc nhãn. View không phải project/folder -> không có ngữ cảnh -> hiện tất cả.
+// Convert navigation state (activeView/activeProjectId/activeFolderId) to context,
+// then filter tags. View is not project/folder -> no context -> show all.
 export function getContextTags(
   tags: Tag[],
   folders: Folder[],

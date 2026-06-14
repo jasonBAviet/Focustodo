@@ -11,14 +11,14 @@ function formatTime(iso: string | null | undefined): string {
   if (!iso) return '-';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '-';
-  return d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '-';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
 }
 
 interface PomodoroRecordsProps {
@@ -112,7 +112,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
             <circle cx="20" cy="20" r="16" stroke="var(--border-strong)" strokeWidth="1.5"/>
             <path d="M20 12v8l4 4" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          <span>Không tìm thấy nhật ký Pomodoro nào phù hợp</span>
+          <span>No matching Pomodoro logs found</span>
         </div>
       );
     }
@@ -121,10 +121,10 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
       <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--divider)' }}>
-            <th style={thStyle}>Loại</th>
-            <th style={thStyle}>Công việc</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Thời lượng</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Thời gian</th>
+            <th style={thStyle}>Type</th>
+            <th style={thStyle}>Task</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>Duration</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>Time</th>
           </tr>
         </thead>
         <tbody>
@@ -172,7 +172,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
             <circle cx="20" cy="20" r="16" stroke="var(--border-strong)" strokeWidth="1.5"/>
             <path d="M20 12v8l4 4" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          <span>Không tìm thấy chu kỳ Pomodoro nào phù hợp</span>
+          <span>No matching Pomodoro runs found</span>
         </div>
       );
     }
@@ -181,10 +181,10 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
       <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--divider)' }}>
-            <th style={thStyle}>Công việc</th>
-            <th style={thStyle}>Tập trung (Bắt đầu → Kết thúc)</th>
-            <th style={thStyle}>Nghỉ ngơi (Bắt đầu → Kết thúc)</th>
-            <th style={{ ...thStyle, textAlign: 'right' }}>Trạng thái</th>
+            <th style={thStyle}>Task</th>
+            <th style={thStyle}>Focus (Start → End)</th>
+            <th style={thStyle}>Break (Start → End)</th>
+            <th style={{ ...thStyle, textAlign: 'right' }}>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -192,12 +192,12 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
             const isFocusRunning = !r.endTime;
             const isBreakRunning = r.breakStart && !r.breakEnd;
             const statusLabel = isFocusRunning 
-              ? 'Tập trung' 
+              ? 'Focusing' 
               : isBreakRunning 
-                ? 'Nghỉ ngơi' 
+                ? 'On Break' 
                 : r.completed 
-                  ? 'Hoàn thành' 
-                  : 'Bỏ dở';
+                  ? 'Completed' 
+                  : 'Abandoned';
             const statusColor = isFocusRunning
               ? '#f4a261'
               : isBreakRunning
@@ -223,7 +223,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
                 </td>
                 <td style={tdStyle}>
                   <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                    {r.breakStart ? `${formatTime(r.breakStart)} → ${isBreakRunning ? 'Running' : formatTime(r.breakEnd)}` : 'Không nghỉ'}
+                    {r.breakStart ? `${formatTime(r.breakStart)} → ${isBreakRunning ? 'Running' : formatTime(r.breakEnd)}` : 'No break'}
                   </span>
                 </td>
                 <td style={{ ...tdStyle, textAlign: 'right' }}>
@@ -269,7 +269,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
             transition: 'all 0.2s',
           }}
         >
-          Chu kỳ Pomodoro ({filteredRecords.length})
+          Pomodoro Runs ({filteredRecords.length})
         </button>
         <button
           onClick={() => setViewMode('sessions')}
@@ -285,7 +285,7 @@ const PomodoroRecords: React.FC<PomodoroRecordsProps> = ({
             transition: 'all 0.2s',
           }}
         >
-          Nhật ký giai đoạn ({filteredSessions.length})
+          Session Logs ({filteredSessions.length})
         </button>
       </div>
 

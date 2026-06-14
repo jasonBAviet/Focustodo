@@ -108,8 +108,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({ x, y, isOpen, onClose
       <>
         {task.completed ? (
           <>
-            <button className="tc-menu-item" style={{ color: '#4ade80' }} onClick={handleRestore}>Đánh dấu chưa hoàn thành</button>
-            <button className="tc-menu-item" onClick={handleDelete}>Xóa Task</button>
+            <button className="tc-menu-item" style={{ color: '#4ade80' }} onClick={handleRestore}>Mark as uncompleted</button>
+            <button className="tc-menu-item" onClick={handleDelete}>Delete Task</button>
           </>
         ) : (
           <>

@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - ProjectTimeDistribution
-// Phân bổ thời gian focus theo từng project (dữ liệu thật trong khoảng thời gian).
+// Focus time distribution by project (real data in time range).
 // ============================================================
 import React, { useMemo } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
@@ -93,13 +93,15 @@ const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({
           <rect x="4" y="4" width="32" height="32" rx="4" stroke="var(--border-strong)" strokeWidth="1.5" />
           <path d="M12 20h4v8h-4zM18 14h4v14h-4zM24 17h4v11h-4z" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>Không có dữ liệu</span>
+        <span>No data</span>
       </div>
     );
   }
 
   const total = slices.reduce((acc, s) => acc + s.minutes, 0);
-  const max = Math.max(...slices.map((s) => s.minutes), 1);
+  // Cap bar at 90% when single item to avoid misleading full-width bar
+  const maxRaw = Math.max(...slices.map((s) => s.minutes), 1);
+  const max = slices.length === 1 ? maxRaw / 0.9 : maxRaw;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

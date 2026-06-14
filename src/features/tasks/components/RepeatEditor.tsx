@@ -15,7 +15,7 @@ const FREQS: { value: Freq; label: string }[] = [
   { value: 'YEARLY', label: 'Yearly' },
 ];
 
-// Trình soạn lặp RRULE: chọn tần suất, khoảng lặp, thứ trong tuần, ngày kết thúc.
+// RRULE repeat editor: select frequency, interval, weekday, end date.
 const RepeatEditor: React.FC<RepeatEditorProps> = ({ value, onChange, onClose }) => {
   const [rec, setRec] = useState<Recurrence>(
     value ?? { freq: 'WEEKLY', interval: 1, byday: [], until: null },

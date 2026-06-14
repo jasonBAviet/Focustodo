@@ -3,10 +3,35 @@ import { rowToTask } from '../src/backend/modules/tasks/task.service.js';
 
 // ============================================================
 // Delta feed: GET /api/changes?since=<ISO>&types=tasks,projects,folders,tags
-// Trả về các dòng có updated_at > since. Dòng còn sống -> changes; dòng đã
-// tombstone (is_deleted) -> deletedIds. SPA dùng để bắt kịp ghi từ app ngoài
-// mà không cần reload. Bọc updated_at + is_deleted, không cần bảng changes riêng.
+// Returns rows with updated_at > since. Live rows -> changes; deleted rows
+// tombstone (is_deleted) -> deletedIds. Used by SPA to catch up with writes from external apps
+// without reloading. Wraps updated_at + is_deleted, no need for a separate changes table.
 // ============================================================
+function rowToKnowledge(r) {
+  return {
+    id: r.id,
+    title: r.title ?? '',
+    projectId: r.project_id ?? null,
+    priority: r.priority ?? 'none',
+    dueDate: r.due_date ?? null,
+    reminder: r.reminder ?? null,
+    repeat: r.repeat ?? 'none',
+    repeatCustom: r.repeat_custom ?? null,
+    note: r.note ?? '',
+    subtasks: r.subtasks ?? [],
+    pomodoroEstimate: r.pomodoro_estimate ?? 1,
+    pomodoroCompleted: r.pomodoro_completed ?? 0,
+    totalFocusTime: r.total_focus_time ?? 0,
+    completed: r.completed ?? false,
+    flagged: r.flagged ?? false,
+    tags: r.tags ?? [],
+    position: r.position ?? 0,
+    createdAt: r.created_at ?? null,
+    completedAt: r.completed_at ?? null,
+    updatedAt: r.updated_at ?? null,
+  };
+}
+
 function rowToProject(r) {
   return {
     id: r.id, name: r.name ?? '', color: r.color ?? '#7ec8e3',
@@ -45,8 +70,8 @@ function rowToPomodoroRecord(r) {
   };
 }
 
-const MAPPERS = { tasks: rowToTask, projects: rowToProject, folders: rowToFolder, tags: rowToTag, pomodoro_records: rowToPomodoroRecord };
-const ALL_TYPES = ['tasks', 'projects', 'folders', 'tags', 'pomodoro_records'];
+const MAPPERS = { tasks: rowToTask, knowledges: rowToKnowledge, projects: rowToProject, folders: rowToFolder, tags: rowToTag, pomodoro_records: rowToPomodoroRecord };
+const ALL_TYPES = ['tasks', 'knowledges', 'projects', 'folders', 'tags', 'pomodoro_records'];
 
 export function createChangesRouter(pool, auth) {
   const router = Router();
@@ -65,14 +90,15 @@ export function createChangesRouter(pool, auth) {
       for (const table of types) {
         const mapper = MAPPERS[table];
         let rows;
+        const tableName = table === 'knowledges' ? 'knowleadge' : table;
         if (since) {
           rows = await pool.query(
-            `SELECT * FROM ${table} WHERE updated_at > $1 AND user_id = $2 ORDER BY updated_at ASC LIMIT 2000`,
+            `SELECT * FROM ${tableName} WHERE updated_at > $1 AND user_id = $2 ORDER BY updated_at ASC LIMIT 2000`,
             [since, userId],
           );
         } else {
           rows = await pool.query(
-            `SELECT * FROM ${table} WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY updated_at ASC LIMIT 2000`,
+            `SELECT * FROM ${tableName} WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY updated_at ASC LIMIT 2000`,
             [userId],
           );
         }

@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - ProjectsAndFoldersSettings
-// Quản lý Smart Views + cây thư mục & dự án + chuột phải tương tác
+// Manage Smart Views + folder & project tree + right-click interactions
 // ============================================================
 import React, { useState } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -50,7 +50,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
 
   const [menuState, setMenuState] = useState<{ x: number; y: number; id: string; type: 'project' | 'folder' } | null>(null);
 
-  // Edit States (Dùng chung cho cả project/folder)
+  // Edit States (Shared for project/folder)
   const [editState, setEditState] = useState<{ id: string; type: 'project' | 'folder'; name: string; color: string } | null>(null);
 
   // Reassign States
@@ -125,10 +125,10 @@ const ProjectsAndFoldersSettings: React.FC = () => {
 
   const handleSaveMoveFolder = () => {
     if (!moveFolderState) return;
-    // Chống vòng lặp
+    // Prevent circular loop
     if (moveFolderState.parentId === moveFolderState.folderId) return;
     if (moveFolderState.parentId && isAncestor(folders, moveFolderState.folderId, moveFolderState.parentId)) {
-      alert('Không thể di chuyển thư mục vào bên trong cây thư mục con của nó.');
+      alert('Cannot move a folder into its own subfolder.');
       return;
     }
     updateFolder(moveFolderState.folderId, { parentId: moveFolderState.parentId || null });
@@ -138,18 +138,18 @@ const ProjectsAndFoldersSettings: React.FC = () => {
   // 4. Delete
   const handleDelete = () => {
     if (menuState?.type === 'folder' && currentFolder) {
-      if (confirm(`Bạn có chắc chắn muốn xóa thư mục "${currentFolder.name}"? Các dự án con sẽ được đưa ra ngoài.`)) {
+      if (confirm(`Are you sure you want to delete folder "${currentFolder.name}"? Child projects will be moved to root.`)) {
         deleteFolder(currentFolder.id);
       }
     } else if (menuState?.type === 'project' && currentProject) {
-      if (confirm(`Bạn có chắc chắn muốn xóa dự án "${currentProject.name}"?`)) {
+      if (confirm(`Are you sure you want to delete project "${currentProject.name}"?`)) {
         deleteProject(currentProject.id);
       }
     }
     handleCloseMenu();
   };
 
-  // Vẽ đệ quy cây folder & projects
+  // Recursively render folder & projects tree
   const renderFolderNode = (folder: any, depth = 0): React.ReactNode => {
     const childFolders = getChildFolders(folders, folder.id);
     const childProjects = projects.filter((p) => p.folderId === folder.id);
@@ -168,9 +168,9 @@ const ProjectsAndFoldersSettings: React.FC = () => {
             </svg>
           </span>
           <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 600 }}>
-            {folder.name} {folder.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+            {folder.name} {folder.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Hidden)</span>}
           </span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Thư mục</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Folder</span>
           <Toggle
             checked={folder.isVisible !== false}
             onChange={(val) => updateFolder(folder.id, { isVisible: val })}
@@ -204,9 +204,9 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           }}
         />
         <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
-          {project.name} {project.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+          {project.name} {project.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Hidden)</span>}
         </span>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Dự án</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', opacity: 0.8, marginRight: 4 }}>Project</span>
         <Toggle
           checked={project.isVisible !== false}
           onChange={(val) => updateProject(project.id, { isVisible: val })}
@@ -237,21 +237,21 @@ const ProjectsAndFoldersSettings: React.FC = () => {
       {/* Projects and Folders List */}
       <div style={sectionTitleStyle}>Projects & Folders Tree</div>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {/* 1. Render Folders ở gốc (parentId = null) */}
+        {/* 1. Render root Folders (parentId = null) */}
         {getRootFolders(folders).map((f) => renderFolderNode(f, 0))}
 
-        {/* 2. Render Project ở gốc (folderId = null) */}
+        {/* 2. Render root Projects (folderId = null) */}
         {projects.filter((p) => !p.folderId).map((p) => renderProjectNode(p, 0))}
 
         {folders.length === 0 && projects.length === 0 && (
           <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: '8px 0' }}>
-            Chưa có thư mục hoặc dự án nào.
+            No folders or projects yet.
           </div>
         )}
       </div>
 
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 8 }}>
-        * Nhấp chuột phải vào Dự án/Thư mục để đổi tên, chọn lại thư mục, ẩn/hiện hoặc xóa.
+        * Right-click on a Project/Folder to rename, move, hide/show, or delete.
       </div>
 
       {/* Context Menu */}
@@ -260,16 +260,16 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           Rename
         </button>
         <button type="button" style={menuBtnStyle} onClick={handleOpenMove}>
-          {menuState?.type === 'folder' ? 'Move Folder (Chọn thư mục cha)' : 'Move Project (Chọn thư mục chứa)'}
+          {menuState?.type === 'folder' ? 'Move Folder (Select parent folder)' : 'Move Project (Select parent folder)'}
         </button>
         <button type="button" style={menuBtnStyle} onClick={handleToggleHide}>
           {menuState?.type === 'folder'
             ? currentFolder?.isVisible === false
-              ? 'Show Folder (Hiện thư mục)'
-              : 'Hide Folder (Ẩn thư mục)'
+              ? 'Show Folder'
+              : 'Hide Folder'
             : currentProject?.isVisible === false
-            ? 'Show Project (Hiện dự án)'
-            : 'Hide Project (Ẩn dự án)'}
+            ? 'Show Project'
+            : 'Hide Project'}
         </button>
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <button type="button" style={{ ...menuBtnStyle, color: '#f25f5c' }} onClick={handleDelete}>
@@ -291,10 +291,10 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           <ColorPicker value={editState?.color ?? '#7ec8e3'} onChange={(color) => setEditState(prev => prev ? { ...prev, color } : null)} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button type="button" className="apd-btn apd-btn--cancel" onClick={() => setEditState(null)}>
-              Hủy
+              Cancel
             </button>
             <button type="button" className="apd-btn apd-btn--ok" onClick={handleSaveRename} disabled={!editState?.name.trim()}>
-              Lưu
+              Save
             </button>
           </div>
         </div>
@@ -305,11 +305,11 @@ const ProjectsAndFoldersSettings: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetProjectForMove && (
             <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)' }}>
-              Dự án đang chọn: <strong>{targetProjectForMove.name}</strong>
+              Selected project: <strong>{targetProjectForMove.name}</strong>
             </div>
           )}
           <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Chọn thư mục chứa dự án này. Chọn "Không có" để chuyển thành dự án độc lập ngoài gốc.
+            Select parent folder for this project. Select "None" to make it a standalone root project.
           </div>
           <div>
             <select
@@ -318,7 +318,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
               onChange={(e) => setMoveProjectState(prev => prev ? { ...prev, folderId: e.target.value } : null)}
               style={{ width: '100%', margin: 0 }}
             >
-              <option value="">Không có (Dự án độc lập ở gốc)</option>
+              <option value="">None (Standalone root project)</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -328,10 +328,10 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button type="button" className="apd-btn apd-btn--cancel" onClick={() => setMoveProjectState(null)}>
-              Hủy
+              Cancel
             </button>
             <button type="button" className="apd-btn apd-btn--ok" onClick={handleSaveMoveProject}>
-              Lưu thay đổi
+              Save changes
             </button>
           </div>
         </div>
@@ -342,11 +342,11 @@ const ProjectsAndFoldersSettings: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetFolderForMove && (
             <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)' }}>
-              Thư mục đang chọn: <strong>{targetFolderForMove.name}</strong>
+              Selected folder: <strong>{targetFolderForMove.name}</strong>
             </div>
           )}
           <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Chọn thư mục cha chứa thư mục này. Chọn "Không có" để đưa ra gốc làm thư mục cao nhất.
+            Select parent folder. Select "None" to move it to root.
           </div>
           <div>
             <select
@@ -355,7 +355,7 @@ const ProjectsAndFoldersSettings: React.FC = () => {
               onChange={(e) => setMoveFolderState(prev => prev ? { ...prev, parentId: e.target.value } : null)}
               style={{ width: '100%', margin: 0 }}
             >
-              <option value="">Không có (Thư mục gốc)</option>
+              <option value="">None (Root folder)</option>
               {folders
                 .filter((f) => f.id !== moveFolderState?.folderId && !isAncestor(folders, moveFolderState?.folderId ?? '', f.id))
                 .map((f) => (
@@ -367,10 +367,10 @@ const ProjectsAndFoldersSettings: React.FC = () => {
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button type="button" className="apd-btn apd-btn--cancel" onClick={() => setMoveFolderState(null)}>
-              Hủy
+              Cancel
             </button>
             <button type="button" className="apd-btn apd-btn--ok" onClick={handleSaveMoveFolder}>
-              Lưu thay đổi
+              Save changes
             </button>
           </div>
         </div>

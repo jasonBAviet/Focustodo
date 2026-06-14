@@ -90,6 +90,30 @@ export const IconBook: React.FC = () => (
   </svg>
 );
 
+export const IconPriorityHigh: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+    <path d="M2 2h12l-2.5 5 2.5 5H2l2.5-5L2 2z"/>
+  </svg>
+);
+
+export const IconPriorityMedium: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <path d="M3 5h10M3 8h7M3 11h4"/>
+  </svg>
+);
+
+export const IconPriorityLow: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <path d="M3 5h4M3 8h7M3 11h10"/>
+  </svg>
+);
+
+export const IconSomeday: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3a9 9 0 1 0 0 18A9 9 0 0 0 12 3zm0 2a7 7 0 1 1 0 14A7 7 0 0 1 12 5zm-.5 3v5.25l4.5 2.7-.75 1.23L10 14V8h1.5z"/>
+  </svg>
+);
+
 export const IconUnassigned: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
@@ -103,12 +127,16 @@ export interface NavView {
 }
 
 export const SMART_VIEWS: NavView[] = [
-  { id: 'today',      label: 'Today',          icon: <IconClock /> },
-  { id: 'tomorrow',   label: 'Tomorrow',        icon: <IconSun /> },
-  { id: 'this-week',  label: 'This Week',       icon: <IconCalendar /> },
-  { id: 'planned',    label: 'Planned',         icon: <IconList /> },
-  { id: 'events',     label: 'Events',          icon: <IconStar /> },
-  { id: 'completed',  label: 'Completed',       icon: <IconCheck /> },
-  { id: 'knowledge',  label: 'Knowledge',       icon: <IconBook /> },
-  { id: 'unassigned', label: 'Chưa phân loại',  icon: <IconUnassigned /> },
+  { id: 'today',           label: 'Today',           icon: <IconClock /> },
+  { id: 'tomorrow',        label: 'Tomorrow',         icon: <IconSun /> },
+  { id: 'this-week',       label: 'This Week',        icon: <IconCalendar /> },
+  { id: 'planned',         label: 'Planned',          icon: <IconList /> },
+  { id: 'high-priority',   label: 'High Priority',    icon: <IconPriorityHigh /> },
+  { id: 'medium-priority', label: 'Medium Priority',  icon: <IconPriorityMedium /> },
+  { id: 'low-priority',    label: 'Low Priority',     icon: <IconPriorityLow /> },
+  { id: 'someday',         label: 'Someday',          icon: <IconSomeday /> },
+  { id: 'events',          label: 'Events',           icon: <IconStar /> },
+  { id: 'completed',       label: 'Completed',        icon: <IconCheck /> },
+  { id: 'knowledge',       label: 'Knowledge',        icon: <IconBook /> },
+  { id: 'unassigned',      label: 'Chưa phân loại',   icon: <IconUnassigned /> },
 ];

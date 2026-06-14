@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - AccountSettings (Data / Sync & User Profile)
-// Trạng thái kết nối DB, số liệu, đồng bộ thủ công, thông tin tài khoản.
+// DB connection status, metrics, manual sync, account info.
 // ============================================================
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -90,7 +90,7 @@ const AccountSettings: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Trạng thái đóng/mở của các phần trong Account Settings
+  // Toggle state of sections in Account Settings
   const [expandedSections, setExpandedSections] = useState<Record<SectionKey, boolean>>({
     accountInfo: true,
     dbStatus: false,
@@ -129,9 +129,9 @@ const AccountSettings: React.FC = () => {
     try {
       await saveRemoteAppState(state);
       setLastSaved(new Date().toLocaleTimeString('vi-VN'));
-      setMessage('Đã lưu toàn bộ dữ liệu lên DB.');
+      setMessage('Successfully saved all data to DB.');
     } catch (err) {
-      setMessage('Lỗi lưu lên DB: ' + (err instanceof Error ? err.message : String(err)));
+      setMessage('Error saving to DB: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setBusy(null);
     }
@@ -154,21 +154,21 @@ const AccountSettings: React.FC = () => {
     window.location.reload();
   };
 
-  const healthLabel = health === 'checking' ? 'Đang kiểm tra...' : health === 'ok' ? 'Kết nối OK' : 'Không kết nối được';
+  const healthLabel = health === 'checking' ? 'Checking...' : health === 'ok' ? 'Connection OK' : 'Connection failed';
   const healthColor = health === 'ok' ? '#06d6a0' : health === 'error' ? '#f25f5c' : 'var(--text-muted)';
 
   return (
     <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
-      {/* Thông tin ứng dụng */}
+      {/* App Information */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>Focus To-Do</div>
-        <div style={{ color: 'var(--text-muted)' }}>Phiên bản 1.0.0 · Dữ liệu lưu trên PostgreSQL</div>
+        <div style={{ color: 'var(--text-muted)' }}>Version 1.0.0 · Data stored on PostgreSQL</div>
       </div>
 
-      {/* 1. Thông tin tài khoản */}
+      {/* 1. Account info */}
       <div>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('accountInfo')}>
-          <span>Thông tin tài khoản</span>
+          <span>Account Information</span>
           <IconChevron expanded={expandedSections.accountInfo} />
         </div>
         {expandedSections.accountInfo && (
@@ -180,51 +180,51 @@ const AccountSettings: React.FC = () => {
                   <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{user.email}</span>
                 </div>
                 <div style={rowStyle}>
-                  <span>ID tài khoản</span>
+                  <span>Account ID</span>
                   <span style={{ color: 'var(--text-primary)', fontFamily: 'monospace' }}>{user.id}</span>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
                   <button type="button" style={logoutBtnStyle} onClick={logout}>
-                    Đăng xuất
+                    Logout
                   </button>
                 </div>
               </>
             ) : (
               <div style={{ padding: '8px 0', color: 'var(--text-muted)' }}>
-                Chưa đăng nhập tài khoản.
+                Not logged in.
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* 2. Trạng thái cơ sở dữ liệu */}
+      {/* 2. Database status */}
       <div>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('dbStatus')}>
-          <span>Trạng thái cơ sở dữ liệu</span>
+          <span>Database Status</span>
           <IconChevron expanded={expandedSections.dbStatus} />
         </div>
         {expandedSections.dbStatus && (
           <div>
             <div style={rowStyle}>
-              <span>Kết nối DB</span>
+              <span>DB Connection</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: healthColor, fontWeight: 600 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: healthColor, display: 'inline-block' }} />
                 {healthLabel}
               </span>
             </div>
             <div style={{ ...rowStyle, borderBottom: 'none' }}>
-              <span>Lần lưu gần nhất</span>
+              <span>Last saved</span>
               <span style={{ color: 'var(--text-primary)' }}>{lastSaved ?? '—'}</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* 3. Số liệu */}
+      {/* 3. Metrics */}
       <div>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('stats')}>
-          <span>Số liệu thống kê</span>
+          <span>Statistics</span>
           <IconChevron expanded={expandedSections.stats} />
         </div>
         {expandedSections.stats && (
@@ -239,25 +239,25 @@ const AccountSettings: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Hành động đồng bộ */}
+      {/* 4. Sync actions */}
       <div>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('sync')}>
-          <span>Đồng bộ thủ công</span>
+          <span>Manual Sync</span>
           <IconChevron expanded={expandedSections.sync} />
         </div>
         {expandedSections.sync && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 4 }}>
             <button type="button" style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }} disabled={!!busy} onClick={handleReload}>
-              Tải lại từ DB
+              Reload from DB
             </button>
             <button type="button" style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }} disabled={!!busy} onClick={handleForceSave}>
-              {busy === 'save' ? 'Đang lưu...' : 'Lưu ngay lên DB'}
+              {busy === 'save' ? 'Saving...' : 'Save to DB now'}
             </button>
             <button type="button" style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }} disabled={!!busy} onClick={handleClearCache}>
-              Xoá cache cục bộ
+              Clear local cache
             </button>
             <button type="button" style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }} disabled={!!busy} onClick={checkHealth}>
-              Kiểm tra kết nối
+              Check connection
             </button>
           </div>
         )}
@@ -268,8 +268,8 @@ const AccountSettings: React.FC = () => {
           marginTop: 12,
           padding: '8px 12px',
           borderRadius: 'var(--radius-sm)',
-          background: message.startsWith('Lỗi') ? 'rgba(242,95,92,0.12)' : 'rgba(6,214,160,0.12)',
-          color: message.startsWith('Lỗi') ? '#f25f5c' : '#06d6a0',
+          background: message.startsWith('Error') ? 'rgba(242,95,92,0.12)' : 'rgba(6,214,160,0.12)',
+          color: message.startsWith('Error') ? '#f25f5c' : '#06d6a0',
         }}>
           {message}
         </div>

@@ -35,7 +35,6 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (t.isKnowledge) return false;
       if (selectedFolderId !== 'all') {
         if (!t.projectId) return false;
         const project = projects.find((p) => p.id === t.projectId);
@@ -85,9 +84,9 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
         const overdue = list.find((p: any) => p.seriesName === 'Trễ hạn');
         return [
           `<b>${label}</b>`,
-          created ? `🟠 Tạo mới: ${created.value}` : '',
-          done ? `🔵 Hoàn thành: ${done.value}` : '',
-          overdue ? `🔴 Trễ hạn: ${overdue.value}` : '',
+          created ? `🟠 Created: ${created.value}` : '',
+          done ? `🔵 Completed: ${done.value}` : '',
+          overdue ? `🔴 Overdue: ${overdue.value}` : '',
         ].filter(Boolean).join('<br/>');
       },
     },
@@ -119,21 +118,21 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
     },
     series: [
       {
-        name: 'Tạo mới',
+        name: 'Created',
         type: 'bar',
         data: chartData.map((d) => d.createdCount),
         barMaxWidth: 20,
         itemStyle: { borderRadius: [3, 3, 0, 0], color: COLOR_CREATED },
       },
       {
-        name: 'Hoàn thành',
+        name: 'Completed',
         type: 'bar',
         data: chartData.map((d) => d.completedCount),
         barMaxWidth: 20,
         itemStyle: { borderRadius: [3, 3, 0, 0], color: COLOR_COMPLETED },
       },
       {
-        name: 'Trễ hạn',
+        name: 'Overdue',
         type: 'bar',
         data: chartData.map((d) => d.overdueCount),
         barMaxWidth: 20,
@@ -155,7 +154,7 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
           height: '100%', gap: 8,
         }}>
           <span style={{ fontSize: 32 }}>📊</span>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Không có hoạt động nào trong thời gian này</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>No activity in this period</span>
         </div>
       )}
     </div>

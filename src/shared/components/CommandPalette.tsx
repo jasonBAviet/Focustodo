@@ -11,7 +11,7 @@ interface Command {
   id: string;
   label: string;
   hint?: string;
-  dot?: string; // màu chấm (project/tag/folder)
+  dot?: string; // dot color (project/tag/folder)
   keywords?: string;
   run: () => void;
 }
@@ -24,7 +24,7 @@ const SMART_VIEWS: { id: ViewType; label: string }[] = [
   { id: 'completed', label: 'Completed' },
 ];
 
-// Command palette + quick-capture. Mở bằng Ctrl/Cmd+K.
+// Command palette + quick-capture. Open with Ctrl/Cmd+K.
 const CommandPalette: React.FC<CommandPaletteProps> = ({ onToggleReport }) => {
   const {
     projects, folders, tags, addTask,
@@ -37,7 +37,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onToggleReport }) => {
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mở/đóng bằng Ctrl/Cmd+K (toàn cục).
+  // Open/close with Ctrl/Cmd+K (global).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -53,7 +53,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onToggleReport }) => {
     if (open) {
       setQuery('');
       setIndex(0);
-      // focus sau khi render
+      // focus after render
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [open]);
@@ -69,7 +69,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onToggleReport }) => {
     close();
   };
 
-  // Danh sách lệnh tĩnh + động.
+  // Static + dynamic command list.
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [];
     for (const v of SMART_VIEWS) {
@@ -110,7 +110,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onToggleReport }) => {
     return commands.filter((c) => (c.label + ' ' + (c.keywords ?? '')).toLowerCase().includes(q));
   }, [commands, q]);
 
-  // Quick-capture: nếu có query, luôn cho phép tạo task nhanh ở đầu danh sách.
+  // Quick-capture: if there's a query, always allow quick task creation at the top.
   const quickAdd: Command | null = q
     ? {
         id: 'quick-add',

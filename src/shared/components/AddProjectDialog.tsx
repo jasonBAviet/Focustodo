@@ -44,9 +44,9 @@ const AddProjectDialog: React.FC = () => {
           value={folderId}
           onChange={(e) => setFolderId(e.target.value)}
           style={{ cursor: 'pointer' }}
-          aria-label="Thư mục"
+          aria-label="Folder"
         >
-          <option value="">Thư mục: Không có</option>
+          <option value="">Folder: None</option>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}

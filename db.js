@@ -65,6 +65,14 @@ export async function ensureSchema() {
     console.warn('[schema] Khong the them password_salt vao bang users:', err.message);
   }
 
+  // Migration: them cot calendar vao bang settings neu chua co
+  try {
+    await pool.query(`ALTER TABLE settings ADD COLUMN IF NOT EXISTS calendar_scale TEXT DEFAULT 'month';`);
+    await pool.query(`ALTER TABLE settings ADD COLUMN IF NOT EXISTS calendar_date_field TEXT DEFAULT 'dueDate';`);
+  } catch (err) {
+    console.warn('[schema] Khong the them calendar columns vao bang settings:', err.message);
+  }
+
   // 2. Tao cac bang khac neu chua ton tai
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -91,6 +99,32 @@ export async function ensureSchema() {
       is_knowledge BOOLEAN DEFAULT false,
       position INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS knowleadge (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      project_id TEXT,
+      priority TEXT,
+      due_date TEXT,
+      reminder TEXT,
+      repeat TEXT,
+      repeat_custom TEXT,
+      note TEXT,
+      subtasks JSONB DEFAULT '[]'::jsonb,
+      pomodoro_estimate INTEGER DEFAULT 1,
+      pomodoro_completed INTEGER DEFAULT 0,
+      total_focus_time INTEGER DEFAULT 0,
+      completed BOOLEAN DEFAULT false,
+      flagged BOOLEAN DEFAULT false,
+      tags JSONB DEFAULT '[]'::jsonb,
+      created_at TEXT,
+      completed_at TEXT,
+      updated_at TEXT,
+      is_deleted BOOLEAN DEFAULT false,
+      is_knowledge BOOLEAN DEFAULT true,
+      position INTEGER DEFAULT 0
+    );
+
 
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
@@ -145,7 +179,9 @@ export async function ensureSchema() {
       external_api_url TEXT,
       external_api_enabled BOOLEAN,
       daily_focus_goal_hours NUMERIC,
-      visible_views JSONB DEFAULT '{}'::jsonb
+      visible_views JSONB DEFAULT '{}'::jsonb,
+      calendar_scale TEXT DEFAULT 'month',
+      calendar_date_field TEXT DEFAULT 'dueDate'
     );
 
     CREATE TABLE IF NOT EXISTS ui_state (
@@ -225,11 +261,21 @@ export async function ensureSchema() {
       created_at TEXT,
       last_triggered_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS webhook_delivery_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      subscriber_id TEXT REFERENCES webhook_subscribers(id) ON DELETE CASCADE,
+      event TEXT NOT NULL,
+      http_status INTEGER,
+      error TEXT,
+      timestamp TEXT NOT NULL
+    );
   `);
 
   // 3. Them cot user_id vao cac bang neu chua co
   const tables = [
-    'tasks', 'projects', 'folders', 'tags', 'settings',
+    'tasks', 'knowleadge', 'projects', 'folders', 'tags', 'settings',
     'ui_state', 'system_logs', 'api_keys', 'webhook_endpoints',
     'attachments', 'pomodoro_records'
   ];
@@ -280,12 +326,15 @@ export async function ensureSchema() {
   // 5. Tao cac Index can thiet
   try {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_knowleadge_user_id ON knowleadge(user_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_folders_user_id ON folders(user_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_subscribers_user_id ON webhook_subscribers(user_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_delivery_logs_user_id ON webhook_delivery_logs(user_id);');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_delivery_logs_timestamp ON webhook_delivery_logs(timestamp);');
   } catch (err) {
     console.warn('[safety] Khong the tao cac index:', err.message);
   }

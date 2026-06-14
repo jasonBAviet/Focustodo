@@ -33,7 +33,6 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
 
   const filteredData = useMemo(() => {
     const matchedTasks = tasks.filter((t) => {
-      if (t.isKnowledge) return false;
       if (selectedFolderId !== 'all') {
         if (!t.projectId) return false;
         const project = projects.find((p) => p.id === t.projectId);
@@ -86,12 +85,12 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
         const label = list[0]?.name ?? '';
         const task = list.find((p: any) => p.seriesName === 'Task');
         const sub = list.find((p: any) => p.seriesName === 'Subtask');
-        const growth = list.find((p: any) => p.seriesName === 'Lũy kế');
+        const growth = list.find((p: any) => p.seriesName === 'Cumulative');
         return [
           `<b>${label}</b>`,
           task ? `Task: ${task.value}` : '',
           sub ? `Subtask: ${sub.value}` : '',
-          growth ? `Lũy kế: ${growth.value}` : '',
+          growth ? `Cumulative: ${growth.value}` : '',
         ].filter(Boolean).join('<br/>');
       },
     },
@@ -158,7 +157,7 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
         },
       },
       {
-        name: 'Lũy kế',
+        name: 'Cumulative',
         type: 'line',
         yAxisIndex: 1,
         data: bars.map((b) => b.cumulativeGrowth),
@@ -194,7 +193,7 @@ const TaskCompletionChart: React.FC<TaskCompletionChartProps> = ({
           height: '100%', gap: 8,
         }}>
           <span style={{ fontSize: 32 }}>📈</span>
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Không có dữ liệu hoàn thành</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>No completion data</span>
         </div>
       )}
     </div>

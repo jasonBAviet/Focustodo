@@ -58,25 +58,25 @@ export const TaskSortMenu: React.FC<TaskSortMenuProps> = ({
       <div className="cm-menu" style={{ width: 240 }}>
         <div className="cm-item" onClick={() => handleSortClick('project')}>
           <span className="cm-item-text">
-            Sắp xếp theo dự án {sortBy === 'project' && `(${sortDirection === 'asc' ? 'Tăng' : 'Giảm'})`}
+            Sort by project {sortBy === 'project' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
           </span>
           {sortBy === 'project' && <IconCheck />}
         </div>
         <div className="cm-item" onClick={() => handleSortClick('createdAt')}>
           <span className="cm-item-text">
-            Sắp xếp theo ngày tạo {sortBy === 'createdAt' && `(${sortDirection === 'asc' ? 'Tăng' : 'Giảm'})`}
+            Sort by creation date {sortBy === 'createdAt' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
           </span>
           {sortBy === 'createdAt' && <IconCheck />}
         </div>
         <div className="cm-item" onClick={() => handleSortClick('dueDate')}>
           <span className="cm-item-text">
-            Sắp xếp theo ngày hết hạn {sortBy === 'dueDate' && `(${sortDirection === 'asc' ? 'Tăng' : 'Giảm'})`}
+            Sort by due date {sortBy === 'dueDate' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
           </span>
           {sortBy === 'dueDate' && <IconCheck />}
         </div>
         <div className="cm-item" onClick={() => handleSortClick('priority')}>
           <span className="cm-item-text">
-            Sắp xếp theo mức độ ưu tiên {sortBy === 'priority' && `(${sortDirection === 'asc' ? 'Tăng' : 'Giảm'})`}
+            Sort by priority {sortBy === 'priority' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
           </span>
           {sortBy === 'priority' && <IconCheck />}
         </div>
@@ -84,7 +84,7 @@ export const TaskSortMenu: React.FC<TaskSortMenuProps> = ({
           <>
             <div className="cm-divider"></div>
             <div className="cm-item" onClick={() => { setSortBy(null); setSortDirection('asc'); sortMenu.close(); }}>
-              <span className="cm-item-text">Xóa sắp xếp</span>
+              <span className="cm-item-text">Clear sorting</span>
             </div>
           </>
         )}

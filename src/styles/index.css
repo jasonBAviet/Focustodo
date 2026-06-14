@@ -24,7 +24,7 @@ body {
   line-height: 1.5;
   overflow: hidden;
   height: 100vh;
-  /* Render chữ mượt kiểu macOS */
+  /* Smooth macOS-style text rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -63,6 +63,15 @@ body {
 
 .app-layout.panel-hidden {
   grid-template-columns: var(--sidebar-width) 1fr;
+}
+
+/* When right panel is hidden, main-header expands to full width and overlaps
+   the absolutely-positioned HeaderActions icons. Reserve enough right space.
+   Only needed on desktop (mobile hides the email and has its own header layout). */
+@media (min-width: 769px) {
+  .app-layout.panel-hidden .main-header {
+    padding-right: 260px;
+  }
 }
 
 /* ============================================================
@@ -348,11 +357,11 @@ body {
 .mobile-backdrop { display: none; }
 
 /* ============================================================
-   CAPACITOR NATIVE — Safe Area cho Notch va Status Bar
-   Khi chay trong Capacitor, body se co class .capacitor-native
-   duoc gan tu main.tsx. Class nay kich hoat cac quy tac safe-area.
-   env(safe-area-inset-*) la CSS bien duoc trinh duyet WebView cung cap
-   tu dong theo kich thuoc that cua notch/status-bar tren tung thiet bi.
+   CAPACITOR NATIVE — Safe Area for Notch and Status Bar
+   When running in Capacitor, body will have .capacitor-native class
+   assigned from main.tsx. This class enables safe-area rules.
+   env(safe-area-inset-*) is a CSS variable provided by WebView browser
+   automatically based on actual notch/status-bar size on each device.
    ============================================================ */
 :root {
   --safe-area-top: env(safe-area-inset-top, 0px);
@@ -361,28 +370,28 @@ body {
   --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
-/* Them padding cho vung an toan tren va duoi (iPhone notch, Android nav bar) */
+/* Add padding for top and bottom safe areas (iPhone notch, Android nav bar) */
 .capacitor-native body {
   padding-top: var(--safe-area-top);
   padding-bottom: var(--safe-area-bottom);
 }
 
-/* Nut hamburger di xuong duoi thanh trang thai */
+/* Hamburger button goes below status bar */
 .capacitor-native .mobile-menu-btn {
   top: calc(12px + var(--safe-area-top));
 }
 
-/* Header actions di xuong tuong tu */
+/* Header actions go down similarly */
 .capacitor-native .app-layout .header-actions {
   top: calc(14px + var(--safe-area-top));
 }
 
-/* Sidebar off-canvas can padding top de tranh che khuat status bar */
+/* Sidebar off-canvas needs padding top to avoid overlapping status bar */
 .capacitor-native .sidebar {
   padding-top: var(--safe-area-top);
 }
 
-/* Banner thong bao ngoai tuyen cach nut home bar phia duoi */
+/* Offline notification banner is spaced from the bottom home bar */
 .capacitor-native .offline-indicator {
   bottom: calc(24px + var(--safe-area-bottom));
 }
@@ -449,7 +458,7 @@ body {
   .main-content { height: 100dvh; }
   .main-header { padding: var(--header-offset-mobile) var(--space-4) var(--space-2); }
   .task-list__title { font-size: var(--text-xl); }
-  /* Stats: gộp lưới 2×2 thành 1 dải ngang compact để nhường chỗ cho task */
+  /* Stats: merge 2x2 grid into 1 compact horizontal strip to make room for tasks */
   .main-stats-row {
     grid-template-columns: repeat(4, 1fr);
     padding: 0 var(--space-4) var(--space-3);
@@ -459,10 +468,10 @@ body {
   .main-stats-row .stat-card__label { font-size: var(--text-2xs); line-height: 1.2; }
   .main-task-area { padding: var(--space-1) var(--space-4) var(--space-4); }
 
-  /* Floating header buttons: tighten so all 4 fit on the right */
-  .app-layout .header-actions { top: 14px; right: 12px; gap: 4px; }
+  /* Floating header buttons: 5 icon buttons on the right, email hidden on mobile */
+  .app-layout .header-actions { top: 14px; right: 8px; gap: 2px; }
 
-  /* ---- Filter bar: search + "Lọc" toggle on row 1; expanded group wraps below.
+  /* ---- Filter bar: search + "Filter" toggle on row 1; expanded group wraps below.
           Parent keeps its base `flex-wrap: wrap` so the 100%-basis group can drop
           onto its own row. ---- */
   .task-filter-bar .tfb-search { flex: 1; min-width: 0; }
@@ -571,3 +580,89 @@ body {
   .main-header { padding-left: var(--space-3); padding-right: var(--space-3); }
   .main-task-area { padding: var(--space-1) var(--space-3) var(--space-3); }
 }
+
+/* ============================================================
+   KNOWLEDGE NOTE STYLING & PREVIEW
+   ============================================================ */
+.note-kw-ketluan {
+  font-weight: 700;
+  color: #ff6b6b;
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.2);
+}
+.note-kw-luandiem {
+  font-weight: 700;
+  color: #f4a261;
+  text-shadow: 0 0 8px rgba(244, 162, 97, 0.2);
+}
+.note-kw-danchung {
+  font-weight: 700;
+  color: #2ec4b6;
+  text-shadow: 0 0 8px rgba(46, 196, 182, 0.2);
+}
+[data-theme="light"] .note-kw-ketluan {
+  color: #d9383a;
+  text-shadow: none;
+}
+[data-theme="light"] .note-kw-luandiem {
+  color: #d46b08;
+  text-shadow: none;
+}
+[data-theme="light"] .note-kw-danchung {
+  color: #008080;
+  text-shadow: none;
+}
+
+.kd-tabs-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+.kd-tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: all var(--transition-fast);
+}
+.kd-tab-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.kd-tab-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.kd-note-preview {
+  flex: 1;
+  min-height: 120px;
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: var(--font-main);
+  overflow-y: auto;
+}
+
+.formatted-note-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.formatted-note-line {
+  min-height: 1.5em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+

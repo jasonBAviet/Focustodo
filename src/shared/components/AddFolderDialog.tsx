@@ -44,7 +44,7 @@ const AddFolderDialog: React.FC = () => {
           value={parentId}
           onChange={(e) => setParentId(e.target.value)}
           style={{ cursor: 'pointer' }}
-          aria-label="Thư mục cha"
+          aria-label="Parent folder"
         >
           <option value="">Top level (no parent)</option>
           {folders.map((f) => (

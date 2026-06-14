@@ -1,13 +1,13 @@
 // ============================================================
 // FOCUS TO-DO - PomodoroTimerSettings
-// Tab Pomodoro Timer trong Settings
+// Pomodoro Timer Tab in Settings
 // ============================================================
 import React from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
 import Toggle from '@/shared/components/Toggle';
 
 // ----------------------------------------------------------
-// Styles noi tuyen dung chung cho settings
+// Inline styles used for settings
 // ----------------------------------------------------------
 const sectionStyle: React.CSSProperties = {
   marginBottom: 20,
@@ -50,7 +50,7 @@ const toggleRowStyle: React.CSSProperties = {
 };
 
 // ----------------------------------------------------------
-// Options cho tung dropdown
+// Options for each dropdown
 // ----------------------------------------------------------
 const POMODORO_OPTS = [5, 10, 15, 20, 25, 30, 45, 60];
 const SHORT_BREAK_OPTS = [1, 2, 5, 10, 15];
@@ -58,7 +58,7 @@ const LONG_BREAK_OPTS = [10, 15, 20, 30];
 const LONG_BREAK_AFTER_OPTS = [2, 3, 4, 5, 6];
 
 // ----------------------------------------------------------
-// Subcomponent: Select row don gian
+// Subcomponent: Simple select row
 // ----------------------------------------------------------
 interface SelectFieldProps {
   label: string;
@@ -86,14 +86,14 @@ const SelectField: React.FC<SelectFieldProps> = ({ label, value, options, unit, 
 );
 
 // ----------------------------------------------------------
-// Component chinh
+// Main component
 // ----------------------------------------------------------
 const PomodoroTimerSettings: React.FC = () => {
   const { settings, updateSettings } = useAppContext();
 
   return (
     <div>
-      {/* Nhom 1: Thoi luong */}
+      {/* Group 1: Duration */}
       <div style={sectionStyle}>
         <div style={rowStyle}>
           <SelectField
@@ -132,7 +132,7 @@ const PomodoroTimerSettings: React.FC = () => {
 
       <div style={dividerStyle} />
 
-      {/* Nhom 2: Auto start toggles */}
+      {/* Group 2: Auto start toggles */}
       <div style={sectionStyle}>
         <div style={toggleRowStyle}>
           <Toggle
@@ -159,7 +159,7 @@ const PomodoroTimerSettings: React.FC = () => {
 
       <div style={dividerStyle} />
 
-      {/* Nhom 3: Alarm */}
+      {/* Group 3: Alarm */}
       <div style={sectionStyle}>
         <div style={toggleRowStyle}>
           <Toggle

@@ -76,15 +76,11 @@ const TASK_ITEM_CSS = `
         }
         .task-item__pomo-pill {
           display: flex; align-items: center; gap: 3px;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid var(--border);
-          padding: 2px var(--space-1-5); border-radius: var(--radius-sm);
           cursor: pointer;
-          transition: background var(--transition-fast), border-color var(--transition-fast);
+          margin-left: var(--space-2);
         }
         .task-item__pomo-pill:hover {
-          background: rgba(255,255,255,0.12);
-          border-color: var(--border-strong);
+          opacity: 0.75;
         }
         .task-item__due {
           display: flex; align-items: center; gap: var(--space-1);
@@ -95,7 +91,7 @@ const TASK_ITEM_CSS = `
         .task-item__completed-date {
           font-size: var(--text-xs); color: var(--stat-blue); flex-shrink: 0;
           background: rgba(76,201,240,0.1); padding: 2px 8px; border-radius: var(--radius-full);
-          align-self: flex-start;
+          margin-left: auto;
         }
         .task-item__tag-badge {
           font-size: var(--text-xs);
@@ -208,7 +204,7 @@ const PriorityDot: React.FC<{ priority: Task['priority'] }> = ({ priority }) => 
     <span
       className="task-item__priority-dot"
       style={{ background: colors[priority] }}
-      title={`Uu tien: ${priority}`}
+      title={`Priority: ${priority}`}
     />
   );
 };
@@ -217,7 +213,7 @@ const CheckCircle: React.FC<{ checked: boolean; onChange: () => void }> = ({ che
   <button
     className={`task-item__check ${checked ? 'checked' : ''}`}
     onClick={(e) => { e.stopPropagation(); onChange(); }}
-    aria-label={checked ? 'Danh dau chua hoan thanh' : 'Danh dau hoan thanh'}
+    aria-label={checked ? 'Mark as uncompleted' : 'Mark as completed'}
   >
     {checked && (
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -283,7 +279,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
       <PriorityDot priority={task.priority} />
 
       <div className="task-item__body">
-        {/* Hàng 1: tiêu đề + ngày hạn */}
+        {/* Row 1: title + due date / completed date */}
         <div className="task-item__row1">
           <span className="task-item__title">{task.title}</span>
           {task.dueDate && !task.completed && (
@@ -292,9 +288,12 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
               {dateUtils.formatShort(task.dueDate)}
             </span>
           )}
+          {task.completed && completedDateText && (
+            <span className="task-item__completed-date">{completedDateText}</span>
+          )}
         </div>
 
-        {/* Hàng 2: pomodoro pill + countdown + tags */}
+        {/* Row 2: pomodoro pill + countdown + tags */}
         {hasRow2 && (
           <div className="task-item__row2">
             {hasSubtasks && (
@@ -307,7 +306,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
               <div
                 className="task-item__pomo-pill"
                 onClick={handleStartPomodoro}
-                title={`${task.pomodoroCompleted}/${task.pomodoroEstimate} Pomodoro — click để bắt đầu`}
+                title={`${task.pomodoroCompleted}/${task.pomodoroEstimate} Pomodoros — click to start`}
               >
                 {Array.from({ length: Math.min(task.pomodoroEstimate, 4) }).map((_, i) => (
                   <TomatoIconDot key={i} done={i < task.pomodoroCompleted} />
@@ -335,19 +334,16 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, isSelected, onContextMenu }) 
                 #{tag.name}
               </span>
             ))}
-          </div>
-        )}
 
-        {task.completed && completedDateText && (
-          <span className="task-item__completed-date">{completedDateText}</span>
+          </div>
         )}
       </div>
 
-      {/* Nút ... xuất hiện khi hover → mở context menu */}
+      {/* More options button (shown on hover) */}
       <button
         className="task-item__more-btn"
         onClick={(e) => { e.stopPropagation(); onContextMenu?.(e); }}
-        title="Tùy chọn"
+        title="Options"
       >
         <IconMoreVert />
       </button>

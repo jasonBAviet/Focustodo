@@ -27,7 +27,6 @@ export function rowToTask(r) {
     createdAt: r.created_at ?? null,
     completedAt: r.completed_at ?? null,
     updatedAt: r.updated_at ?? null,
-    isKnowledge: r.is_knowledge ?? false,
   };
 }
 
@@ -271,7 +270,6 @@ export class TaskService {
       tags: 'tags' in body ? JSON.stringify(body.tags) : cur.tags,
       position: 'position' in body ? body.position : cur.position,
       completed_at: 'completed' in body ? (body.completed ? cur.completed_at ?? now : null) : cur.completed_at,
-      is_knowledge: 'isKnowledge' in body ? body.isKnowledge : cur.is_knowledge,
       updated_at: now,
     };
 

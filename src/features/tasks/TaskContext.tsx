@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef, useState } from 'react';
-import type { Task, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
+import type { Task, Knowledge, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { DeletedIds } from '@/utils/remoteState';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -8,6 +8,8 @@ import { useWebhookContext } from '@/core/contexts/WebhookContext';
 import { useTaskSync } from './hooks/useTaskSync';
 import { useTaskFilters } from './hooks/useTaskFilters';
 import { useTaskActions } from './hooks/useTaskActions';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 
 const DEFAULT_PROJECTS: Project[] = [
   { id: 'inbox',    name: 'Inbox',    color: '#7ec8e3', isVisible: true, taskCount: 0, createdAt: new Date().toISOString() },
@@ -30,11 +32,30 @@ export const EMPTY_FILTERS: TaskFilters = {
   text: '', tagIds: [], projectIds: [], createdFrom: null, createdTo: null, dueFrom: null, dueTo: null,
 };
 
+export interface NewTaskDraft {
+  title: string;
+  projectId: string | null;
+  tags: string[];
+  priority: Priority;
+  pomodoro: number;
+  dueDate: string | null;
+  note: string;
+}
+
+const DEFAULT_NEW_TASK_DRAFT: NewTaskDraft = {
+  title: '', projectId: null, tags: [], priority: 'none', pomodoro: 1, dueDate: null, note: '',
+};
+
 interface TaskContextType {
   tasks: Task[]; projects: Project[]; folders: Folder[]; tags: Tag[];
   pomodoroSessions: PomodoroSession[]; pomodoroRecords: PomodoroRecord[]; attachments: Attachment[];
   selectedTaskId: string | null; activeView: ViewType; activeProjectId: string | null;
   activeTagId: string | null; activeFolderId: string | null; searchQuery: string; filters: TaskFilters;
+  newTaskPanelOpen: boolean; setNewTaskPanelOpen: (v: boolean) => void;
+  newTaskDraft: NewTaskDraft;
+  updateNewTaskDraft: (fields: Partial<NewTaskDraft>) => void;
+  resetNewTaskDraft: () => void;
+  submitNewTask: () => void;
   setFilters: React.Dispatch<React.SetStateAction<TaskFilters>>;
   setSelectedTaskId: (id: string | null) => void;
   setActiveView: (view: ViewType) => void;
@@ -67,36 +88,53 @@ interface TaskContextType {
   deleteAttachment: (id: string) => void;
   getFilteredTasks: () => Task[];
   getProjectName: (projectId: string | null) => string;
+  knowledges: Knowledge[];
+  setKnowledges: React.Dispatch<React.SetStateAction<Knowledge[]>>;
+  deletedIdsRef: React.MutableRefObject<DeletedIds>;
 }
 
 export const TaskContext = createContext<TaskContextType | null>(null);
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('focus-tasks', []);
+  const [knowledges, setKnowledges] = useLocalStorage<Knowledge[]>('focus-knowledges', []);
   const [projects, setProjects] = useLocalStorage<Project[]>('focus-projects', DEFAULT_PROJECTS);
   const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
   const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
   const [pomodoroSessions, setPomodoroSessions] = useLocalStorage<PomodoroSession[]>('focus-pomodoro-sessions', []);
   const [pomodoroRecords, setPomodoroRecords] = useLocalStorage<PomodoroRecord[]>('focus-pomodoro-records', []);
   const [attachments, setAttachments] = useLocalStorage<Attachment[]>('focus-attachments', []);
-  const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('focus-selected-task', null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useLocalStorage<ViewType>('focus-active-view', 'today');
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('focus-active-project', null);
   const [activeTagId, setActiveTagId] = useLocalStorage<string | null>('focus-active-tag', null);
   const [activeFolderId, setActiveFolderId] = useLocalStorage<string | null>('focus-active-folder', null);
   const [searchQuery, setSearchQuery] = useLocalStorage<string>('focus-search', '');
   const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
+  const [newTaskPanelOpen, setNewTaskPanelOpen] = useState(false);
+  const [newTaskDraft, setNewTaskDraftState] = useState<NewTaskDraft>(DEFAULT_NEW_TASK_DRAFT);
+  const updateNewTaskDraft = (fields: Partial<NewTaskDraft>) =>
+    setNewTaskDraftState(prev => ({ ...prev, ...fields }));
+  const resetNewTaskDraft = () =>
+    setNewTaskDraftState({
+      ...DEFAULT_NEW_TASK_DRAFT,
+      projectId: activeView === 'project' ? activeProjectId : null,
+    });
 
   const { settings, updateSettings } = useAppContext();
   const { onTaskCreated, onTaskCompleted, onPomodoroCompleted } = useWebhookContext();
+  const { token } = useAuth();
+  const isMobile = useIsMobile();
 
-  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], projects: [], folders: [], tags: [], attachments: [], pomodoroRecords: [] });
+  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], knowledges: [], projects: [], folders: [], tags: [], attachments: [], pomodoroRecords: [] });
 
   useTaskSync({
-    tasks, setTasks, projects, setProjects, folders, setFolders, tags, setTags,
+    token,
+    tasks, setTasks, knowledges, setKnowledges, projects, setProjects, folders, setFolders, tags, setTags,
     pomodoroSessions, setPomodoroSessions, pomodoroRecords, setPomodoroRecords,
     attachments, setAttachments, selectedTaskId, setSelectedTaskId,
-    activeView, activeProjectId, searchQuery, settings, updateSettings, deletedIdsRef
+    activeView, activeProjectId, searchQuery, settings, updateSettings, deletedIdsRef,
+    isMobile,
   });
 
   const { getFilteredTasks } = useTaskFilters({
@@ -111,12 +149,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     activeTagId, setActiveTagId, deletedIdsRef, onTaskCreated, onTaskCompleted, onPomodoroCompleted
   });
 
+  const submitNewTask = () => {
+    if (!newTaskDraft.title.trim()) return;
+    const created = actions.addTask(newTaskDraft.title.trim(), newTaskDraft.projectId, newTaskDraft.priority, newTaskDraft.pomodoro);
+    const extras: Partial<Task> = {};
+    if (newTaskDraft.tags.length) extras.tags = newTaskDraft.tags;
+    if (newTaskDraft.dueDate) extras.dueDate = newTaskDraft.dueDate;
+    if (newTaskDraft.note.trim()) extras.note = newTaskDraft.note.trim();
+    if (Object.keys(extras).length) actions.updateTask(created.id, extras);
+    setSelectedTaskId(created.id);
+    setNewTaskPanelOpen(false);
+    setNewTaskDraftState({
+      ...DEFAULT_NEW_TASK_DRAFT,
+      projectId: activeView === 'project' ? activeProjectId : null,
+    });
+  };
+
   return (
     <TaskContext.Provider value={{
       tasks, projects, folders, tags, pomodoroSessions, pomodoroRecords, attachments,
       selectedTaskId, activeView, activeProjectId, activeTagId, activeFolderId, searchQuery, filters,
+      newTaskPanelOpen, setNewTaskPanelOpen,
+      newTaskDraft, updateNewTaskDraft, resetNewTaskDraft, submitNewTask,
       setFilters, setSelectedTaskId, setActiveView, setActiveProjectId, setActiveTagId, setActiveFolderId, setSearchQuery,
-      getFilteredTasks, ...actions
+      getFilteredTasks, knowledges, setKnowledges, deletedIdsRef, ...actions
     }}>
       {children}
     </TaskContext.Provider>

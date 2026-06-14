@@ -8,15 +8,17 @@ interface CalendarWeekProps {
   tasks: Task[];
   onSelectTask: (id: string) => void;
   selectedTaskId: string | null;
+  dateField: 'dueDate' | 'createdAt';
 }
 
-const WEEK_LABELS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const CalendarWeek: React.FC<CalendarWeekProps> = ({
   currentDate,
   tasks,
   onSelectTask,
   selectedTaskId,
+  dateField,
 }) => {
   const { addTask, updateTask, getProjectName } = useTaskContext();
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -25,8 +27,9 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
 
   const getTasksForDate = (dateString: string) => {
     return tasks.filter((t) => {
-      if (!t.dueDate) return false;
-      const d = new Date(t.dueDate);
+      const rawDate = t[dateField];
+      if (!rawDate) return false;
+      const d = new Date(rawDate);
       const cellD = new Date(dateString);
       return calendarUtils.isSameDay(d, cellD);
     });
@@ -60,7 +63,7 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
   };
 
   const handleDoubleClick = (dateString: string) => {
-    const title = window.prompt('Nhập tiêu đề công việc mới:');
+    const title = window.prompt('Enter new task title:');
     if (title && title.trim()) {
       const targetDate = new Date(dateString);
       targetDate.setHours(9, 0, 0, 0);
@@ -91,7 +94,7 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
             
             <div className="calendar-week-col-body">
               {dayTasks.length === 0 ? (
-                <div className="calendar-week-empty-text">Click đúp để tạo</div>
+                <div className="calendar-week-empty-text">Double click to create</div>
               ) : (
                 dayTasks.map((task) => (
                   <div

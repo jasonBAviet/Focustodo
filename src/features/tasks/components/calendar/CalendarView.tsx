@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useAppContext } from '@/core/contexts/AppContext';
 import CalendarHeader from '@/features/tasks/components/calendar/CalendarHeader';
 import CalendarMonth from '@/features/tasks/components/calendar/CalendarMonth';
 import CalendarWeek from '@/features/tasks/components/calendar/CalendarWeek';
 import CalendarDay from '@/features/tasks/components/calendar/CalendarDay';
-import UnscheduledSidebar from '@/features/tasks/components/calendar/UnscheduledSidebar';
+import TaskFilterBar from '@/features/tasks/components/TaskFilterBar';
 
 const CalendarView: React.FC = () => {
   const {
@@ -13,53 +14,59 @@ const CalendarView: React.FC = () => {
     setSelectedTaskId,
   } = useTaskContext();
 
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [scale, setScale] = useState<'month' | 'week' | 'day'>('month');
+  const { settings, updateSettings } = useAppContext();
+
+  const [currentDate, setCurrentDate] = React.useState<Date>(new Date());
+
+  const scale = settings.calendarScale;
+  const dateField = settings.calendarDateField;
+
+  const setScale = (s: 'month' | 'week' | 'day') => updateSettings({ calendarScale: s });
+  const setDateField = (f: 'dueDate' | 'createdAt') => updateSettings({ calendarDateField: f });
 
   const filteredTasks = getFilteredTasks();
 
   return (
     <div className="calendar-view-container">
+      <TaskFilterBar />
+
       <CalendarHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
         scale={scale}
         setScale={setScale}
+        dateField={dateField}
+        setDateField={setDateField}
       />
 
-      <div className="calendar-view-content-wrapper">
-        <div className="calendar-grid-area">
-          {scale === 'month' && (
-            <CalendarMonth
-              currentDate={currentDate}
-              tasks={filteredTasks}
-              onSelectTask={setSelectedTaskId}
-              selectedTaskId={selectedTaskId}
-            />
-          )}
-          {scale === 'week' && (
-            <CalendarWeek
-              currentDate={currentDate}
-              tasks={filteredTasks}
-              onSelectTask={setSelectedTaskId}
-              selectedTaskId={selectedTaskId}
-            />
-          )}
-          {scale === 'day' && (
-            <CalendarDay
-              currentDate={currentDate}
-              tasks={filteredTasks}
-              onSelectTask={setSelectedTaskId}
-              selectedTaskId={selectedTaskId}
-            />
-          )}
-        </div>
-
-        <UnscheduledSidebar
-          tasks={filteredTasks}
-          onSelectTask={setSelectedTaskId}
-          selectedTaskId={selectedTaskId}
-        />
+      <div className="calendar-grid-area">
+        {scale === 'month' && (
+          <CalendarMonth
+            currentDate={currentDate}
+            tasks={filteredTasks}
+            onSelectTask={setSelectedTaskId}
+            selectedTaskId={selectedTaskId}
+            dateField={dateField}
+          />
+        )}
+        {scale === 'week' && (
+          <CalendarWeek
+            currentDate={currentDate}
+            tasks={filteredTasks}
+            onSelectTask={setSelectedTaskId}
+            selectedTaskId={selectedTaskId}
+            dateField={dateField}
+          />
+        )}
+        {scale === 'day' && (
+          <CalendarDay
+            currentDate={currentDate}
+            tasks={filteredTasks}
+            onSelectTask={setSelectedTaskId}
+            selectedTaskId={selectedTaskId}
+            dateField={dateField}
+          />
+        )}
       </div>
 
       <style>{`
@@ -69,33 +76,12 @@ const CalendarView: React.FC = () => {
           height: 100%;
           gap: 8px;
         }
-        .calendar-view-content-wrapper {
-          display: flex;
-          gap: 16px;
-          flex: 1;
-          height: calc(100% - 70px);
-          min-height: 0;
-        }
         .calendar-grid-area {
           flex: 1;
           display: flex;
           flex-direction: column;
           min-width: 0;
-          height: 100%;
-        }
-        
-        @media (max-width: 768px) {
-          .calendar-view-content-wrapper {
-            flex-direction: column-reverse;
-            overflow-y: auto;
-          }
-          .calendar-grid-area {
-            height: auto;
-          }
-          .unscheduled-sidebar {
-            width: 100% !important;
-            height: 250px !important;
-          }
+          min-height: 0;
         }
       `}</style>
     </div>

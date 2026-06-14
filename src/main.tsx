@@ -9,9 +9,16 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 );
 
+// Trong dev mode: huy dang ky moi SW cu de tranh intercept API calls
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((r) => r.unregister());
+  });
+}
+
 // Dang ky Service Worker SAU khi React da mount
-// Goi tach biet de tranh xung dot module trong qua trinh khoi tao
-if ('serviceWorker' in navigator) {
+// Chi chay trong production
+if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
   // Dung import() dong de tranh top-level module conflict
   import('virtual:pwa-register').then(({ registerSW }) => {
     const updateSW = registerSW({

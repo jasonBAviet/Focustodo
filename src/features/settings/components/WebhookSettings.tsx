@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - WebhookSettings
-// Tab Webhook & Integration Settings
+// Webhook & Integration Settings Tab
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -111,7 +111,7 @@ const EventLogTable: React.FC<{
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-          {events.length} su kien (hien thi 20 gan nhat)
+          {events.length} events (showing last 20)
         </span>
         <button type="button" style={{ ...btnStyle, padding: '4px 10px', fontSize: 'var(--text-sm)' }} onClick={onClear}>
           Clear Log
@@ -121,14 +121,14 @@ const EventLogTable: React.FC<{
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
           <thead>
             <tr style={{ background: 'var(--bg-card)' }}>
-              <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--divider)' }}>Thoi gian</th>
+              <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--divider)' }}>Time</th>
               <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--divider)' }}>Event</th>
               <th style={{ padding: '6px 8px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--divider)' }}>Status</th>
             </tr>
           </thead>
           <tbody>
             {displayed.length === 0 ? (
-              <tr><td colSpan={3} style={{ padding: '12px 8px', textAlign: 'center', color: 'var(--text-muted)' }}>Chua co event nao.</td></tr>
+              <tr><td colSpan={3} style={{ padding: '12px 8px', textAlign: 'center', color: 'var(--text-muted)' }}>No events yet.</td></tr>
             ) : (
               displayed.map((ev) => (
                 <tr key={ev.id} style={{ borderBottom: '1px solid var(--divider)' }}>
@@ -192,15 +192,15 @@ const WebhookSubscribersSection: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Xoa subscriber nay?')) return;
+    if (!confirm('Delete this subscriber?')) return;
     await fetch(`/api/webhooks/subscribers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     load();
   };
 
   const handleAdd = async () => {
     setError('');
-    if (!form.name.trim() || !form.url.trim()) { setError('Ten va URL la bat buoc.'); return; }
-    if (form.events.length === 0) { setError('Chon it nhat 1 event.'); return; }
+    if (!form.name.trim() || !form.url.trim()) { setError('Name and URL are required.'); return; }
+    if (form.events.length === 0) { setError('Select at least 1 event.'); return; }
     setSaving(true);
     try {
       const res = await fetch('/api/webhooks/subscribers', {
@@ -209,12 +209,12 @@ const WebhookSubscribersSection: React.FC = () => {
         body: JSON.stringify({ name: form.name, url: form.url, events: form.events, secret: form.secret || undefined }),
       });
       const json = await res.json();
-      if (!res.ok) { setError(json.error || 'Loi them subscriber.'); return; }
+      if (!res.ok) { setError(json.error || 'Error adding subscriber.'); return; }
       setForm({ name: '', url: '', events: ALL_EVENTS.slice(0, 4), secret: '' });
       setAddOpen(false);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Loi ket noi.');
+      setError(e instanceof Error ? e.message : 'Connection error.');
     } finally {
       setSaving(false);
     }
@@ -231,20 +231,20 @@ const WebhookSubscribersSection: React.FC = () => {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-          {loading ? 'Dang tai...' : `${subscribers.length} subscriber`}
+          {loading ? 'Loading...' : `${subscribers.length} subscribers`}
         </span>
         <button type="button" style={{ ...btnStyle, marginTop: 0, padding: '5px 12px' }} onClick={() => { setAddOpen(v => !v); setError(''); }}>
-          {addOpen ? 'Huy' : '+ Them'}
+          {addOpen ? 'Cancel' : '+ Add'}
         </button>
       </div>
 
       {addOpen && (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 12 }}>
-          <label style={labelStyle}>Ten subscriber</label>
+          <label style={labelStyle}>Subscriber name</label>
           <input style={inputStyle} placeholder="Slack, n8n, Zapier..." value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           <label style={labelStyle}>URL (HTTPS)</label>
           <input style={inputStyle} type="url" placeholder="https://hooks.example.com/..." value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} />
-          <label style={labelStyle}>Events nhan</label>
+          <label style={labelStyle}>Events to receive</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
             {ALL_EVENTS.map(ev => (
               <label key={ev} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-sm)', cursor: 'pointer', color: 'var(--text-primary)' }}>
@@ -253,17 +253,17 @@ const WebhookSubscribersSection: React.FC = () => {
               </label>
             ))}
           </div>
-          <label style={labelStyle}>Secret HMAC (tuy chon)</label>
-          <input style={inputStyle} type="password" placeholder="De trong neu khong can ky payload" value={form.secret} onChange={e => setForm(f => ({ ...f, secret: e.target.value }))} />
+          <label style={labelStyle}>HMAC Secret (optional)</label>
+          <input style={inputStyle} type="password" placeholder="Leave empty if payload signing is not needed" value={form.secret} onChange={e => setForm(f => ({ ...f, secret: e.target.value }))} />
           {error && <div style={{ color: '#f25f5c', fontSize: 'var(--text-sm)', marginTop: 8 }}>{error}</div>}
           <button type="button" style={{ ...btnStyle, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', marginTop: 12 }} disabled={saving} onClick={handleAdd}>
-            {saving ? 'Dang luu...' : 'Luu subscriber'}
+            {saving ? 'Saving...' : 'Save subscriber'}
           </button>
         </div>
       )}
 
       {subscribers.length === 0 && !loading ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: '8px 0' }}>Chua co subscriber nao.</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: '8px 0' }}>No subscribers yet.</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {subscribers.map(sub => (
@@ -279,7 +279,7 @@ const WebhookSubscribersSection: React.FC = () => {
                   {sub.last_triggered_at && <span style={{ marginLeft: 8 }}>· last push: {new Date(sub.last_triggered_at).toLocaleString('vi-VN')}</span>}
                 </div>
               </div>
-              <button type="button" style={btnDangerStyle} onClick={() => handleDelete(sub.id)}>Xoa</button>
+              <button type="button" style={btnDangerStyle} onClick={() => handleDelete(sub.id)}>Delete</button>
             </div>
           ))}
         </div>
@@ -331,7 +331,7 @@ const ApiKeysSection: React.FC = () => {
   };
 
   const handleRevoke = async (id: string) => {
-    if (!confirm('Thu hoi key nay?')) return;
+    if (!confirm('Revoke this key?')) return;
     await fetch(`/api/auth/keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setNewKey('');
     load();
@@ -340,12 +340,12 @@ const ApiKeysSection: React.FC = () => {
   return (
     <div>
       <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 8 }}>
-        API Key cho phep he thong ngoai goi <code style={{ background: 'var(--bg-card)', padding: '1px 5px', borderRadius: 3 }}>/api/external/v1/tasks</code> voi header <code style={{ background: 'var(--bg-card)', padding: '1px 5px', borderRadius: 3 }}>X-API-Key</code>.
+        API Key allows external systems to call <code style={{ background: 'var(--bg-card)', padding: '1px 5px', borderRadius: 3 }}>/api/external/v1/tasks</code> with header <code style={{ background: 'var(--bg-card)', padding: '1px 5px', borderRadius: 3 }}>X-API-Key</code>.
       </div>
 
       {newKey && (
         <div style={{ background: 'rgba(6,214,160,0.1)', border: '1px solid rgba(6,214,160,0.3)', borderRadius: 'var(--radius-md)', padding: 12, marginBottom: 12 }}>
-          <div style={{ fontSize: 'var(--text-xs)', color: '#06d6a0', fontWeight: 700, marginBottom: 4 }}>Key moi (chi hien thi 1 lan, sao chep ngay):</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: '#06d6a0', fontWeight: 700, marginBottom: 4 }}>New key (shown only once, copy now):</div>
           <code style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{newKey}</code>
           <button type="button" style={{ ...btnStyle, marginTop: 8, padding: '4px 10px', fontSize: 'var(--text-xs)' }}
             onClick={() => { navigator.clipboard.writeText(newKey); }}>
@@ -356,19 +356,19 @@ const ApiKeysSection: React.FC = () => {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-          {loading ? 'Dang tai...' : `${keys.filter(k => !k.revoked).length} key hieu luc`}
+          {loading ? 'Loading...' : `${keys.filter(k => !k.revoked).length} active keys`}
         </span>
         <button type="button" style={{ ...btnStyle, marginTop: 0, padding: '5px 12px' }} onClick={() => setAddOpen(v => !v)}>
-          {addOpen ? 'Huy' : '+ Tao key'}
+          {addOpen ? 'Cancel' : '+ Create key'}
         </button>
       </div>
 
       {addOpen && (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 14, marginBottom: 12 }}>
-          <label style={labelStyle}>Nhan key (de nho)</label>
-          <input style={inputStyle} placeholder="Vi du: n8n integration" value={label} onChange={e => setLabel(e.target.value)} />
+          <label style={labelStyle}>Key label (memorable)</label>
+          <input style={inputStyle} placeholder="Example: n8n integration" value={label} onChange={e => setLabel(e.target.value)} />
           <button type="button" style={{ ...btnStyle, background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)', marginTop: 12 }} disabled={saving} onClick={handleCreate}>
-            {saving ? 'Dang tao...' : 'Tao API Key'}
+            {saving ? 'Creating...' : 'Create API Key'}
           </button>
         </div>
       )}
@@ -380,21 +380,21 @@ const ApiKeysSection: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <code style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{k.key_prefix}…</code>
                 {k.label && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{k.label}</span>}
-                {k.revoked && <span style={{ fontSize: 'var(--text-xs)', color: '#f25f5c', background: 'rgba(242,95,92,0.1)', padding: '1px 6px', borderRadius: 3 }}>Da thu hoi</span>}
+                {k.revoked && <span style={{ fontSize: 'var(--text-xs)', color: '#f25f5c', background: 'rgba(242,95,92,0.1)', padding: '1px 6px', borderRadius: 3 }}>Revoked</span>}
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
-                Tao: {new Date(k.created_at).toLocaleDateString('vi-VN')}
-                {k.last_used_at && <span style={{ marginLeft: 8 }}>· Dung lan cuoi: {new Date(k.last_used_at).toLocaleDateString('vi-VN')}</span>}
+                Created: {new Date(k.created_at).toLocaleDateString('vi-VN')}
+                {k.last_used_at && <span style={{ marginLeft: 8 }}>· Last used: {new Date(k.last_used_at).toLocaleDateString('vi-VN')}</span>}
                 <span style={{ marginLeft: 8 }}>· scope: {(k.scopes || []).join(', ')}</span>
               </div>
             </div>
             {!k.revoked && (
-              <button type="button" style={btnDangerStyle} onClick={() => handleRevoke(k.id)}>Thu hoi</button>
+              <button type="button" style={btnDangerStyle} onClick={() => handleRevoke(k.id)}>Revoke</button>
             )}
           </div>
         ))}
         {keys.length === 0 && !loading && (
-          <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: '8px 0' }}>Chua co API key nao.</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: '8px 0' }}>No API keys yet.</div>
         )}
       </div>
     </div>
@@ -436,7 +436,7 @@ const WebhookSettings: React.FC = () => {
       {/* Section Webhook (legacy single URL) */}
       <div style={sectionTitleStyle}>Webhook (Single URL)</div>
 
-      <Toggle checked={settings.webhookEnabled} onChange={(v) => updateSettings({ webhookEnabled: v })} label="Bat Webhook" />
+      <Toggle checked={settings.webhookEnabled} onChange={(v) => updateSettings({ webhookEnabled: v })} label="Enable Webhook" />
 
       <label style={labelStyle}>URL Webhook</label>
       <input type="url" style={inputStyle} placeholder="https://hooks.example.com/..."
@@ -445,7 +445,7 @@ const WebhookSettings: React.FC = () => {
       <button type="button"
         style={{ ...btnStyle, opacity: (!settings.webhookEnabled || !settings.webhookUrl || testing) ? 0.5 : 1 }}
         onClick={handleTestConnection} disabled={!settings.webhookEnabled || !settings.webhookUrl || testing}>
-        {testing ? 'Dang kiem tra...' : 'Test Connection'}
+        {testing ? 'Testing...' : 'Test Connection'}
       </button>
 
       {testResult && (
@@ -454,7 +454,7 @@ const WebhookSettings: React.FC = () => {
           background: testResult.status === 'success' ? 'rgba(6,214,160,0.12)' : 'rgba(242,95,92,0.12)',
           color: testResult.status === 'success' ? '#06d6a0' : '#f25f5c',
         }}>
-          {testResult.status === 'success' ? `Status ${testResult.code} OK - Ket noi thanh cong` : `Loi: ${testResult.message}`}
+          {testResult.status === 'success' ? `Status ${testResult.code} OK - Connection successful` : `Error: ${testResult.message}`}
         </div>
       )}
 
@@ -463,7 +463,7 @@ const WebhookSettings: React.FC = () => {
       {/* Section Webhook Subscribers */}
       <div style={sectionTitleStyle}>Webhook Subscribers</div>
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 10 }}>
-        Dang ky nhieu URL nhan push khi co task event. Ho tro HMAC signing. Schema: <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: 3 }}>{`{ event, timestamp, data }`}</code>
+        Register multiple URLs to receive push on task events. Supports HMAC signing. Schema: <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: 3 }}>{`{ event, timestamp, data }`}</code>
       </div>
       <WebhookSubscribersSection />
 
@@ -478,7 +478,7 @@ const WebhookSettings: React.FC = () => {
       {/* Section External API URL (legacy) */}
       <div style={sectionTitleStyle}>External API (Legacy)</div>
 
-      <Toggle checked={settings.externalApiEnabled} onChange={(v) => updateSettings({ externalApiEnabled: v })} label="Bat External API" />
+      <Toggle checked={settings.externalApiEnabled} onChange={(v) => updateSettings({ externalApiEnabled: v })} label="Enable External API" />
       <label style={labelStyle}>URL API</label>
       <input type="url" style={inputStyle} placeholder="https://api.example.com/..."
         value={settings.externalApiUrl} onChange={(e) => updateSettings({ externalApiUrl: e.target.value })} disabled={!settings.externalApiEnabled} />

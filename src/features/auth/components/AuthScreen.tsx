@@ -30,15 +30,15 @@ const AuthScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Vui lòng điền đầy đủ thông tin.');
+      setError('Please fill in all information.');
       return;
     }
     if (!isLogin && password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp.');
+      setError('Passwords do not match.');
       return;
     }
     if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự.');
+      setError('Password must be at least 6 characters.');
       return;
     }
 
@@ -83,7 +83,7 @@ const AuthScreen: React.FC = () => {
       <div className="auth-card">
         <div className="auth-header">
           <h2>Focus To Do</h2>
-          <p>{isLogin ? 'Đăng nhập để đồng bộ hóa công việc' : 'Tạo tài khoản mới để bắt đầu'}</p>
+          <p>{isLogin ? 'Login to sync tasks' : 'Create a new account to get started'}</p>
         </div>
 
         {error && (
@@ -100,13 +100,13 @@ const AuthScreen: React.FC = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ten@viethanh.com"
+              placeholder="name@example.com"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Mật khẩu</label>
+            <label htmlFor="password">Password</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -120,7 +120,7 @@ const AuthScreen: React.FC = () => {
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <IconEyeOff /> : <IconEye />}
               </button>
@@ -129,7 +129,7 @@ const AuthScreen: React.FC = () => {
 
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+              <label htmlFor="confirmPassword">Confirm Password</label>
               <div className="password-input-wrapper">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -143,7 +143,7 @@ const AuthScreen: React.FC = () => {
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <IconEyeOff /> : <IconEye />}
                 </button>
@@ -152,7 +152,7 @@ const AuthScreen: React.FC = () => {
           )}
 
           <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading ? 'Đang xử lý...' : isLogin ? 'Đăng nhập' : 'Đăng ký'}
+            {loading ? 'Processing...' : isLogin ? 'Login' : 'Register'}
           </button>
         </form>
 
@@ -166,9 +166,9 @@ const AuthScreen: React.FC = () => {
         )}
 
         <div className="auth-footer">
-          <span>{isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}</span>
+          <span>{isLogin ? "Don't have an account?" : 'Already have an account?'}</span>
           <button type="button" className="auth-switch-btn" onClick={switchMode}>
-            {isLogin ? 'Đăng ký ngay' : 'Đăng nhập ngay'}
+            {isLogin ? 'Register now' : 'Login now'}
           </button>
         </div>
       </div>

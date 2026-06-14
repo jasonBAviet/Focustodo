@@ -6,7 +6,7 @@ interface SyncResult {
   failed: number;
 }
 
-// Component hien thi banner thong bao trang thai mang Online/Offline
+// Component to display Online/Offline network status banner
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -19,15 +19,15 @@ export default function OfflineIndicator() {
       setIsSyncing(true);
       setSyncResult(null);
 
-      // Chay dong bo hoa du lieu hang doi
+      // Run queue data synchronization
       try {
         const result = await runSync();
         setSyncResult(result);
         setShowResult(true);
-        // An thong bao ket qua sau 4 giay
+        // Hide result notification after 4 seconds
         setTimeout(() => setShowResult(false), 4000);
       } catch (err) {
-        console.error('[OfflineIndicator] Loi dong bo:', err);
+        console.error('[OfflineIndicator] Sync error:', err);
       } finally {
         setIsSyncing(false);
       }
@@ -48,7 +48,7 @@ export default function OfflineIndicator() {
     };
   }, []);
 
-  // Dang online va khong co thong bao gi - khong hien thi gi ca
+  // Online and no notification - display nothing
   if (isOnline && !isSyncing && !showResult) return null;
 
   return (
@@ -83,12 +83,12 @@ export default function OfflineIndicator() {
       </div>
 
       <span className="offline-indicator__text">
-        {!isOnline && 'Dang ngoai tuyen - cac thay doi se duoc luu lai'}
-        {isSyncing && 'Dang dong bo du lieu...'}
+        {!isOnline && 'Offline - changes will be saved'}
+        {isSyncing && 'Syncing data...'}
         {isOnline && showResult && !isSyncing && syncResult && (
           syncResult.success > 0
-            ? `Da dong bo ${syncResult.success} thay doi thanh cong`
-            : 'Da ket noi lai mang'
+            ? `Successfully synced ${syncResult.success} changes`
+            : 'Reconnected to network'
         )}
       </span>
 

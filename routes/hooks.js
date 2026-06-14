@@ -5,13 +5,13 @@ import { taskService } from '../src/backend/modules/tasks/task.service.js';
 // ============================================================
 // Inbound webhook receiver: POST /api/hooks/:integration
 // ------------------------------------------------------------
-// LƯU Ý: router này nhận RAW body (Buffer) vì server.js đã mount
-// express.raw() CHỈ cho /api/hooks (cần raw để xác thực HMAC chuẩn).
-// Map payload ngoài -> task qua cấu hình trong bảng webhook_endpoints.
+// NOTE: this router receives RAW body (Buffer) because server.js mounted
+// express.raw() ONLY for /api/hooks (raw is needed for standard HMAC validation).
+// Maps external payload -> task via configuration in the webhook_endpoints table.
 // ============================================================
 
 function verifyHmac(secret, rawBuf, signatureHeader) {
-  if (!secret) return false; // bat buoc phai co secret va xac thuc chu ky
+  if (!secret) return false; // secret and signature validation are mandatory
   if (!signatureHeader) return false;
   const expected = crypto.createHmac('sha256', secret).update(rawBuf).digest('hex');
   const provided = String(signatureHeader).replace(/^sha256=/i, '').trim();
@@ -58,33 +58,33 @@ export function createHooksRouter(pool) {
       const epQ = await pool.query('SELECT * FROM webhook_endpoints WHERE integration = $1', [integration]);
       const ep = epQ.rows[0];
       if (!ep || ep.enabled === false) {
-        return res.status(404).json({ error: `Integration "${integration}" khong ton tai hoac da tat.` });
+        return res.status(404).json({ error: `Integration "${integration}" does not exist or is disabled.` });
       }
 
-      // req.body là Buffer (express.raw). Có thể rỗng nếu không có body.
+      // req.body is Buffer (express.raw). Can be empty if no body.
       const rawBuf = Buffer.isBuffer(req.body) ? req.body : Buffer.from('');
       if (!ep.secret) {
-        return res.status(503).json({ error: `Endpoint "${integration}" chua cau hinh secret. Vui long cap nhat secret qua /api/integrations truoc khi su dung.` });
+        return res.status(503).json({ error: `Endpoint "${integration}" has no secret configured. Please update the secret via /api/integrations before use.` });
       }
       const signature = req.headers['x-signature'] || req.headers['x-hub-signature-256'];
       if (!verifyHmac(ep.secret, rawBuf, signature)) {
-        return res.status(401).json({ error: 'Chu ky HMAC khong hop le.' });
+        return res.status(401).json({ error: 'Invalid HMAC signature.' });
       }
 
       let payload;
       try {
         payload = rawBuf.length ? JSON.parse(rawBuf.toString('utf8')) : {};
       } catch {
-        return res.status(400).json({ error: 'Body khong phai JSON hop le.' });
+        return res.status(400).json({ error: 'Invalid JSON body.' });
       }
 
       const mapped = mapPayloadToTask(payload, ep.mapping, ep.default_project_id);
       if (!mapped.title || String(mapped.title).trim() === '') {
-        return res.status(400).json({ error: 'Khong map duoc "title" tu payload.' });
+        return res.status(400).json({ error: 'Could not map "title" from the payload.' });
       }
 
       if (!ep.user_id) {
-        return res.status(400).json({ error: `Endpoint "${integration}" chua cau hinh user_id. Vui long cap nhat qua /api/integrations.` });
+        return res.status(400).json({ error: `Endpoint "${integration}" has no user_id configured. Please update via /api/integrations.` });
       }
       const { data: task } = await taskService.createTask(ep.user_id, mapped);
       pool
@@ -101,8 +101,8 @@ export function createHooksRouter(pool) {
 }
 
 // ============================================================
-// Quản lý cấu hình inbound endpoint (admin / SPA cùng origin).
-// Mount ở /api/integrations (JSON parser bình thường, KHÔNG raw).
+// Manage inbound endpoint configuration (admin / same-origin SPA).
+// Mounted at /api/integrations (normal JSON parser, NOT raw).
 // ============================================================
 export function createIntegrationsRouter(pool, auth) {
   const router = Router();
@@ -111,7 +111,7 @@ export function createIntegrationsRouter(pool, auth) {
   router.get('/', async (req, res) => {
     try {
       const userId = req.user?.id ?? 'default_user';
-      // Không trả secret thô.
+      // Do not return raw secret.
       const r = await pool.query(
         `SELECT integration, mapping, default_project_id, enabled, created_at, last_used_at, (secret IS NOT NULL AND secret <> '') AS has_secret 
          FROM webhook_endpoints 
@@ -126,11 +126,11 @@ export function createIntegrationsRouter(pool, auth) {
     }
   });
 
-  // Tạo/cập nhật endpoint (upsert theo integration).
+  // Create/update endpoint (upsert by integration).
   router.post('/', async (req, res) => {
     const body = req.body ?? {};
     const integration = String(body.integration ?? '').trim();
-    if (!integration) return res.status(400).json({ error: 'Truong "integration" la bat buoc.' });
+    if (!integration) return res.status(400).json({ error: '"integration" field is required.' });
     try {
       const userId = req.user?.id ?? 'default_user';
       const now = new Date().toISOString();
@@ -156,9 +156,9 @@ export function createIntegrationsRouter(pool, auth) {
       );
       res.status(201).json({
         integration,
-        secret, // trả secret để cấu hình bên gửi (chỉ hiện khi tạo/cập nhật)
+        secret, // return secret to configure the sender (only shown upon creation/update)
         webhookUrl: `/api/hooks/${integration}`,
-        note: 'Bên gửi đặt header X-Signature = HMAC-SHA256(secret, rawBody) hex.',
+        note: 'Sender sets header X-Signature = HMAC-SHA256(secret, rawBody) hex.',
       });
     } catch (err) {
       console.error('[POST /api/integrations]', err);
@@ -173,8 +173,8 @@ export function createIntegrationsRouter(pool, auth) {
         'DELETE FROM webhook_endpoints WHERE integration = $1 AND user_id = $2 RETURNING integration', 
         [req.params.integration, userId]
       );
-      if (r.rows.length === 0) return res.status(404).json({ error: 'Integration khong tim thay' });
-      res.json({ data: { integration: r.rows[0].integration }, message: 'Da xoa integration.' });
+      if (r.rows.length === 0) return res.status(404).json({ error: 'Integration not found' });
+      res.json({ data: { integration: r.rows[0].integration }, message: 'Integration deleted.' });
     } catch (err) {
       console.error('[DELETE /api/integrations/:integration]', err);
       res.status(500).json({ error: 'Internal server error' });

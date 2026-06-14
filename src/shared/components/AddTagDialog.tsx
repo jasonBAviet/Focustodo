@@ -46,9 +46,9 @@ const AddTagDialog: React.FC = () => {
           value={folderId}
           onChange={(e) => setFolderId(e.target.value)}
           style={{ cursor: 'pointer' }}
-          aria-label="Thư mục (dùng chung nếu để trống)"
+          aria-label="Folder (shared if empty)"
         >
-          <option value="">Thư mục: Không có (dùng chung)</option>
+          <option value="">Folder: None (shared)</option>
           {folders.map((f) => (
             <option key={f.id} value={f.id}>{f.name}</option>
           ))}
@@ -58,9 +58,9 @@ const AddTagDialog: React.FC = () => {
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
           style={{ cursor: 'pointer' }}
-          aria-label="Dự án (dùng chung nếu để trống)"
+          aria-label="Project (shared if empty)"
         >
-          <option value="">Dự án: Không có (dùng chung)</option>
+          <option value="">Project: None (shared)</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}

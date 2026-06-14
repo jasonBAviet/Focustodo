@@ -18,12 +18,15 @@ const IconSearch = () => (
   </svg>
 );
 
+const NO_PROJECT_ID = '__no_project__';
+const NO_TAG_ID = '__no_tag__';
+
 const TaskFilterBar: React.FC = () => {
-  const { filters, setFilters, tags, projects, folders, activeView, activeProjectId, activeFolderId } = useTaskContext();
-  // Nhãn lọc theo ngữ cảnh dự án/thư mục đang xem (view khác -> hiện tất cả).
+  const { filters, setFilters, tags, projects, folders, tasks, activeView, activeProjectId, activeFolderId } = useTaskContext();
+  // Filter labels context by current project/folder view.
   const visibleTags = getContextTags(tags, folders, projects, activeView, activeProjectId, activeFolderId);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
-  // Mobile: Tag/Project/ngày thu sau nút "Lọc"; toggle này bung/đóng chúng.
+  // Mobile: Toggle for tag/project/date filters behind 'Filter' button.
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -46,8 +49,26 @@ const TaskFilterBar: React.FC = () => {
   const toggleProject = (id: string) =>
     setFilters((f) => ({ ...f, projectIds: toggleArrayItem(f.projectIds, id) }));
 
-  // Khi đang ở project/folder/tag view, bộ lọc "Project" không có hiệu lực
+  // When in project/folder/tag view, the 'Project' filter is not applicable
   const showProjectFilter = activeView !== 'project' && activeView !== 'folder' && activeView !== 'tag';
+
+  // Available tags after selecting project filter
+  const tagsForSelectedProjects = React.useMemo(() => {
+    const realProjectIds = filters.projectIds.filter((id) => id !== NO_PROJECT_ID);
+    if (realProjectIds.length === 0) return visibleTags;
+    const tagIdsInProjects = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.projectId && realProjectIds.includes(t.projectId)) {
+        t.tags.forEach((tid) => tagIdsInProjects.add(tid));
+      }
+    });
+    return visibleTags.filter((tag) => tagIdsInProjects.has(tag.id));
+  }, [filters.projectIds, tasks, visibleTags]);
+
+  // Any tasks with no project?
+  const hasTasksWithNoProject = tasks.some((t) => !t.projectId);
+  // Any tasks with no tag?
+  const hasTasksWithNoTag = tasks.some((t) => t.tags.length === 0);
 
   const activeCount =
     (filters.text.trim() ? 1 : 0) +
@@ -69,24 +90,67 @@ const TaskFilterBar: React.FC = () => {
         <input
           className="tfb-search-input"
           type="text"
-          placeholder="Lọc theo từ khóa…"
+          placeholder="Filter by keyword…"
           value={filters.text}
           onChange={(e) => setFilters((f) => ({ ...f, text: e.target.value }))}
         />
       </div>
 
-      {/* Mobile-only: nút bung/đóng nhóm bộ lọc (Tag/Project/ngày) */}
+      {/* Mobile-only: toggle button for filters */}
       <button
         type="button"
         className={`tfb-toggle ${activeCount > 0 ? 'active' : ''}`}
         onClick={() => setMobileFiltersOpen((v) => !v)}
         aria-expanded={mobileFiltersOpen}
       >
-        Lọc{activeCount > 0 ? ` (${activeCount})` : ''} <IconChevron />
+        Filter{activeCount > 0 ? ` (${activeCount})` : ''} <IconChevron />
       </button>
 
-      {/* Nhóm bộ lọc — desktop: inline (display:contents); mobile: thu sau nút "Lọc" */}
+      {/* Filter group */}
       <div className="tfb-filters">
+
+      {/* Project */}
+      {showProjectFilter && (
+        <div className="tfb-item">
+          <button
+            className={`tfb-btn ${filters.projectIds.length > 0 ? 'active' : ''}`}
+            onClick={() => toggleMenu('project')}
+          >
+            {projectLabel} <IconChevron />
+          </button>
+          {openMenu === 'project' && (
+            <div className="tfb-menu">
+              {projects.map((p) => {
+                const checked = filters.projectIds.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    className={`tfb-menu-item ${checked ? 'checked' : ''}`}
+                    onClick={() => toggleProject(p.id)}
+                  >
+                    <span className="tfb-dot" style={{ background: p.color }} />
+                    <span className="tfb-menu-text">{p.name}</span>
+                    {checked && <span className="tfb-check">✓</span>}
+                  </button>
+                );
+              })}
+              {hasTasksWithNoProject && (
+                <button
+                  className={`tfb-menu-item ${filters.projectIds.includes(NO_PROJECT_ID) ? 'checked' : ''}`}
+                  onClick={() => toggleProject(NO_PROJECT_ID)}
+                >
+                  <span className="tfb-dot" style={{ background: 'var(--text-tertiary)', opacity: 0.4 }} />
+                  <span className="tfb-menu-text" style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No project</span>
+                  {filters.projectIds.includes(NO_PROJECT_ID) && <span className="tfb-check">✓</span>}
+                </button>
+              )}
+              {projects.length === 0 && !hasTasksWithNoProject && (
+                <p className="tfb-empty">No projects yet</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tag */}
       <div className="tfb-item">
@@ -98,74 +162,49 @@ const TaskFilterBar: React.FC = () => {
         </button>
         {openMenu === 'tag' && (
           <div className="tfb-menu">
-            {visibleTags.length === 0 ? (
-              <p className="tfb-empty">Chưa có tag nào</p>
-            ) : (
-              visibleTags.map((tag) => {
-                const checked = filters.tagIds.includes(tag.id);
-                return (
-                  <button
-                    key={tag.id}
-                    className={`tfb-menu-item ${checked ? 'checked' : ''}`}
-                    onClick={() => toggleTag(tag.id)}
-                  >
-                    <span className="tfb-dot" style={{ background: tag.color }} />
-                    <span className="tfb-menu-text">{tag.name}</span>
-                    {checked && <span className="tfb-check">✓</span>}
-                  </button>
-                );
-              })
+            {tagsForSelectedProjects.map((tag) => {
+              const checked = filters.tagIds.includes(tag.id);
+              return (
+                <button
+                  key={tag.id}
+                  className={`tfb-menu-item ${checked ? 'checked' : ''}`}
+                  onClick={() => toggleTag(tag.id)}
+                >
+                  <span className="tfb-dot" style={{ background: tag.color }} />
+                  <span className="tfb-menu-text">{tag.name}</span>
+                  {checked && <span className="tfb-check">✓</span>}
+                </button>
+              );
+            })}
+            {hasTasksWithNoTag && (
+              <button
+                className={`tfb-menu-item ${filters.tagIds.includes(NO_TAG_ID) ? 'checked' : ''}`}
+                onClick={() => toggleTag(NO_TAG_ID)}
+              >
+                <span className="tfb-dot" style={{ background: 'var(--text-tertiary)', opacity: 0.4 }} />
+                <span className="tfb-menu-text" style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>No tag</span>
+                {filters.tagIds.includes(NO_TAG_ID) && <span className="tfb-check">✓</span>}
+              </button>
+            )}
+            {tagsForSelectedProjects.length === 0 && !hasTasksWithNoTag && (
+              <p className="tfb-empty">No tags yet</p>
             )}
           </div>
         )}
       </div>
 
-      {/* Project — ẩn khi đang ở project/folder/tag view (đã scope sẵn) */}
-      {showProjectFilter && (
-        <div className="tfb-item">
-          <button
-            className={`tfb-btn ${filters.projectIds.length > 0 ? 'active' : ''}`}
-            onClick={() => toggleMenu('project')}
-          >
-            {projectLabel} <IconChevron />
-          </button>
-          {openMenu === 'project' && (
-            <div className="tfb-menu">
-              {projects.length === 0 ? (
-                <p className="tfb-empty">Chưa có project nào</p>
-              ) : (
-                projects.map((p) => {
-                  const checked = filters.projectIds.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      className={`tfb-menu-item ${checked ? 'checked' : ''}`}
-                      onClick={() => toggleProject(p.id)}
-                    >
-                      <span className="tfb-dot" style={{ background: p.color }} />
-                      <span className="tfb-menu-text">{p.name}</span>
-                      {checked && <span className="tfb-check">✓</span>}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Ngày tạo */}
+      {/* Created date */}
       <div className="tfb-item">
         <button
           className={`tfb-btn ${createdActive ? 'active' : ''}`}
           onClick={() => toggleMenu('created')}
         >
-          Ngày tạo <IconChevron />
+          Created Date <IconChevron />
         </button>
         {openMenu === 'created' && (
           <div className="tfb-menu tfb-menu--date">
             <label className="tfb-date-row">
-              <span>Từ</span>
+              <span>From</span>
               <input
                 type="date"
                 value={filters.createdFrom ?? ''}
@@ -173,7 +212,7 @@ const TaskFilterBar: React.FC = () => {
               />
             </label>
             <label className="tfb-date-row">
-              <span>Đến</span>
+              <span>To</span>
               <input
                 type="date"
                 value={filters.createdTo ?? ''}
@@ -185,25 +224,25 @@ const TaskFilterBar: React.FC = () => {
                 className="tfb-clear-range"
                 onClick={() => setFilters((f) => ({ ...f, createdFrom: null, createdTo: null }))}
               >
-                Xóa khoảng
+                Clear range
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Ngày due */}
+      {/* Due date */}
       <div className="tfb-item">
         <button
           className={`tfb-btn ${dueActive ? 'active' : ''}`}
           onClick={() => toggleMenu('due')}
         >
-          Ngày due <IconChevron />
+          Due Date <IconChevron />
         </button>
         {openMenu === 'due' && (
           <div className="tfb-menu tfb-menu--date">
             <label className="tfb-date-row">
-              <span>Từ</span>
+              <span>From</span>
               <input
                 type="date"
                 value={filters.dueFrom ?? ''}
@@ -211,7 +250,7 @@ const TaskFilterBar: React.FC = () => {
               />
             </label>
             <label className="tfb-date-row">
-              <span>Đến</span>
+              <span>To</span>
               <input
                 type="date"
                 value={filters.dueTo ?? ''}
@@ -223,17 +262,17 @@ const TaskFilterBar: React.FC = () => {
                 className="tfb-clear-range"
                 onClick={() => setFilters((f) => ({ ...f, dueFrom: null, dueTo: null }))}
               >
-                Xóa khoảng
+                Clear range
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Xóa tất cả filter */}
+      {/* Clear all filters */}
       {activeCount > 0 && (
         <button className="tfb-clear-all" onClick={() => { setFilters(EMPTY_FILTERS); setOpenMenu(null); setMobileFiltersOpen(false); }}>
-          Xóa lọc ({activeCount})
+          Clear filters ({activeCount})
         </button>
       )}
 
@@ -241,11 +280,10 @@ const TaskFilterBar: React.FC = () => {
 
       <style>{`
         .task-filter-bar {
-          display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+          display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
           margin-bottom: 10px;
         }
-        /* Desktop: nút "Lọc" ẩn, nhóm bộ lọc flow inline như cũ.
-           Mobile override (display:flex / collapse) nằm trong index.css @media. */
+        /* Desktop: Filter toggle hidden. Mobile override in index.css @media. */
         .tfb-toggle {
           display: none; align-items: center; gap: 6px;
           background: var(--task-bg); border: 1px solid var(--border);

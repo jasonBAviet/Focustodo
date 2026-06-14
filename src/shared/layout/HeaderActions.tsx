@@ -33,19 +33,13 @@ const IconSettings = () => (
   </svg>
 );
 
-const IconLogout = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
-  </svg>
-);
-
 interface HeaderActionsProps {
   onShowReport: () => void;
 }
 
 const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
   const { setOpenModal, isDark, updateSettings } = useAppContext();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
 
   const toggleTheme = () => {
     updateSettings({ darkMode: isDark ? 'light' : 'dark' });
@@ -54,17 +48,16 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
   return (
     <div className="header-actions">
       {user && <span className="user-email-display">{user.email}</span>}
-      <button className="ha-btn" title="Báo cáo" onClick={onShowReport}><IconChart /></button>
-      <button className="ha-btn" title="Thông báo"><IconBell /></button>
+      <button className="ha-btn" title="Report" onClick={onShowReport}><IconChart /></button>
+      <button className="ha-btn" title="Notifications"><IconBell /></button>
       <button
         className="ha-btn"
-        title={isDark ? 'Chuyển sang sáng' : 'Chuyển sang tối'}
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         onClick={toggleTheme}
       >
         {isDark ? <IconSun /> : <IconMoon />}
       </button>
-      <button className="ha-btn" title="Cài đặt" onClick={() => setOpenModal('settings')}><IconSettings /></button>
-      <button className="ha-btn logout-btn" title="Đăng xuất" onClick={logout}><IconLogout /></button>
+      <button className="ha-btn" title="Settings" onClick={() => setOpenModal('settings')}><IconSettings /></button>
 
       <style>{`
         .header-actions {
@@ -88,6 +81,11 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
+        @media (max-width: 768px) {
+          .user-email-display { display: none; }
+          .ha-btn { padding: 6px; }
+          .header-actions { gap: 2px !important; }
+        }
         .ha-btn {
           background: transparent;
           border: none;
@@ -103,10 +101,6 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
         .ha-btn:hover {
           color: var(--text-primary);
           background: var(--bg-card-hover);
-        }
-        .logout-btn:hover {
-          color: var(--accent);
-          background: var(--accent-soft);
         }
       `}</style>
     </div>

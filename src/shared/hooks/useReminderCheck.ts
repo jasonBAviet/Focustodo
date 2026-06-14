@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - useReminderCheck
-// Hook kiểm tra task cần remind và gửi webhook
+// Hook to check tasks needing reminder and send webhook
 // ============================================================
 import { useEffect, useRef, useCallback } from 'react';
 import type { Task } from '@/types';
@@ -16,16 +16,16 @@ export function useReminderCheck({
   webhookEnabled,
   onTaskReminded,
 }: UseReminderCheckParams) {
-  // Lưu IDs của task đã gửi reminder trong session
+  // Store IDs of tasks already sent reminder in session
   const sentReminderIdsRef = useRef<Set<string>>(new Set());
 
-  // Tham chiếu để tránh stale closure
+  // Reference to avoid stale closure
   const tasksRef = useRef(tasks);
   useEffect(() => {
     tasksRef.current = tasks;
   }, [tasks]);
 
-  // Hàm kiểm tra xem reminder time có đã tới chưa
+  // Function to check if reminder time has arrived
   const isReminderTime = useCallback((task: Task): boolean => {
     if (!task.reminder || task.completed) {
       return false;
@@ -35,15 +35,15 @@ export function useReminderCheck({
       const reminderTime = new Date(task.reminder).getTime();
       const now = new Date().getTime();
 
-      // Gửi reminder nếu thời gian hiện tại >= thời gian reminder
-      // Cho phép 1 phút sai lệch
+      // Send reminder if current time >= reminder time
+      // Allow 1 minute margin
       return now >= reminderTime && now - reminderTime < 60 * 1000;
     } catch {
       return false;
     }
   }, []);
 
-  // Hàm kiểm tra toàn bộ task
+  // Function to check all tasks
   const checkReminders = useCallback(() => {
     if (!webhookEnabled) return;
 
@@ -58,25 +58,25 @@ export function useReminderCheck({
     });
   }, [isReminderTime, webhookEnabled, onTaskReminded]);
 
-  // Chạy kiểm tra reminder mỗi 30 giây
+  // Run reminder check every 30 seconds
   useEffect(() => {
     if (!webhookEnabled) return;
 
-    // Kiểm tra ngay khi component mount
+    // Check immediately on component mount
     checkReminders();
 
-    // Thiết lập interval để kiểm tra periodic
+    // Set interval for periodic check
     const interval = setInterval(checkReminders, 30 * 1000);
 
     return () => clearInterval(interval);
   }, [webhookEnabled, checkReminders]);
 
-  // Reset danh sách sent reminders khi task thay đổi (xóa/sửa)
+  // Reset sent reminders list when task changes (delete/edit)
   useEffect(() => {
     const currentTaskIds = new Set(tasksRef.current.map((t) => t.id));
     const sentIds = Array.from(sentReminderIdsRef.current);
 
-    // Xóa các task không còn tồn tại
+    // Delete non-existent tasks
     sentIds.forEach((id) => {
       if (!currentTaskIds.has(id)) {
         sentReminderIdsRef.current.delete(id);

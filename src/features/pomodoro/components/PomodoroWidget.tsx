@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - PomodoroWidget
-// Widget Pomodoro cố định cuối màn hình (pill shape)
+// Fixed Pomodoro widget at bottom of screen (pill shape)
 // ============================================================
 import React from 'react';
 import { usePomodoroContext } from '@/features/pomodoro/PomodoroContext';

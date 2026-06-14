@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - TagsSettings
-// Tab quản lý toàn bộ Tags + click chuột phải để tương tác
+// Manage all Tags + right-click interactions
 // ============================================================
 import React, { useState } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
@@ -60,7 +60,7 @@ const TagsSettings: React.FC = () => {
   const targetTagForScope = scopeTagId ? tags.find((t) => t.id === scopeTagId) : null;
 
 
-  // Thao tác chỉnh sửa
+  // Edit operations
   const handleOpenRename = () => {
     if (!currentMenuTag) return;
     setEditTagId(currentMenuTag.id);
@@ -100,7 +100,7 @@ const TagsSettings: React.FC = () => {
 
   const handleDelete = () => {
     if (!currentMenuTag) return;
-    if (confirm(`Bạn có chắc chắn muốn xóa nhãn "${currentMenuTag.name}"?`)) {
+    if (confirm(`Are you sure you want to delete tag "${currentMenuTag.name}"?`)) {
       deleteTag(currentMenuTag.id);
     }
     handleCloseMenu();
@@ -116,13 +116,13 @@ const TagsSettings: React.FC = () => {
   const getTagScopeText = (tag: any) => {
     if (tag.projectId) {
       const p = projects.find((x) => x.id === tag.projectId);
-      return `Dự án: ${p?.name ?? 'Không xác định'}`;
+      return `Project: ${p?.name ?? 'Unknown'}`;
     }
     if (tag.folderId) {
       const f = folders.find((x) => x.id === tag.folderId);
-      return `Thư mục: ${f?.name ?? 'Không xác định'}`;
+      return `Folder: ${f?.name ?? 'Unknown'}`;
     }
-    return 'Dùng chung';
+    return 'Global';
   };
 
   return (
@@ -158,7 +158,7 @@ const TagsSettings: React.FC = () => {
             <input
               type="text"
               autoFocus
-              placeholder="Nhập tên tag..."
+              placeholder="Enter tag name..."
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="add-project-input"
@@ -176,7 +176,7 @@ const TagsSettings: React.FC = () => {
       {/* Tags List */}
       {tags.length === 0 ? (
         <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: '8px 0' }}>
-          Chưa có nhãn nào được tạo.
+          No tags created yet.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -185,7 +185,7 @@ const TagsSettings: React.FC = () => {
               key={tag.id}
               style={tagRowStyle(tag.isVisible !== false, menuState?.tagId === tag.id)}
               onContextMenu={(e) => handleContextMenu(e, tag.id)}
-              title="Nhấp chuột phải để xem các tùy chọn"
+              title="Right-click to view options"
             >
               {/* Color Dot */}
               <span
@@ -200,7 +200,7 @@ const TagsSettings: React.FC = () => {
 
               {/* Tag Name */}
               <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>
-                {tag.name} {tag.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Đang ẩn)</span>}
+                {tag.name} {tag.isVisible === false && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>(Hidden)</span>}
               </span>
 
               {/* Scope Badge */}
@@ -210,7 +210,7 @@ const TagsSettings: React.FC = () => {
               <div
                 style={{ display: 'flex', alignItems: 'center', marginLeft: 8 }}
                 onClick={(e) => e.stopPropagation()}
-                title={tag.isVisible !== false ? 'Click để ẩn nhãn trên sidebar' : 'Click để hiện nhãn trên sidebar'}
+                title={tag.isVisible !== false ? 'Click to hide tag from sidebar' : 'Click to show tag on sidebar'}
               >
                 <Toggle
                   checked={tag.isVisible !== false}
@@ -224,7 +224,7 @@ const TagsSettings: React.FC = () => {
       )}
 
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 8 }}>
-        * Nhấp chuột phải vào Tag để Rename, Assign Scope, Ẩn/Hiện hoặc Xóa.
+        * Right-click on a Tag to Rename, Assign Scope, Hide/Show, or Delete.
       </div>
 
       {/* Context Menu */}
@@ -233,10 +233,10 @@ const TagsSettings: React.FC = () => {
           Rename
         </button>
         <button type="button" style={menuBtnStyle} onClick={handleOpenScope}>
-          Assign Scope (Chọn thư mục/dự án)
+          Assign Scope (Select folder/project)
         </button>
         <button type="button" style={menuBtnStyle} onClick={handleToggleHide}>
-          {currentMenuTag?.isVisible === false ? 'Show Tag (Hiện nhãn)' : 'Hide Tag (Ẩn nhãn)'}
+          {currentMenuTag?.isVisible === false ? 'Show Tag' : 'Hide Tag'}
         </button>
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <button type="button" style={{ ...menuBtnStyle, color: '#f25f5c' }} onClick={handleDelete}>
@@ -258,10 +258,10 @@ const TagsSettings: React.FC = () => {
           <ColorPicker value={editColor} onChange={setEditColor} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button type="button" className="apd-btn apd-btn--cancel" onClick={() => setEditTagId(null)}>
-              Hủy
+              Cancel
             </button>
             <button type="button" className="apd-btn apd-btn--ok" onClick={handleSaveRename} disabled={!editName.trim()}>
-              Lưu
+              Save
             </button>
           </div>
         </div>
@@ -272,7 +272,7 @@ const TagsSettings: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {targetTagForScope && (
             <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: 'var(--bg-body)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              Nhãn đang chọn: 
+              Selected tag: 
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: targetTagForScope.color }} />
                 <strong>{targetTagForScope.name}</strong>
@@ -280,11 +280,11 @@ const TagsSettings: React.FC = () => {
             </div>
           )}
           <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-            Chọn dự án hoặc thư mục chứa nhãn này. Nhãn sẽ chỉ xuất hiện khi bạn đang xem dự án hoặc thư mục đó.
+            Select project or folder containing this tag. The tag will only appear when you are viewing that project or folder.
           </div>
           <div>
             <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-              Dự án
+              Project
             </label>
             <select
               className="add-project-input"
@@ -295,7 +295,7 @@ const TagsSettings: React.FC = () => {
               }}
               style={{ width: '100%', margin: 0 }}
             >
-              <option value="">Không có (Dùng chung / Toàn cục)</option>
+              <option value="">None (Global)</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -306,7 +306,7 @@ const TagsSettings: React.FC = () => {
 
           <div>
             <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-              Thư mục
+              Folder
             </label>
             <select
               className="add-project-input"
@@ -317,7 +317,7 @@ const TagsSettings: React.FC = () => {
               }}
               style={{ width: '100%', margin: 0 }}
             >
-              <option value="">Không có (Dùng chung / Toàn cục)</option>
+              <option value="">None (Global)</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -328,10 +328,10 @@ const TagsSettings: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <button type="button" className="apd-btn apd-btn--cancel" onClick={() => setScopeTagId(null)}>
-              Hủy
+              Cancel
             </button>
             <button type="button" className="apd-btn apd-btn--ok" onClick={handleSaveScope}>
-              Lưu thay đổi
+              Save changes
             </button>
           </div>
         </div>

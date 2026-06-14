@@ -85,7 +85,7 @@ const TagPicker: React.FC<TagPickerProps> = ({ taskTags, allTags, onUpdate, onAd
 
   return (
     <div className="tag-picker-wrap">
-      {/* Hiển thị các tag đã chọn + button */}
+      {/* Display selected tags + button */}
       <div className="tag-picker-bar">
         {selectedTags.map((t) => (
           <span key={t.id} className="tag-chip" style={{ borderColor: t.color }}>
@@ -106,7 +106,7 @@ const TagPicker: React.FC<TagPickerProps> = ({ taskTags, allTags, onUpdate, onAd
         <div className="tag-dropdown" ref={dropRef}>
           <div className="tag-dropdown-list">
             {allTags.length === 0 && !showNew && (
-              <p className="tag-empty-hint">Chua co tag nao. Tao tag moi ben duoi.</p>
+              <p className="tag-empty-hint">No tags yet. Create a new tag below.</p>
             )}
             {allTags.map((tag) => {
               const checked = pending.includes(tag.id);
@@ -133,7 +133,7 @@ const TagPicker: React.FC<TagPickerProps> = ({ taskTags, allTags, onUpdate, onAd
               <div className="tag-new-row">
                 <input
                   className="tag-new-input"
-                  placeholder="Ten tag..."
+                  placeholder="Tag name..."
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddNewTag()}
@@ -150,7 +150,7 @@ const TagPicker: React.FC<TagPickerProps> = ({ taskTags, allTags, onUpdate, onAd
                   ))}
                 </div>
                 <button className="tag-new-confirm-btn" onClick={handleAddNewTag}>
-                  Them tag
+                  Add tag
                 </button>
               </div>
             )}

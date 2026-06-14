@@ -29,18 +29,18 @@
     'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Menlo', 'Monaco', 'Cascadia Code',
     'JetBrains Mono', monospace;
-  /* Tinh chỉnh chữ kiểu Apple: chống răng cưa + giãn chữ nhẹ */
+  /* Apple-style text refinement: anti-aliasing + slight letter spacing */
   --letter-spacing-tight: -0.01em;
-  /* Quy ước dùng type scale:
-     --text-2xs  10px  chỉ cho dữ liệu dày đặc: trục biểu đồ, ô lịch, heatmap
-     --text-xs   11px  meta/caption: ngày hạn, đếm, badge, timestamp
-     --text-sm   12px  nhãn phụ: settings row, nav item, form label
-     --text-base 13px  nội dung phụ mặc định (body)
-     --text-md   14px  nội dung chính: tiêu đề task, input chính, nút chính
-     --text-lg   16px  tiêu đề section/dialog
-     --text-xl   18px  tiêu đề trang mobile
-     --text-2xl  22px  tiêu đề trang, giá trị stat
-     --text-3xl  28px  số hero: đồng hồ Pomodoro, tâm donut chart */
+  /* Type scale convention:
+     --text-2xs  10px  only for dense data: chart axes, calendar cells, heatmap
+     --text-xs   11px  meta/caption: due date, count, badge, timestamp
+     --text-sm   12px  sub-label: settings row, nav item, form label
+     --text-base 13px  default sub-content (body)
+     --text-md   14px  main content: task title, main input, main button
+     --text-lg   16px  section/dialog title
+     --text-xl   18px  mobile page title
+     --text-2xl  22px  page title, stat value
+     --text-3xl  28px  hero numbers: Pomodoro clock, donut chart center */
   --text-2xs: 10px;
   --text-xs: 11px;
   --text-sm: 12px;
@@ -63,7 +63,7 @@
   --transition-normal: 200ms ease;
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Spacing (nửa bước 6px/10px cho nhịp hàng kiểu macOS) */
+  /* Spacing (half step 6px/10px for macOS-style rhythm) */
   --space-1: 4px;
   --space-1-5: 6px;
   --space-2: 8px;
@@ -75,12 +75,12 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* Layout offsets cho chrome nổi (HeaderActions / hamburger) */
+  /* Layout offsets for floating chrome (HeaderActions / hamburger) */
   --header-offset: 64px;
   --header-offset-mobile: 52px;
   --panel-padding: 16px;
 
-  /* Aliases — nhiều component đã dùng các tên này */
+  /* Aliases — many components already use these names */
   --text-muted: var(--text-tertiary);
   --bg-body: var(--bg-main);
   --shadow-xl: 0 16px 48px rgba(0,0,0,0.35);
@@ -132,8 +132,9 @@
   --task-bg-selected: rgba(242, 95, 92, 0.07);
   --task-border-bottom: rgba(255,255,255,0.05);
 
-  /* Stats */
+  /* Stats — semantic: red=pending, orange=elapsed/in-progress, blue=done */
   --stat-red: #f25f5c;
+  --stat-orange: #f4a261;
   --stat-blue: #4cc9f0;
 }
 
@@ -172,6 +173,11 @@
 
   --sidebar-item-hover: rgba(0, 0, 0, 0.04);
   --sidebar-item-active: rgba(242, 95, 92, 0.08);
+
+  /* Stats — darker for readability on light backgrounds */
+  --stat-red: #d44242;
+  --stat-orange: #c8660a;
+  --stat-blue: #0077cc;
 
   --task-bg: transparent;
   --task-bg-hover: rgba(0, 0, 0, 0.02);

@@ -19,10 +19,10 @@ interface GoalCalendarProps {
 // ----------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------
-const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = [
-  'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
-  'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 /** Tổng focus time (phút) của tất cả tasks được cập nhật vào ngày d */
@@ -116,12 +116,7 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
   });
 
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 16,
-      padding: isMobile ? '14px 10px' : '18px 20px',
-    }}>
+    <div>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center',

@@ -8,15 +8,17 @@ interface CalendarMonthProps {
   tasks: Task[];
   onSelectTask: (id: string) => void;
   selectedTaskId: string | null;
+  dateField: 'dueDate' | 'createdAt';
 }
 
-const WEEK_DAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const CalendarMonth: React.FC<CalendarMonthProps> = ({
   currentDate,
   tasks,
   onSelectTask,
   selectedTaskId,
+  dateField,
 }) => {
   const { addTask, updateTask } = useTaskContext();
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -25,11 +27,11 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
   const month = currentDate.getMonth();
   const daysGrid = calendarUtils.getMonthGrid(year, month);
 
-  // Lọc các task thuộc về từng ngày trong tháng
   const getTasksForDate = (dateString: string) => {
     return tasks.filter((t) => {
-      if (!t.dueDate) return false;
-      const d = new Date(t.dueDate);
+      const rawDate = t[dateField];
+      if (!rawDate) return false;
+      const d = new Date(rawDate);
       const cellD = new Date(dateString);
       return calendarUtils.isSameDay(d, cellD);
     });
@@ -56,16 +58,16 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
     setDragOverDate(null);
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
-      // Cập nhật dueDate của task
+      // Update task dueDate
       const targetDate = new Date(dateString);
-      // Đặt giờ mặc định là 9:00 sáng
+      // Default to 9:00 AM
       targetDate.setHours(9, 0, 0, 0);
       updateTask(taskId, { dueDate: targetDate.toISOString() });
     }
   };
 
   const handleDoubleClick = (dateString: string) => {
-    const title = window.prompt('Nhập tiêu đề công việc mới:');
+    const title = window.prompt('Enter new task title:');
     if (title && title.trim()) {
       const targetDate = new Date(dateString);
       targetDate.setHours(9, 0, 0, 0);
@@ -151,7 +153,8 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
           grid-template-columns: repeat(7, 1fr);
           grid-template-rows: repeat(6, 1fr);
           flex: 1;
-          min-height: 480px;
+          min-height: 0;
+          overflow: hidden;
         }
         .calendar-cell {
           border-right: 1px solid var(--border);
@@ -160,7 +163,7 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
           display: flex;
           flex-direction: column;
           gap: 4px;
-          min-height: 80px;
+          overflow: hidden;
           background: transparent;
           transition: background var(--transition-fast);
           user-select: none;
@@ -209,8 +212,7 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
           flex-direction: column;
           gap: 3px;
           flex: 1;
-          overflow-y: auto;
-          max-height: 90px;
+          overflow: hidden;
         }
         .calendar-task-badge {
           font-size: 10px;

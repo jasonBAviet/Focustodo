@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
 import { dateUtils } from '@/utils/dateUtils';
 import type { ChartPeriod } from '@/features/reports/components/FocusTimeChart';
 
@@ -27,6 +28,7 @@ const StatCards: React.FC<StatCardsProps> = ({
   period,
 }) => {
   const { tasks, projects, pomodoroSessions, pomodoroRecords } = useTaskContext();
+  const { knowledges } = useKnowledgeContext();
 
   const stats = useMemo(() => {
     const applyCommonFilters = (task: typeof tasks[number]) => {
@@ -44,10 +46,8 @@ const StatCards: React.FC<StatCardsProps> = ({
       return true;
     };
 
-    // Only real tasks (not knowledge items) for task metrics
-    const filteredTasks = tasks.filter((t) => !t.isKnowledge && applyCommonFilters(t));
-    // All items (tasks + knowledge) matching filters for knowledge count
-    const filteredAllItems = tasks.filter(applyCommonFilters);
+    const filteredTasks = tasks.filter((t) => applyCommonFilters(t));
+    const filteredAllItems = [...tasks, ...knowledges].filter(applyCommonFilters);
 
     const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
 
@@ -66,8 +66,8 @@ const StatCards: React.FC<StatCardsProps> = ({
     const periodCompleted = filteredTasks.filter(
       (t) => t.completed && isInRange(t.completedAt, startDate, endDate),
     ).length;
-    const periodKnowledgeCreated = filteredAllItems.filter(
-      (t) => t.isKnowledge && isInRange(t.createdAt, startDate, endDate),
+    const periodKnowledgeCreated = knowledges.filter(
+      (k) => isInRange(k.createdAt, startDate, endDate) && applyCommonFilters(k)
     ).length;
     const overdueCount = filteredTasks.filter((t) => {
       if (t.completed || !t.dueDate) return false;
@@ -91,9 +91,9 @@ const StatCards: React.FC<StatCardsProps> = ({
       });
       const avgDays = totalMs / (1000 * 60 * 60 * 24) / completedTasksInPeriod.length;
       if (avgDays < 1) {
-        avgCompletionTimeStr = `${Math.round(avgDays * 24 * 10) / 10} giờ`;
+        avgCompletionTimeStr = `${Math.round(avgDays * 24 * 10) / 10} hours`;
       } else {
-        avgCompletionTimeStr = `${Math.round(avgDays * 10) / 10} ngày`;
+        avgCompletionTimeStr = `${Math.round(avgDays * 10) / 10} days`;
       }
     }
 
@@ -130,17 +130,17 @@ const StatCards: React.FC<StatCardsProps> = ({
       onTimeRate,
       interruptionRate,
     };
-  }, [tasks, projects, pomodoroSessions, pomodoroRecords, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
+  }, [tasks, knowledges, projects, pomodoroSessions, pomodoroRecords, selectedFolderId, selectedProjectId, selectedTagId, startDate, endDate]);
 
   function fmtMin(minutes: number): string {
     return dateUtils.formatDuration(Math.round(minutes));
   }
 
-  let periodLabel = 'Trong kỳ';
-  if (period === 'daily') periodLabel = 'Ngày này';
-  else if (period === 'weekly') periodLabel = 'Tuần này';
-  else if (period === 'monthly') periodLabel = 'Tháng này';
-  else if (period === 'yearly') periodLabel = 'Năm này';
+  let periodLabel = 'In period';
+  if (period === 'daily') periodLabel = 'Today';
+  else if (period === 'weekly') periodLabel = 'This week';
+  else if (period === 'monthly') periodLabel = 'This month';
+  else if (period === 'yearly') periodLabel = 'This year';
 
   const warningColor = '#f25f5c';
   const successColor = '#06d6a0';
@@ -148,19 +148,19 @@ const StatCards: React.FC<StatCardsProps> = ({
   const accentColor = '#f25f5c';
 
   const groupIcons: Record<string, React.ReactNode> = {
-    'Thời gian': (
+    'Time': (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12 6 12 12 16 14"/>
       </svg>
     ),
-    'Công việc': (
+    'Tasks': (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 11 12 14 22 4"/>
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
       </svg>
     ),
-    'Chất lượng': (
+    'Quality': (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10"/>
         <line x1="12" y1="20" x2="12" y2="4"/>
@@ -175,31 +175,31 @@ const StatCards: React.FC<StatCardsProps> = ({
     cards: Array<{ label: string; value: string; warning?: boolean }>;
   }> = [
     {
-      groupLabel: 'Thời gian',
+      groupLabel: 'Time',
       accent: accentColor,
       cards: [
         { label: `Focus (${periodLabel})`, value: fmtMin(stats.periodFocusTime) },
-        { label: 'Focus tích lũy', value: fmtMin(stats.totalFocusTime) },
+        { label: 'Total focus', value: fmtMin(stats.totalFocusTime) },
       ],
     },
     {
-      groupLabel: 'Công việc',
+      groupLabel: 'Tasks',
       accent: primaryColor,
       cards: [
-        { label: `Tạo mới (${periodLabel})`, value: String(stats.periodCreated) },
-        { label: `Hoàn thành (${periodLabel})`, value: String(stats.periodCompleted) },
-        { label: 'Hoàn thành (tổng)', value: String(stats.totalCompleted) },
-        { label: `Kiến thức (${periodLabel})`, value: String(stats.periodKnowledgeCreated) },
+        { label: `Created (${periodLabel})`, value: String(stats.periodCreated) },
+        { label: `Completed (${periodLabel})`, value: String(stats.periodCompleted) },
+        { label: 'Total completed', value: String(stats.totalCompleted) },
+        { label: `Knowledge (${periodLabel})`, value: String(stats.periodKnowledgeCreated) },
       ],
     },
     {
-      groupLabel: 'Chất lượng',
+      groupLabel: 'Quality',
       accent: successColor,
       cards: [
-        { label: `Lead Time TB (${periodLabel})`, value: stats.avgCompletionTimeStr },
-        { label: `Đúng hạn (${periodLabel})`, value: stats.onTimeRate === null ? '—' : `${stats.onTimeRate}%` },
+        { label: `Avg Lead Time (${periodLabel})`, value: stats.avgCompletionTimeStr },
+        { label: `On time (${periodLabel})`, value: stats.onTimeRate === null ? '—' : `${stats.onTimeRate}%` },
         {
-          label: 'Trễ hạn (cuối kỳ)',
+          label: 'Overdue (end of period)',
           value: String(stats.overdueCount),
           warning: stats.overdueCount > 0,
         },

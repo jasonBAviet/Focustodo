@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
 import KnowledgeList from '@/features/knowledge/components/KnowledgeList';
 import KnowledgeDetail from '@/features/knowledge/components/KnowledgeDetail';
 
 const KnowledgeHub: React.FC = () => {
-  const { getFilteredTasks, addTask, updateTask } = useTaskContext();
+  const { knowledges, addKnowledge, updateKnowledge } = useKnowledgeContext();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Mobile master-detail: the detail pane is a slide-over shown only after the
   // user taps a note (on desktop this flag is inert — no effect outside the
@@ -12,8 +12,6 @@ const KnowledgeHub: React.FC = () => {
   const [detailOpenMobile, setDetailOpenMobile] = useState(false);
 
   // Lọc toàn bộ danh sách kiến thức từ Context
-  const knowledges = getFilteredTasks(); // getFilteredTasks() sẽ lọc và trả về tasks.filter(t => t.isKnowledge) khi activeView = 'knowledge'
-
   // Tự động chọn ghi chú đầu tiên nếu chưa chọn gì
   useEffect(() => {
     if (knowledges.length > 0 && !selectedId) {
@@ -38,10 +36,10 @@ Luận điểm chính:
 
 Dẫn chứng:
 - `;
-    // Gọi hàm tạo task mới với thuộc tính isKnowledge = true
-    const newNote = addTask('Ghi chú kiến thức mới', null, 'none', 1, true);
+    // Gọi hàm tạo knowledge mới
+    const newNote = addKnowledge('Ghi chú kiến thức mới', null, 'none');
     if (newNote) {
-      updateTask(newNote.id, { note: template });
+      updateKnowledge(newNote.id, { note: template });
       setSelectedId(newNote.id);
       setDetailOpenMobile(true);
     }

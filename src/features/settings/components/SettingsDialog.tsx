@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - SettingsDialog
-// Dialog Settings chinh - layout 2 cot: sidebar tabs + content
+// Main Settings Dialog - 2 col layout: sidebar tabs + content
 // ============================================================
 import React, { useState } from 'react';
 import Dialog from '@/shared/components/Dialog';
@@ -14,7 +14,7 @@ import GeneralSettings from '@/features/settings/components/GeneralSettings';
 import AccountSettings from '@/features/settings/components/AccountSettings';
 
 // ----------------------------------------------------------
-// Kieu du lieu Tab
+// Tab data type
 // ----------------------------------------------------------
 type TabId = 'account' | 'general' | 'pomodoro' | 'projects' | 'tags' | 'appearance' | 'webhook';
 
@@ -25,7 +25,7 @@ interface TabItem {
 }
 
 // ----------------------------------------------------------
-// Icon SVG nho gon cho tung tab
+// Compact SVG icon for each tab
 // ----------------------------------------------------------
 const IconAccount = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -73,7 +73,7 @@ const IconTags = () => (
 );
 
 // ----------------------------------------------------------
-// Danh sach Tab
+// Tab list
 // ----------------------------------------------------------
 const TABS: TabItem[] = [
   { id: 'account',    label: 'Account',       icon: <IconAccount /> },
@@ -86,7 +86,7 @@ const TABS: TabItem[] = [
 ];
 
 // ----------------------------------------------------------
-// Render noi dung tuong ung voi tab
+// Render corresponding tab content
 // ----------------------------------------------------------
 function renderTabContent(tab: TabId): React.ReactNode {
   switch (tab) {
@@ -102,7 +102,7 @@ function renderTabContent(tab: TabId): React.ReactNode {
 }
 
 // ----------------------------------------------------------
-// Component chinh
+// Main component
 // ----------------------------------------------------------
 const SettingsDialog: React.FC = () => {
   const { openModal, setOpenModal } = useAppContext();

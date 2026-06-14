@@ -26,7 +26,32 @@ function rowToTask(r) {
     createdAt: r.created_at ?? null,
     completedAt: r.completed_at ?? null,
     updatedAt: r.updated_at ?? null,
-    isKnowledge: r.is_knowledge ?? false,
+    updatedAt: r.updated_at ?? null,
+  };
+}
+
+function rowToKnowledge(r) {
+  return {
+    id: r.id,
+    title: r.title ?? '',
+    projectId: r.project_id ?? null,
+    priority: r.priority ?? 'none',
+    dueDate: r.due_date ?? null,
+    reminder: r.reminder ?? null,
+    repeat: r.repeat ?? 'none',
+    repeatCustom: r.repeat_custom ?? null,
+    note: r.note ?? '',
+    subtasks: r.subtasks ?? [],
+    pomodoroEstimate: r.pomodoro_estimate ?? 1,
+    pomodoroCompleted: r.pomodoro_completed ?? 0,
+    totalFocusTime: r.total_focus_time ?? 0,
+    completed: r.completed ?? false,
+    flagged: r.flagged ?? false,
+    tags: r.tags ?? [],
+    position: r.position ?? 0,
+    createdAt: r.created_at ?? null,
+    completedAt: r.completed_at ?? null,
+    updatedAt: r.updated_at ?? null,
   };
 }
 
@@ -90,6 +115,8 @@ function rowToSettings(r) {
     externalApiEnabled: r.external_api_enabled ?? false,
     dailyFocusGoalHours: r.daily_focus_goal_hours != null ? Number(r.daily_focus_goal_hours) : 3,
     visibleViews: r.visible_views ?? {},
+    calendarScale: r.calendar_scale ?? 'month',
+    calendarDateField: r.calendar_date_field ?? 'dueDate',
   };
 }
 
@@ -176,14 +203,30 @@ async function persistState(incoming, userId) {
       client, 'tasks', incoming.tasks ?? [],
       ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
         'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
-        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at', 'is_knowledge'],
+        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at'],
       (t) => [
         t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
         t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
         JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
         Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
         JSON.stringify(t.tags ?? []), t.position ?? 0, t.createdAt ?? null, t.completedAt ?? null,
-        t.updatedAt ?? t.createdAt ?? nowIso, t.isKnowledge ?? false,
+        t.updatedAt ?? t.createdAt ?? nowIso,
+      ],
+      'updated_at', userId
+    );
+
+    await reconcileTable(
+      client, 'knowleadge', incoming.knowledges ?? [],
+      ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
+        'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
+        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at'],
+      (t) => [
+        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
+        t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
+        JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
+        Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
+        JSON.stringify(t.tags ?? []), t.position ?? 0, t.createdAt ?? null, t.completedAt ?? null,
+        t.updatedAt ?? t.createdAt ?? nowIso,
       ],
       'updated_at', userId
     );
@@ -253,6 +296,7 @@ async function persistState(incoming, userId) {
     // 2. Apply explicit deletes
     const del = incoming.deletedIds ?? {};
     await applyDeletedIds(client, 'tasks', del.tasks, userId);
+    await applyDeletedIds(client, 'knowleadge', del.knowledges, userId);
     await applyDeletedIds(client, 'projects', del.projects, userId);
     await applyDeletedIds(client, 'folders', del.folders, userId);
     await applyDeletedIds(client, 'tags', del.tags, userId);
@@ -267,8 +311,9 @@ async function persistState(incoming, userId) {
            id, pomodoro_length, short_break_length, long_break_length, long_break_after,
            auto_start_next_pomodoro, auto_start_break, disable_break, alarm_sound,
            dark_mode, theme_wallpaper, accent_color, webhook_url, webhook_enabled,
-           external_api_url, external_api_enabled, daily_focus_goal_hours, visible_views, user_id
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$1)
+           external_api_url, external_api_enabled, daily_focus_goal_hours, visible_views,
+           calendar_scale, calendar_date_field, user_id
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$1)
          ON CONFLICT (id) DO UPDATE SET
            pomodoro_length = EXCLUDED.pomodoro_length,
            short_break_length = EXCLUDED.short_break_length,
@@ -286,7 +331,9 @@ async function persistState(incoming, userId) {
            external_api_url = EXCLUDED.external_api_url,
            external_api_enabled = EXCLUDED.external_api_enabled,
            daily_focus_goal_hours = EXCLUDED.daily_focus_goal_hours,
-           visible_views = EXCLUDED.visible_views`,
+           visible_views = EXCLUDED.visible_views,
+           calendar_scale = EXCLUDED.calendar_scale,
+           calendar_date_field = EXCLUDED.calendar_date_field`,
         [
           userId, s.pomodoroLength ?? 25, s.shortBreakLength ?? 5, s.longBreakLength ?? 15,
           s.longBreakAfter ?? 4, s.autoStartNextPomodoro ?? false, s.autoStartBreak ?? false,
@@ -294,6 +341,7 @@ async function persistState(incoming, userId) {
           s.themeWallpaper ?? 'dark-forest', s.accentColor ?? '#f25f5c', s.webhookUrl ?? '',
           s.webhookEnabled ?? false, s.externalApiUrl ?? '', s.externalApiEnabled ?? false,
           s.dailyFocusGoalHours ?? 3, JSON.stringify(s.visibleViews ?? {}),
+          s.calendarScale ?? 'month', s.calendarDateField ?? 'dueDate',
         ],
       );
     }
@@ -329,8 +377,9 @@ async function persistState(incoming, userId) {
 router.get('/', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
-    const [tasks, projects, folders, tags, settings, ui, sessions, attachments, pomodoroRecords] = await Promise.all([
+    const [tasks, knowledges, projects, folders, tags, settings, ui, sessions, attachments, pomodoroRecords] = await Promise.all([
       pool.query('SELECT * FROM tasks WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at DESC', [userId]),
+      pool.query('SELECT * FROM knowleadge WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at DESC', [userId]),
       pool.query('SELECT * FROM projects WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at ASC', [userId]),
       pool.query('SELECT * FROM folders WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at ASC', [userId]),
       pool.query('SELECT * FROM tags WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY created_at ASC', [userId]),
@@ -345,6 +394,7 @@ router.get('/', authenticateUser, async (req, res) => {
 
     const state = {
       tasks: tasks.rows.map(rowToTask),
+      knowledges: knowledges.rows.map(rowToKnowledge),
       projects: projects.rows.map(rowToProject),
       folders: folders.rows.map(rowToFolder),
       tags: tags.rows.map(rowToTag),

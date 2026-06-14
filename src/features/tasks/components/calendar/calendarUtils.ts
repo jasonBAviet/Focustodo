@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - calendarUtils.ts
-// Các tiện ích tính toán lịch cho Calendar View
+// Calendar calculations for Calendar View
 // ============================================================
 
 export interface CalendarDayInfo {
@@ -11,12 +11,12 @@ export interface CalendarDayInfo {
 }
 
 export const calendarUtils = {
-  // Trả về số ngày của một tháng (tháng 0-indexed)
+  // Returns number of days in a month (month is 0-indexed)
   getDaysInMonth(year: number, month: number): number {
     return new Date(year, month + 1, 0).getDate();
   },
 
-  // Chuyển đối tượng Date thành chuỗi YYYY-MM-DD theo giờ địa phương
+  // Converts Date object to YYYY-MM-DD string in local time
   toDateString(date: Date): string {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -24,7 +24,7 @@ export const calendarUtils = {
     return `${y}-${m}-${d}`;
   },
 
-  // Kiểm tra xem hai ngày có cùng ngày/tháng/năm hay không
+  // Checks if two dates are on the same day/month/year
   isSameDay(d1: Date, d2: Date): boolean {
     return (
       d1.getFullYear() === d2.getFullYear() &&
@@ -33,24 +33,24 @@ export const calendarUtils = {
     );
   },
 
-  // Lấy danh sách 42 ngày (6 tuần) hiển thị trong chế độ xem tháng (bắt đầu từ Thứ 2)
+  // Gets a list of 42 days (6 weeks) to display in month view (starts on Monday)
   getMonthGrid(year: number, month: number): CalendarDayInfo[] {
     const grid: CalendarDayInfo[] = [];
     const firstDay = new Date(year, month, 1);
     
-    // Ngày trong tuần của ngày đầu tiên (0 = Chủ Nhật, 1 = Thứ 2, ..., 6 = Thứ 7)
+    // Day of the week of the first day (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const dayOfWeek = firstDay.getDay();
     
-    // Số ngày cần lùi về tháng trước để bắt đầu từ Thứ Hai
-    // Nếu ngày đầu tiên là Chủ Nhật (0), cần lùi 6 ngày.
-    // Nếu là Thứ Hai (1), lùi 0 ngày.
-    // Nếu là Thứ Ba (2), lùi 1 ngày...
+    // Number of days to go back into the previous month so it starts on Monday
+    // If the first day is Sunday (0), go back 6 days.
+    // If it's Monday (1), go back 0 days.
+    // If it's Tuesday (2), go back 1 day...
     const daysBefore = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
     const startDate = new Date(year, month, 1 - daysBefore);
     const today = new Date();
 
-    // Sinh lưới 42 ngày (6 tuần) để đảm bảo giao diện tháng luôn đồng đều
+    // Generate grid of 42 days (6 weeks) to ensure consistent month grid UI
     for (let i = 0; i < 42; i++) {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
@@ -66,7 +66,7 @@ export const calendarUtils = {
     return grid;
   },
 
-  // Lấy danh sách 7 ngày trong tuần chứa ngày được chọn (bắt đầu từ Thứ 2)
+  // Gets the 7 days of the week containing the given date (starts on Monday)
   getWeekDays(date: Date): CalendarDayInfo[] {
     const days: CalendarDayInfo[] = [];
     const dayOfWeek = date.getDay();

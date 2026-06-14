@@ -38,7 +38,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
   const handleUploadSubtaskImage = async (subtaskId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+    if (file.size > 5 * 1024 * 1024) return alert('Maximum image size is 5MB');
 
     const fd = new FormData();
     fd.append('file', file);
@@ -64,7 +64,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
       });
       updateTask(task.id, { subtasks: updatedSubtasks });
     } catch {
-      alert('Không thể tải ảnh lên');
+      alert('Could not upload image');
     }
   };
 
@@ -118,7 +118,7 @@ const SubtaskList: React.FC<SubtaskListProps> = ({ task }) => {
                 </button>
               </div>
             ))}
-            <label className="sub-attach-add" title="Thêm ảnh">
+            <label className="sub-attach-add" title="Add image">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path d="M13.5 13.5H2.5V4.5H5.5L7 2.5H9L10.5 4.5H13.5V13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 <circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/>

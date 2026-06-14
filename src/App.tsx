@@ -4,7 +4,8 @@ import { AppProvider, useAppContext } from '@/core/contexts/AppContext';
 import { WebhookProvider, useWebhookContext } from '@/core/contexts/WebhookContext';
 import { PomodoroProvider } from '@/features/pomodoro/PomodoroContext';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
-import AuthScreen from '@/features/auth/components/AuthScreen';
+import { KnowledgeProvider } from '@/features/knowledge/KnowledgeContext';
+// import AuthScreen from '@/features/auth/components/AuthScreen'; // temporarily disabled
 import Sidebar from '@/shared/layout/Sidebar';
 import TaskList from '@/features/tasks/components/TaskList';
 import TaskPanel from '@/shared/layout/TaskPanel';
@@ -27,7 +28,7 @@ import './styles/index.css';
 
 const AppInner: React.FC = () => {
   const { openModal, settings } = useAppContext();
-  const { tasks, activeView, activeProjectId, setActiveView, setActiveProjectId } = useTaskContext();
+  const { tasks, activeView, activeProjectId, setActiveView, setActiveProjectId, selectedTaskId, newTaskPanelOpen } = useTaskContext();
   const [showReport, setShowReport] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const closeMobileNav = () => setMobileNavOpen(false);
@@ -53,7 +54,7 @@ const AppInner: React.FC = () => {
     setShowReport
   });
 
-  // Cu chi vuot de mo/dong sidebar tren thiet bi cam ung
+  // Swipe gesture to open/close sidebar on touch devices
   useSwipeGesture({
     isSidebarOpen: mobileNavOpen,
     onSwipeRight: () => setMobileNavOpen(true),
@@ -62,12 +63,14 @@ const AppInner: React.FC = () => {
 
   const handleShowReport = () => setShowReport((v) => !v);
 
+  const panelVisible = !showReport && activeView !== 'knowledge' && (!!selectedTaskId || newTaskPanelOpen);
+
   return (
-    <div className={`app-layout ${(activeView === 'knowledge' || showReport) ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
+    <div className={`app-layout ${!panelVisible ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
       <button
         type="button"
         className="mobile-menu-btn"
-        aria-label="Mở menu"
+        aria-label="Open menu"
         aria-expanded={mobileNavOpen}
         onClick={() => setMobileNavOpen((v) => !v)}
       >
@@ -101,7 +104,7 @@ const AppInner: React.FC = () => {
       <PomodoroWidget />
       <PomodoroModal />
 
-      {/* Cac component PWA: hien thi trang thai mang va goi y cai dat */}
+      {/* PWA components: show network status and install prompt */}
       <OfflineIndicator />
       <InstallPrompt />
 
@@ -119,45 +122,26 @@ const SettingsDialogLazy = React.lazy(
 );
 
 const AppContent: React.FC = () => {
-  const { token, loading } = useAuth();
+  // ---- AUTH TEMPORARILY DISABLED: removed AuthScreen, keep loading to wait for token ----
+  const { loading } = useAuth();
+  // if (!token) return <AuthScreen />; // temporarily disabled
 
   if (loading) {
     return (
-      <div className="app-loading">
-        <div className="spinner"></div>
-        <style>{`
-          .app-loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #0c0d14;
-          }
-          .spinner {
-            width: 45px;
-            height: 45px;
-            border: 4px solid rgba(255, 255, 255, 0.05);
-            border-left-color: #4361ee;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0c0d14' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid rgba(255,255,255,0.05)', borderLeftColor: '#4361ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
-  }
-
-  if (!token) {
-    return <AuthScreen />;
   }
 
   return (
     <WebhookProvider>
       <TaskProvider>
         <PomodoroProvider>
-          <AppInner />
+          <KnowledgeProvider>
+            <AppInner />
+          </KnowledgeProvider>
         </PomodoroProvider>
       </TaskProvider>
     </WebhookProvider>
@@ -165,8 +149,8 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  // Gan class 'capacitor-native' vao the <html> khi chay trong Capacitor
-  // de kich hoat cac quy tac CSS safe-area va tuy chinh native
+  // Add 'capacitor-native' class to <html> tag when running in Capacitor
+  // to enable safe-area CSS rules and native customizations
   useEffect(() => {
     if (isNativeMobile()) {
       document.documentElement.classList.add('capacitor-native');

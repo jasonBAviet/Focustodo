@@ -11,7 +11,8 @@ import { pool, ensureSchema } from './db.js';
 import { createTasksRouter } from './src/backend/modules/tasks/task.route.js';
 import swaggerRouter from './routes/swagger.js';
 import { createAuth, createUserAuthRouter } from './src/backend/modules/auth/auth.route.js';
-import { authenticateUser } from './src/backend/modules/auth/auth.middleware.js';
+import { authenticateUser, requireScope } from './src/backend/modules/auth/auth.middleware.js';
+import { webhookService } from './src/backend/modules/webhooks/webhook.service.js';
 import { createProjectsRouter } from './src/backend/modules/projects/project.route.js';
 import { createFoldersRouter } from './src/backend/modules/folders/folder.route.js';
 import { createTagsRouter } from './src/backend/modules/tags/tag.route.js';
@@ -91,6 +92,14 @@ const app = express();
 // Security headers (helmet)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'same-site' },
+  contentSecurityPolicy: {
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+      "img-src": ["'self'", "data:", "https://unpkg.com"],
+    },
+  },
 }));
 
 // CORS chi cho phep origin da dinh nghia
@@ -123,13 +132,14 @@ app.use(cors({
 }));
 
 // Rate limiting cho auth endpoints (10 request / 15 phut)
+// Bo qua rate limit khi co bien test hoac DISABLE_RATE_LIMIT=true
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Qua nhieu yeu cau. Vui long thu lai sau 15 phut.' },
-  skip: (req) => req.method === 'OPTIONS',
+  skip: (req) => req.method === 'OPTIONS' || process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMIT === 'true',
 });
 
 // Rate limiting chung (200 request / 1 phut)
@@ -140,6 +150,26 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Qua nhieu yeu cau. Vui long thu lai sau.' },
   skip: (req) => req.method === 'OPTIONS',
+});
+
+// Rate limiting rieng cho external tasks (60 request / 1 phut per API Key)
+const externalApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Qua nhieu yeu cau den External API. Vui long thu lai sau 1 phut.' },
+  keyGenerator: (req) => {
+    if (req.apiKey?.id) {
+      return `apikey:${req.apiKey.id}`;
+    }
+    if (req.user?.id) {
+      return `user:${req.user.id}`;
+    }
+    return req.ip;
+  },
+  skip: (req) => req.method === 'OPTIONS',
+  validate: false,
 });
 
 app.use(generalLimiter);
@@ -161,7 +191,7 @@ app.use((req, res, next) => {
 });
 
 // Dang ky routes
-app.use('/api/auth', authLimiter, createUserAuthRouter());
+app.use('/api/auth', createUserAuthRouter(authLimiter));
 app.use('/api/state', stateRouter);
 app.use('/api/events', createEventsRouter(pool, auth));
 app.use('/api/keys', auth.keysRouter);
@@ -173,7 +203,7 @@ app.use('/api/changes', createChangesRouter(pool, auth));
 app.use('/api/integrations', createIntegrationsRouter(pool, auth));
 app.use('/api/hooks', createHooksRouter(pool));
 app.use('/api/webhooks', createWebhookRouter());
-app.use('/api/external/v1/tasks', createExternalTaskRouter());
+app.use('/api/external/v1/tasks', requireScope('tasks'), externalApiLimiter, createExternalTaskRouter());
 app.use('/api/docs', swaggerRouter);
 app.use('/api/notify', notifyRouter);
 
@@ -245,6 +275,13 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       await ensureSchema();
+
+      // Auto-xoa logs sau 30 ngay (startup & periodic every 24h)
+      webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Initial logs cleanup failed:', err));
+      setInterval(() => {
+        webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Periodic logs cleanup failed:', err));
+      }, 24 * 60 * 60 * 1000);
+
       app.listen(PORT, () => {
         console.log(`Focus To Do backend is running on http://localhost:${PORT}`);
       });
@@ -263,7 +300,9 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
 
 const isServerless = !!process.env.VERCEL;
 if (isServerless) {
-  ensureSchema().catch(err => console.error('Failed to init schema:', err));
+  ensureSchema()
+    .then(() => webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Serverless logs cleanup failed:', err)))
+    .catch(err => console.error('Failed to init schema:', err));
 } else {
   startWithRetry();
 }

@@ -48,17 +48,15 @@ export class WebhookService {
         ]);
 
         const payload = buildPayload(eventType, taskData);
-        const now = new Date().toISOString();
 
         // 1. Legacy single-URL from settings table
         if (settings?.webhook_enabled && settings.webhook_url) {
           const url = String(settings.webhook_url).trim();
           if (isSafeWebhookUrl(url)) {
-            fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-Webhook-Event': eventType },
-              body: JSON.stringify(payload),
-            }).catch(() => {});
+            const reqHeaders = { 'Content-Type': 'application/json', 'X-Webhook-Event': eventType };
+            const reqBody = JSON.stringify(payload);
+            this.sendWebhookWithRetryAndLog(url, reqHeaders, reqBody, eventType, userId, null)
+              .catch((err) => console.error('[WebhookService.dispatchToAll] Legacy webhook error:', err));
           }
         }
 
@@ -77,14 +75,96 @@ export class WebhookService {
             reqBody = signed.body;
           }
 
-          fetch(sub.url, { method: 'POST', headers: reqHeaders, body: reqBody })
-            .then(() => webhookRepository.updateLastTriggered(sub.id, now))
-            .catch(() => {});
+          this.sendWebhookWithRetryAndLog(sub.url, reqHeaders, reqBody, eventType, userId, sub.id)
+            .then((result) => {
+              if (result.success) {
+                webhookRepository.updateLastTriggered(sub.id, new Date().toISOString()).catch(() => {});
+              }
+            })
+            .catch((err) => console.error('[WebhookService.dispatchToAll] Subscriber webhook error:', err));
         }
       } catch (err) {
         console.error('[WebhookService.dispatchToAll]', err);
       }
     }, 0);
+  }
+
+  async sendWebhookWithRetryAndLog(url, headers, body, eventType, userId, subscriberId = null) {
+    const maxRetries = 3;
+    const initialDelay = 2000;
+    let attempt = 0;
+    let success = false;
+    let lastHttpStatus = null;
+    let lastError = null;
+
+    while (attempt <= maxRetries && !success) {
+      attempt++;
+      const timestamp = new Date().toISOString();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body,
+          signal: controller.signal,
+        });
+
+        lastHttpStatus = response.status;
+        if (response.ok) {
+          success = true;
+          lastError = null;
+        } else {
+          lastError = `HTTP Error ${response.status}: ${response.statusText}`;
+        }
+      } catch (err) {
+        lastHttpStatus = null;
+        lastError = err.message || String(err);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      // Ghi log vao database cho moi lan dispatch
+      try {
+        await webhookRepository.insertDeliveryLog({
+          id: randomUUID(),
+          userId,
+          subscriberId,
+          event: eventType,
+          httpStatus: lastHttpStatus,
+          error: lastError,
+          timestamp,
+        });
+      } catch (logErr) {
+        console.error('[WebhookService] Failed to insert delivery log:', logErr);
+      }
+
+      if (success) {
+        break;
+      }
+
+      if (attempt <= maxRetries) {
+        const backoffDelay = initialDelay * Math.pow(2, attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      }
+    }
+
+    return { success, lastHttpStatus, lastError };
+  }
+
+  async cleanOldLogs() {
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const count = await webhookRepository.deleteLogsOlderThan(thirtyDaysAgo);
+      if (count > 0) {
+        console.log(`[WebhookService.cleanOldLogs] Da don dep ${count} logs webhook cu hon 30 ngay.`);
+      }
+      return count;
+    } catch (err) {
+      console.error('[WebhookService.cleanOldLogs] Loi khi don dep logs cu:', err);
+      return 0;
+    }
   }
 
   async getSubscribers(userId) {

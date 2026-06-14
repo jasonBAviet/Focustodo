@@ -1,4 +1,4 @@
-import type { Task, Project, Folder, ViewType, Settings } from '@/types';
+import type { Task, Knowledge, Project, Folder, ViewType, Settings } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { getDescendantFolderIds } from '@/utils/folderUtils';
 
@@ -60,6 +60,7 @@ const hasValidDueDate = (task: Task) =>
 
 export const getViewStats = (
   tasks: Task[],
+  knowledges: Knowledge[],
   normalTasks: Task[],
   viewId: ViewType,
   settings: Settings
@@ -81,10 +82,18 @@ export const getViewStats = (
       return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)), settings);
     case 'completed':
       return getTasksStats(normalTasks.filter((t) => t.completed), settings);
+    case 'high-priority':
+      return getTasksStats(normalTasks.filter((t) => !t.completed && t.priority === 'high'), settings);
+    case 'medium-priority':
+      return getTasksStats(normalTasks.filter((t) => !t.completed && t.priority === 'medium'), settings);
+    case 'low-priority':
+      return getTasksStats(normalTasks.filter((t) => !t.completed && t.priority === 'low'), settings);
+    case 'someday':
+      return getTasksStats(normalTasks.filter((t) => !t.completed && !hasValidDueDate(t) && !t.projectId), settings);
     case 'events':
       return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)), settings);
     case 'knowledge':
-      return { count: tasks.filter((t) => !!t.isKnowledge).length, time: 0 };
+      return { count: knowledges.length, time: 0 };
     case 'unassigned':
       return getTasksStats(
         normalTasks.filter((t) => !t.completed && !t.projectId && (t.tags ?? []).length === 0),

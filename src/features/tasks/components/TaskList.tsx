@@ -37,7 +37,7 @@ const VIEW_LABELS: Record<string, string> = {
   planned: 'Planned', events: 'Events', completed: 'Completed',
   all: 'All Tasks', someday: 'Someday',
   'high-priority': 'High Priority', 'medium-priority': 'Medium Priority', 'low-priority': 'Low Priority',
-  project: '', tag: '', folder: '', unassigned: 'Chưa phân loại',
+  project: '', tag: '', folder: '', unassigned: 'Uncategorized',
 };
 
 type SortOption = 'project' | 'createdAt' | 'dueDate' | 'priority' | null;
@@ -63,14 +63,14 @@ const TaskList: React.FC = () => {
   } = useTaskContext();
 
   const filteredTasks = useMemo(() => getFilteredTasks(), [getFilteredTasks]);
-  // Mobile: nhãn stat ngắn để 4 ô vừa 1 hàng compact (desktop giữ nhãn đầy đủ).
+  // Mobile: compact stat labels.
   const isMobile = useIsMobile();
   const [confirmClear, setConfirmClear] = useState(false);
   const contextMenu = useContextMenu<string>();
   const sortMenu = useContextMenu<null>();
   const [sortBy, setSortBy] = useState<SortOption>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  // Kéo-thả sắp xếp: chỉ bật trong project view khi không áp sort thủ công.
+  // Drag to reorder: only enabled in project view when manual sort is not applied.
   const [dragId, setDragId] = useState<string | null>(null);
 
 
@@ -107,14 +107,14 @@ const TaskList: React.FC = () => {
         return sortDirection === 'asc' ? weightA - weightB : weightB - weightA;
       });
     } else if (activeView === 'project') {
-      // Mặc định trong project view: theo position (thứ tự kéo-thả).
+      // Default in project view: by position (drag & drop order).
       result.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }
 
     return result;
   }, [filteredTasks, sortBy, sortDirection, activeView, projects]);
 
-  // Kéo-thả: chỉ trong project view và khi chưa áp sort thủ công.
+  // Drag & drop: only in project view and when manual sort is not applied.
   const canReorder = activeView === 'project' && sortBy === null;
 
   const handleDrop = (overId: string) => {
@@ -177,12 +177,12 @@ const TaskList: React.FC = () => {
       <div className="main-header">
         <h1 className="task-list__title">{viewLabel}</h1>
         <div className="main-header-actions">
-          {/* Nút chuyển chế độ xem */}
+          {/* View mode selector */}
           <div className="view-mode-selector" style={{ display: 'flex', gap: 4, marginRight: 8, background: 'var(--bg-input, rgba(0,0,0,0.05))', borderRadius: 'var(--radius-md)', padding: 2, border: '1px solid var(--border)' }}>
             <button
               className={`view-mode-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
               onClick={() => setViewMode('list')}
-              title="Xem dạng danh sách"
+              title="List view"
               style={{
                 background: viewMode === 'list' ? 'var(--bg-card)' : 'transparent',
                 border: 'none',
@@ -202,7 +202,7 @@ const TaskList: React.FC = () => {
             <button
               className={`view-mode-toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
               onClick={() => setViewMode('calendar')}
-              title="Xem dạng lịch"
+              title="Calendar view"
               style={{
                 background: viewMode === 'calendar' ? 'var(--bg-card)' : 'transparent',
                 border: 'none',
@@ -222,7 +222,7 @@ const TaskList: React.FC = () => {
           </div>
 
           {!isCompletedView && viewMode === 'list' && (
-            <button className="sort-btn" onClick={(e) => sortMenu.open(e, null)} title={sortBy ? `Sắp xếp: ${sortDirection === 'asc' ? 'Tăng dần' : 'Giảm dần'}` : "Sắp xếp"}>
+            <button className="sort-btn" onClick={(e) => sortMenu.open(e, null)} title={sortBy ? `Sort: ${sortDirection === 'asc' ? 'Ascending' : 'Descending'}` : "Sort"}>
               <IconSort direction={sortBy ? sortDirection : undefined} />
             </button>
           )}
@@ -237,9 +237,9 @@ const TaskList: React.FC = () => {
               </button>
             ) : (
               <>
-                <span className="clear-completed-confirm">Xóa {tasks.length} task?</span>
-                <button className="clear-completed-btn danger" onClick={handleClearCompleted}>Xóa</button>
-                <button className="clear-completed-btn" onClick={() => setConfirmClear(false)}>Hủy</button>
+                <span className="clear-completed-confirm">Delete {tasks.length} tasks?</span>
+                <button className="clear-completed-btn danger" onClick={handleClearCompleted}>Delete</button>
+                <button className="clear-completed-btn" onClick={() => setConfirmClear(false)}>Cancel</button>
               </>
             )}
           </div>
@@ -271,7 +271,7 @@ const TaskList: React.FC = () => {
             </div>
           )}
 
-          {/* Filter Bar - lọc theo tag/project/text/ngày tạo/ngày due */}
+          {/* Filter Bar */}
           <TaskFilterBar />
 
           {/* Task Items */}
@@ -282,7 +282,7 @@ const TaskList: React.FC = () => {
                   <circle cx="24" cy="24" r="22" stroke="var(--border-strong)" strokeWidth="2"/>
                   <path d="M16 24h16M24 16v16" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                <p>Khong co task nao</p>
+                <p>No tasks</p>
               </div>
             ) : (
               tasks.map((task) =>
@@ -377,7 +377,7 @@ const TaskList: React.FC = () => {
         }
         .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
-        /* Kéo-thả sắp xếp task trong project view */
+        /* Drag-and-drop to reorder tasks in project view */
         .task-drag-row { cursor: grab; flex-shrink: 0; }
         .task-drag-row.dragging { opacity: 0.45; cursor: grabbing; }
 

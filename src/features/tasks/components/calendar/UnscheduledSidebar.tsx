@@ -23,11 +23,11 @@ const UnscheduledSidebar: React.FC<UnscheduledSidebarProps> = ({
 
   return (
     <div className="unscheduled-sidebar">
-      <h3 className="unscheduled-title">Task Chưa Lên Lịch ({unscheduled.length})</h3>
+      <h3 className="unscheduled-title">Unscheduled Tasks</h3>
       <div className="unscheduled-list">
         {unscheduled.length === 0 ? (
           <div className="unscheduled-empty">
-            Tất cả công việc đã được lên lịch.
+            All tasks are scheduled.
           </div>
         ) : (
           unscheduled.map((task) => (

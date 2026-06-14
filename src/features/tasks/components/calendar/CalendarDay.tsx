@@ -8,6 +8,7 @@ interface CalendarDayProps {
   tasks: Task[];
   onSelectTask: (id: string) => void;
   selectedTaskId: string | null;
+  dateField: 'dueDate' | 'createdAt';
 }
 
 const CalendarDay: React.FC<CalendarDayProps> = ({
@@ -15,13 +16,15 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   tasks,
   onSelectTask,
   selectedTaskId,
+  dateField,
 }) => {
   const { addTask, updateTask, getProjectName } = useTaskContext();
   const [isDragOver, setIsDragOver] = useState(false);
 
   const dayTasks = tasks.filter((t) => {
-    if (!t.dueDate) return false;
-    const d = new Date(t.dueDate);
+    const rawDate = t[dateField];
+    if (!rawDate) return false;
+    const d = new Date(rawDate);
     return calendarUtils.isSameDay(d, currentDate);
   });
 
@@ -51,7 +54,7 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
   };
 
   const handleDoubleClick = () => {
-    const title = window.prompt('Nhập tiêu đề công việc mới:');
+    const title = window.prompt('Enter new task title:');
     if (title && title.trim()) {
       const targetDate = new Date(currentDate);
       targetDate.setHours(9, 0, 0, 0);
@@ -69,14 +72,16 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
       onDoubleClick={handleDoubleClick}
     >
       <div className="cal-day-header">
-        <h2>Chi tiết Ngày {currentDate.getDate()} Tháng {currentDate.getMonth() + 1}</h2>
-        <span className="cal-day-hint">Nhấp đúp vào khoảng trống để tạo nhanh công việc mới</span>
+        <h2>Details for {currentDate.getMonth() + 1}/{currentDate.getDate()}</h2>
+        <span className="cal-day-hint">
+          {dateField === 'createdAt' ? 'Shown by creation date' : 'Double click on empty space to quickly create a new task'}
+        </span>
       </div>
 
       <div className="cal-day-content">
         {dayTasks.length === 0 ? (
           <div className="cal-day-empty">
-            Không có công việc nào được lên lịch cho ngày này.
+            No tasks scheduled for this day.
           </div>
         ) : (
           <div className="cal-day-task-list">

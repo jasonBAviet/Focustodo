@@ -5,6 +5,8 @@ interface CalendarHeaderProps {
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   scale: 'month' | 'week' | 'day';
   setScale: (s: 'month' | 'week' | 'day') => void;
+  dateField: 'dueDate' | 'createdAt';
+  setDateField: (f: 'dueDate' | 'createdAt') => void;
 }
 
 const IconChevronLeft = () => (
@@ -24,6 +26,8 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   setCurrentDate,
   scale,
   setScale,
+  dateField,
+  setDateField,
 }) => {
   const handleToday = () => {
     setCurrentDate(new Date());
@@ -57,52 +61,71 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     if (scale === 'month') {
-      return `Tháng ${month}, ${year}`;
+      return `${month}/${year}`;
     }
     if (scale === 'week') {
-      // Tính tuần
+      // Week start
       const day = currentDate.getDate();
-      return `Tuần ${day}/${month}/${year}`;
+      return `Week of ${month}/${day}/${year}`;
     }
-    return `Ngày ${currentDate.getDate()} Tháng ${month}, ${year}`;
+    return `${month}/${currentDate.getDate()}/${year}`;
   };
 
   return (
     <div className="calendar-header-bar">
       <div className="calendar-nav-section">
-        <button className="cal-nav-btn" onClick={handleToday} title="Quay về hôm nay">
-          Hôm nay
+        <button className="cal-nav-btn" onClick={handleToday} title="Back to today">
+          Today
         </button>
         <div className="cal-nav-arrows">
-          <button className="cal-nav-arrow-btn" onClick={handlePrev} title="Trước">
+          <button className="cal-nav-arrow-btn" onClick={handlePrev} title="Previous">
             <IconChevronLeft />
           </button>
-          <button className="cal-nav-arrow-btn" onClick={handleNext} title="Sau">
+          <button className="cal-nav-arrow-btn" onClick={handleNext} title="Next">
             <IconChevronRight />
           </button>
         </div>
         <span className="calendar-current-label">{formatHeaderLabel()}</span>
       </div>
 
-      <div className="calendar-scale-toggle">
-        <button
-          className={`cal-scale-btn ${scale === 'month' ? 'active' : ''}`}
-          onClick={() => setScale('month')}
-        >
-          Tháng
-        </button>
-        <button
-          className={`cal-scale-btn ${scale === 'week' ? 'active' : ''}`}
-          onClick={() => setScale('week')}
-        >
-          Tuần
-        </button>
-        <button
-          className={`cal-scale-btn ${scale === 'day' ? 'active' : ''}`}
-          onClick={() => setScale('day')}
-        >
-          Ngày
-        </button>
+      <div className="calendar-header-right">
+        <div className="calendar-date-field-toggle">
+          <button
+            className={`cal-scale-btn ${dateField === 'dueDate' ? 'active' : ''}`}
+            onClick={() => setDateField('dueDate')}
+            title="Show by due date"
+          >
+            Due Date
+          </button>
+          <button
+            className={`cal-scale-btn ${dateField === 'createdAt' ? 'active' : ''}`}
+            onClick={() => setDateField('createdAt')}
+            title="Show by creation date"
+          >
+            Created Date
+          </button>
+        </div>
+
+        <div className="calendar-scale-toggle">
+          <button
+            className={`cal-scale-btn ${scale === 'month' ? 'active' : ''}`}
+            onClick={() => setScale('month')}
+          >
+            Month
+          </button>
+          <button
+            className={`cal-scale-btn ${scale === 'week' ? 'active' : ''}`}
+            onClick={() => setScale('week')}
+          >
+            Week
+          </button>
+          <button
+            className={`cal-scale-btn ${scale === 'day' ? 'active' : ''}`}
+            onClick={() => setScale('day')}
+          >
+            Day
+          </button>
+        </div>
       </div>
 
       <style>{`
@@ -163,6 +186,18 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           font-weight: 600;
           color: var(--text-primary);
           margin-left: 8px;
+        }
+        .calendar-header-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .calendar-date-field-toggle {
+          display: flex;
+          background: var(--bg-input, rgba(0,0,0,0.05));
+          border-radius: 8px;
+          padding: 2px;
+          border: 1px solid var(--border);
         }
         .calendar-scale-toggle {
           display: flex;

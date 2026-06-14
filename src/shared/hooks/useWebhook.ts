@@ -50,7 +50,7 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
         const token = await loadToken();
         const authHeader: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // Neu la Slack webhook: gui qua route backend rieng (URL khong lo ra client)
+        // If Slack webhook: send via separate backend route (URL not exposed to client)
         if (webhookUrl.includes('hooks.slack.com')) {
           const slackPayload = buildSlackPayload(eventType, data);
           if (!slackPayload) {
@@ -65,7 +65,7 @@ function useWebhook(webhookUrl: string, webhookEnabled: boolean) {
           });
           eventRecord.status = res.ok ? 'success' : 'error';
         } else {
-          // Non-Slack webhook: proxy qua /api/webhook/test (can auth)
+          // Non-Slack webhook: proxy via /api/webhook/test (needs auth)
           const res = await fetch('/api/webhook/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeader },

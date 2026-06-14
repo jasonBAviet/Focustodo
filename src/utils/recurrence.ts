@@ -1,14 +1,14 @@
 // ============================================================
-// RRULE (RFC5545 subset) phía client: build / parse / mô tả.
-// Editor luôn lưu repeat='custom' + repeatCustom=RRULE (trừ 'none').
-// Engine tính occurrence kế tiếp nằm ở server (routes/taskHelpers.js).
+// RRULE (RFC5545 subset) client-side: build / parse / describe.
+// Editor always saves repeat='custom' + repeatCustom=RRULE (except 'none').
+// Engine calculating next occurrence is on the server (routes/taskHelpers.js).
 // ============================================================
 export type Freq = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 export interface Recurrence {
   freq: Freq;
   interval: number;
-  byday: string[]; // ['MO','WE',...] chỉ dùng cho WEEKLY
+  byday: string[]; // ['MO','WE',...] only used for WEEKLY
   until: string | null; // 'YYYY-MM-DD'
 }
 
@@ -47,7 +47,7 @@ export function parseRRule(str: string): Recurrence {
   return { freq, interval, byday, until };
 }
 
-// Chuyển repeat/repeatCustom hiện tại sang Recurrence để khởi tạo editor.
+// Convert current repeat/repeatCustom to Recurrence to initialize editor.
 export function toRecurrence(repeat: string, repeatCustom: string | null): Recurrence | null {
   if (!repeat || repeat === 'none') return null;
   if (repeat === 'custom' && repeatCustom && /FREQ=/i.test(repeatCustom)) return parseRRule(repeatCustom);

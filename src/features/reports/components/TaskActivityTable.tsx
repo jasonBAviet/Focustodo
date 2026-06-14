@@ -32,16 +32,13 @@ const TaskActivityTable: React.FC<TaskActivityTableProps> = ({ data }) => {
   return (
     <div className="task-activity-table-container">
       <div className="table-header-actions">
-        <h3 className="report-card-title" style={{ margin: 0 }}>
-          Bảng chi tiết hoạt động task
-        </h3>
         <label className="toggle-label">
           <input
             type="checkbox"
             checked={showActiveOnly}
             onChange={(e) => setShowActiveOnly(e.target.checked)}
           />
-          Chỉ hiện ngày/giờ có hoạt động
+          Only show dates/times with activity
         </label>
       </div>
 
@@ -50,10 +47,10 @@ const TaskActivityTable: React.FC<TaskActivityTableProps> = ({ data }) => {
           <table className="activity-table">
             <thead>
               <tr>
-                <th>Thời gian</th>
-                <th style={{ textAlign: 'center' }}>Tạo mới</th>
-                <th style={{ textAlign: 'center' }}>Đã hoàn thành</th>
-                <th style={{ textAlign: 'center' }}>Trễ hạn</th>
+                <th>Time</th>
+                <th style={{ textAlign: 'center' }}>Created</th>
+                <th style={{ textAlign: 'center' }}>Completed</th>
+                <th style={{ textAlign: 'center' }}>Overdue</th>
               </tr>
             </thead>
             <tbody>
@@ -77,7 +74,7 @@ const TaskActivityTable: React.FC<TaskActivityTableProps> = ({ data }) => {
             </tbody>
             <tfoot>
               <tr>
-                <td><strong>Tổng cộng</strong></td>
+                <td><strong>Total</strong></td>
                 <td style={{ textAlign: 'center', fontWeight: 700, color: 'var(--text-primary)' }}>{totals.created}</td>
                 <td style={{ textAlign: 'center', fontWeight: 700, color: '#4361ee' }}>{totals.completed}</td>
                 <td style={{ textAlign: 'center', fontWeight: 700, color: '#f25f5c' }}>{totals.overdue}</td>
@@ -86,7 +83,7 @@ const TaskActivityTable: React.FC<TaskActivityTableProps> = ({ data }) => {
           </table>
         ) : (
           <div className="empty-table-state">
-            Không có hoạt động nào được ghi nhận.
+            No activity recorded.
           </div>
         )}
       </div>

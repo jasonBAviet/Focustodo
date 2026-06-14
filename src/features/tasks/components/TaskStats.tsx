@@ -56,7 +56,7 @@ export const TaskStatsRow: React.FC<{
     <div className="main-stats-row">
       <StatCard label={props.isMobile ? 'Est.' : 'Estimated Time'} value={formatStatTime(props.totalEstimatedMin)} />
       <StatCard label={props.isMobile ? 'To-do' : 'Tasks to Complete'} value={props.activeCount} />
-      <StatCard label={props.isMobile ? 'Elapsed' : 'Elapsed Time'} value={props.totalElapsedMin > 0 ? formatStatTime(props.totalElapsedMin) : '0m'} />
+      <StatCard label={props.isMobile ? 'Elapsed' : 'Elapsed Time'} value={props.totalElapsedMin > 0 ? formatStatTime(props.totalElapsedMin) : '0m'} color="var(--stat-orange)" />
       <StatCard label={props.isMobile ? 'Done' : 'Completed Tasks'} value={props.completedCount} color="var(--stat-blue)" />
     </div>
   );

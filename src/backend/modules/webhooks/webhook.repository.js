@@ -51,6 +51,24 @@ export class WebhookRepository {
       [timestamp, id]
     );
   }
+
+  async insertDeliveryLog({ id, userId, subscriberId, event, httpStatus, error, timestamp }) {
+    const result = await pool.query(
+      `INSERT INTO webhook_delivery_logs (id, user_id, subscriber_id, event, http_status, error, timestamp)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [id, userId || null, subscriberId || null, event, httpStatus || null, error || null, timestamp]
+    );
+    return result.rows[0];
+  }
+
+  async deleteLogsOlderThan(timestamp) {
+    const result = await pool.query(
+      'DELETE FROM webhook_delivery_logs WHERE timestamp < $1',
+      [timestamp]
+    );
+    return result.rowCount;
+  }
 }
 
 export const webhookRepository = new WebhookRepository();

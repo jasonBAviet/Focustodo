@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - AppContext
-// Quản lý Settings toàn cục và trạng thái UI của ứng dụng
+// Manage global Settings and UI state of the app
 // ============================================================
 import React, {
   createContext,
@@ -15,7 +15,7 @@ import { DEFAULT_SETTINGS } from '@/types';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 
 // ----------------------------------------------------------
-// Kiểu dữ liệu Context
+// Context data type
 // ----------------------------------------------------------
 interface AppContextType {
   settings: Settings;
@@ -30,17 +30,17 @@ interface AppContextType {
 }
 
 // ----------------------------------------------------------
-// Khởi tạo Context
+// Initialize Context
 // ----------------------------------------------------------
 export const AppContext = createContext<AppContextType | null>(null);
 
 // ----------------------------------------------------------
-// Hàm xác định chế độ tối dựa trên cài đặt darkMode
+// Function to determine dark mode based on darkMode setting
 // ----------------------------------------------------------
 function resolveIsDark(darkMode: ThemeMode): boolean {
   if (darkMode === 'dark') return true;
   if (darkMode === 'light') return false;
-  // Chế độ 'auto' - phụ thuộc vào hệ thống người dùng
+  // 'auto' mode - depends on user system
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
@@ -53,18 +53,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     DEFAULT_SETTINGS,
   );
 
-  // Trạng thái UI - không cần lưu localStorage
+  // UI state - no need to save to localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar'>('focus-view-mode', 'list');
 
-  // Xác định isDark từ settings hiện tại
+  // Determine isDark from current settings
   const [isDark, setIsDark] = useState<boolean>(() =>
     resolveIsDark(settings.darkMode),
   );
 
   // --------------------------------------------------------
-  // Theo dõi thay đổi darkMode từ settings
+  // Track darkMode changes from settings
   // --------------------------------------------------------
   useEffect(() => {
     if (settings.darkMode !== 'auto') {
@@ -72,7 +72,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Chế độ auto - lắng nghe thay đổi từ hệ thống
+    // Auto mode - listen to system changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setIsDark(mediaQuery.matches);
 
@@ -87,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [settings.darkMode]);
 
   // --------------------------------------------------------
-  // Áp dụng theme vào DOM khi isDark thay đổi
+  // Apply theme to DOM when isDark changes
   // --------------------------------------------------------
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -97,7 +97,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [isDark]);
 
   // --------------------------------------------------------
-  // Cập nhật một phần settings
+  // Update partial settings
   // --------------------------------------------------------
   const updateSettings = useCallback(
     (updates: Partial<Settings>) => {
@@ -107,7 +107,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   // --------------------------------------------------------
-  // Giá trị Context (memoized)
+  // Context value (memoized)
   // --------------------------------------------------------
   const value = useMemo<AppContextType>(
     () => ({
@@ -128,12 +128,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 }
 
 // ----------------------------------------------------------
-// Custom hook tiện lợi
+// Convenient custom hook
 // ----------------------------------------------------------
 export function useAppContext(): AppContextType {
   const ctx = useContext(AppContext);
   if (!ctx) {
-    throw new Error('useAppContext phải được dùng bên trong AppProvider');
+    throw new Error('useAppContext must be used within AppProvider');
   }
   return ctx;
 }

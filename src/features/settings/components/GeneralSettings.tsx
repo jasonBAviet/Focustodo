@@ -1,6 +1,6 @@
 // ============================================================
 // FOCUS TO-DO - GeneralSettings
-// Tab General - Xuat/Nhap du lieu, Focus Goal, Thong tin app
+// General Tab - Export/Import data, Focus Goal, App info
 // ============================================================
 import React, { useRef, useState } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -9,7 +9,7 @@ import { exportTasks } from '@/utils/exportUtils';
 import { importFromCSV, readFileAsText } from '@/utils/importUtils';
 
 // ----------------------------------------------------------
-// Kieu du lieu thong bao import
+// Import notification data type
 // ----------------------------------------------------------
 type ImportState =
   | { status: 'idle' }
@@ -79,7 +79,7 @@ const infoRowStyle: React.CSSProperties = {
 };
 
 // ----------------------------------------------------------
-// Component chinh
+// Main component
 // ----------------------------------------------------------
 const GeneralSettings: React.FC = () => {
   const { settings, updateSettings } = useAppContext();
@@ -89,14 +89,14 @@ const GeneralSettings: React.FC = () => {
   const [importState, setImportState] = useState<ImportState>({ status: 'idle' });
 
   // ----------------------------------------------------------
-  // Xuat du lieu CSV
+  // Export CSV data
   // ----------------------------------------------------------
   const handleExport = () => {
     exportTasks(tasks, getProjectName);
   };
 
   // ----------------------------------------------------------
-  // Nhap tu CSV
+  // Import from CSV
   // ----------------------------------------------------------
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -113,11 +113,11 @@ const GeneralSettings: React.FC = () => {
       const imported = importFromCSV(text);
 
       if (imported.length === 0) {
-        setImportState({ status: 'error', message: 'File khong co du lieu hop le.' });
+        setImportState({ status: 'error', message: 'File has no valid data.' });
         return;
       }
 
-      // Them tung task vao TaskContext
+      // Add each task to TaskContext
       imported.forEach((partial) => {
         if (!partial.title) return;
         const task = addTask(partial.title, partial.projectId ?? null, partial.priority ?? 'none');
@@ -140,10 +140,10 @@ const GeneralSettings: React.FC = () => {
     } catch (err) {
       setImportState({
         status: 'error',
-        message: err instanceof Error ? err.message : 'Loi doc file.',
+        message: err instanceof Error ? err.message : 'Error reading file.',
       });
     } finally {
-      // Reset input de co the chon lai cung file
+      // Reset input to allow selecting same file again
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -160,26 +160,26 @@ const GeneralSettings: React.FC = () => {
 
   return (
     <div>
-      {/* Section Du lieu */}
-      <div style={sectionTitleStyle}>Dữ liệu</div>
+      {/* Data Section */}
+      <div style={sectionTitleStyle}>Data</div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
         <button type="button" style={btnPrimaryStyle} onClick={handleExport}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Xuất dữ liệu (CSV)
+          Export data (CSV)
         </button>
 
         <button type="button" style={btnStyle} onClick={handleImportClick}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 9V1M4 4l3-3 3 3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Nhập từ CSV
+          Import from CSV
         </button>
         
 
-        {/* Input file an */}
+        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -189,7 +189,7 @@ const GeneralSettings: React.FC = () => {
         />
       </div>
 
-      {/* Thong bao import */}
+      {/* Import notification */}
       {importState.status === 'success' && (
         <div style={{
           padding: '8px 12px',
@@ -199,7 +199,7 @@ const GeneralSettings: React.FC = () => {
           fontSize: 'var(--text-sm)',
           marginBottom: 10,
         }}>
-          Nhập thành công {importState.count} task từ CSV.
+          Successfully imported {importState.count} tasks from CSV.
         </div>
       )}
       {importState.status === 'error' && (
@@ -211,22 +211,22 @@ const GeneralSettings: React.FC = () => {
           fontSize: 'var(--text-sm)',
           marginBottom: 10,
         }}>
-          Lỗi: {importState.message}
+          Error: {importState.message}
         </div>
       )}
 
       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>
-        Hiện có {tasks.length} task trong hệ thống.
+        Currently {tasks.length} tasks in the system.
       </div>
 
       <div style={dividerStyle} />
 
-      {/* Section Focus Goal */}
-      <div style={sectionTitleStyle}>Mục tiêu Focus</div>
+      {/* Focus Goal Section */}
+      <div style={sectionTitleStyle}>Focus Goal</div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <label style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flex: 1 }}>
-          Mục tiêu focus hàng ngày
+          Daily focus goal
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
@@ -238,18 +238,18 @@ const GeneralSettings: React.FC = () => {
             value={settings.dailyFocusGoalHours}
             onChange={handleGoalChange}
           />
-          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>giờ/ngày</span>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>hours/day</span>
         </div>
       </div>
 
       <div style={{ ...dividerStyle, marginTop: 20 }} />
 
-      {/* Section Thong tin */}
-      <div style={sectionTitleStyle}>Thông tin ứng dụng</div>
+      {/* Info Section */}
+      <div style={sectionTitleStyle}>App Information</div>
 
       <div>
         <div style={infoRowStyle}>
-          <span style={{ color: 'var(--text-secondary)' }}>Phiên bản</span>
+          <span style={{ color: 'var(--text-secondary)' }}>Version</span>
           <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>1.0.0</span>
         </div>
         <div style={{ ...infoRowStyle, borderBottom: 'none' }}>

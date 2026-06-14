@@ -80,15 +80,15 @@ export class TaskRepository {
       `INSERT INTO tasks
          (id, title, project_id, priority, due_date, reminder, repeat, repeat_custom,
           note, subtasks, pomodoro_estimate, pomodoro_completed, total_focus_time,
-          completed, flagged, tags, position, created_at, completed_at, updated_at, is_knowledge, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+          completed, flagged, tags, position, created_at, completed_at, updated_at, user_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING *`,
       [
         id, String(input.title ?? '').trim(), projectId, input.priority ?? 'none',
         input.dueDate ?? null, input.reminder ?? null, input.repeat ?? 'none', input.repeatCustom ?? null,
         input.note ?? '', JSON.stringify(input.subtasks ?? []), input.pomodoroEstimate ?? 1,
         0, 0, false, input.flagged ?? false, JSON.stringify(input.tags ?? []),
-        position, now, null, now, input.isKnowledge ?? false, userId
+        position, now, null, now, userId
       ]
     );
     return result.rows[0];
@@ -107,15 +107,14 @@ export class TaskRepository {
       `UPDATE tasks SET
         title=$1, project_id=$2, priority=$3, due_date=$4, reminder=$5,
         repeat=$6, repeat_custom=$7, note=$8, subtasks=$9, pomodoro_estimate=$10,
-        completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16,
-        is_knowledge=$17
-       WHERE id=$18 AND user_id=$19 RETURNING *`,
+        completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16
+       WHERE id=$17 AND user_id=$18 RETURNING *`,
       [
         updated.title, updated.project_id, updated.priority, updated.due_date,
         updated.reminder, updated.repeat, updated.repeat_custom, updated.note,
         updated.subtasks, updated.pomodoro_estimate, updated.completed,
         updated.flagged, updated.tags, updated.position, updated.completed_at, updated.updated_at,
-        updated.is_knowledge, id, userId
+        id, userId
       ]
     );
     return result.rows[0];

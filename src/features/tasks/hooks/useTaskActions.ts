@@ -29,12 +29,12 @@ export function useTaskActions({
   activeTagId, setActiveTagId, deletedIdsRef, onTaskCreated, onTaskCompleted, onPomodoroCompleted
 }: UseTaskActionsParams) {
 
-  const addTask = useCallback((title: string, projectId: string | null = null, priority: Priority = 'none', pomodoroEstimate: number = 1, isKnowledge: boolean = false): Task => {
+  const addTask = useCallback((title: string, projectId: string | null = null, priority: Priority = 'none', pomodoroEstimate: number = 1): Task => {
     const now = dateUtils.now();
     const newTask: Task = {
       id: uuid(), title, projectId, priority, dueDate: null, reminder: null, repeat: 'none', repeatCustom: null, note: '',
       subtasks: [], pomodoroEstimate, pomodoroCompleted: 0, totalFocusTime: 0, completed: false, flagged: false,
-      tags: [], createdAt: now, completedAt: null, updatedAt: now, isKnowledge,
+      tags: [], createdAt: now, completedAt: null, updatedAt: now,
     };
     setTasks((prev: any) => {
       const pos = prev.filter((t: any) => (t.projectId ?? null) === (projectId ?? null)).reduce((m: any, t: any) => Math.max(m, t.position ?? 0), -1) + 1;

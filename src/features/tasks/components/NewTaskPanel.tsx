@@ -1,70 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
-import type { Priority, Project, Folder, Tag } from '@/types';
-import { getVisibleTags } from '@/utils/tagScope';
-import { dateUtils } from '@/utils/dateUtils';
+import React, { useState } from 'react';
+import { useTaskContext } from '@/features/tasks/TaskContext';
 import TagPicker from '@/features/tasks/components/TagPicker';
 import DatePicker from '@/shared/components/DatePicker';
 import PomodoroScrollPicker from '@/shared/components/PomodoroScrollPicker';
+import { getVisibleTags } from '@/utils/tagScope';
+import { dateUtils } from '@/utils/dateUtils';
+import type { Priority } from '@/types';
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
-  { value: 'high',   label: 'Cao',        color: 'var(--priority-high)' },
-  { value: 'medium', label: 'Trung bình', color: 'var(--priority-medium)' },
-  { value: 'low',    label: 'Thấp',       color: 'var(--priority-low)' },
-  { value: 'none',   label: 'Không',      color: '#888' },
+  { value: 'high',   label: 'High',        color: 'var(--priority-high)' },
+  { value: 'medium', label: 'Medium', color: 'var(--priority-medium)' },
+  { value: 'low',    label: 'Low',       color: 'var(--priority-low)' },
+  { value: 'none',   label: 'None',      color: '#888' },
 ];
 
 interface NewTaskPanelProps {
-  activeView: string;
-  activeProjectId: string | null;
-  projects: Project[];
-  folders: Folder[];
-  tags: Tag[];
-  addTag: (name: string, color: string, opts: { projectId: string | null }) => Tag;
-  onAdd: (
-    title: string,
-    projectId: string | null,
-    priority: Priority,
-    pomodoro: number,
-    extras: { tags?: string[]; dueDate?: string; note?: string }
-  ) => void;
+  onClose?: () => void;
 }
 
-const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
-  activeView, activeProjectId, projects, folders, tags, addTag, onAdd
-}) => {
-  const [newTitle, setNewTitle] = useState('');
-  const [newProjectId, setNewProjectId] = useState<string | null>(activeView === 'project' && activeProjectId ? activeProjectId : null);
-  const [newTags, setNewTags] = useState<string[]>([]);
-  const [newPriority, setNewPriority] = useState<Priority>('none');
-  const [newPomodoro, setNewPomodoro] = useState(1);
-  const [newDueDate, setNewDueDate] = useState<string | null>(null);
-  const [newNote, setNewNote] = useState('');
+const NewTaskPanel: React.FC<NewTaskPanelProps> = ({ onClose }) => {
+  const {
+    activeView, activeProjectId, projects, folders, tags, addTag,
+    newTaskDraft, updateNewTaskDraft, submitNewTask,
+  } = useTaskContext();
 
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [showPomoPicker, setShowPomoPicker] = useState(false);
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
-  const newTitleRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setTimeout(() => newTitleRef.current?.focus(), 60);
-  }, []);
-
-  const handleNewTaskSubmit = () => {
-    if (!newTitle.trim()) return;
-    const extras: { tags?: string[]; dueDate?: string; note?: string } = {};
-    if (newTags.length) extras.tags = newTags;
-    if (newDueDate) extras.dueDate = newDueDate;
-    if (newNote.trim()) extras.note = newNote.trim();
-    onAdd(newTitle.trim(), newProjectId, newPriority, newPomodoro, extras);
+  const handleSubmit = () => {
+    submitNewTask();
   };
 
-  const dueDateText = newDueDate
-    ? dateUtils.isToday(newDueDate) ? 'Today'
-      : dateUtils.isTomorrow(newDueDate) ? 'Tomorrow'
-      : dateUtils.formatShort(newDueDate)
+  const dueDateText = newTaskDraft.dueDate
+    ? dateUtils.isToday(newTaskDraft.dueDate) ? 'Today'
+      : dateUtils.isTomorrow(newTaskDraft.dueDate) ? 'Tomorrow'
+      : dateUtils.formatShort(newTaskDraft.dueDate)
     : 'None';
 
-  const currentPriority = PRIORITY_OPTIONS.find((p) => p.value === newPriority);
+  const currentPriority = PRIORITY_OPTIONS.find((p) => p.value === newTaskDraft.priority);
 
   return (
     <>
@@ -74,57 +48,58 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
             <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </span>
-        <h2 className="task-panel-title" style={{ color: 'var(--text-secondary)', fontWeight: 500, cursor: 'default' }}>
-          Task mới
-        </h2>
-      </div>
-
-      <div className="new-task-title-wrap">
-        <input
-          ref={newTitleRef}
-          className="new-task-title-input"
-          placeholder="Tên task..."
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !(e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) {
-              e.preventDefault();
-              handleNewTaskSubmit();
-            }
+        <h2
+          className="task-panel-title"
+          style={{
+            color: newTaskDraft.title ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: newTaskDraft.title ? 600 : 500,
+            cursor: 'default',
           }}
-        />
+        >
+          {newTaskDraft.title || 'New Task'}
+        </h2>
+        {onClose && (
+          <div className="task-panel-header-actions">
+            <button className="icon-btn" onClick={onClose} title="Close">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="task-panel-tags">
         <TagPicker
-          taskTags={newTags}
-          allTags={getVisibleTags(tags, folders, projects, { projectId: newProjectId })}
-          onUpdate={setNewTags}
-          onAddTag={(name, color) => addTag(name, color, { projectId: newProjectId ?? null })}
+          taskTags={newTaskDraft.tags}
+          allTags={getVisibleTags(tags, folders, projects, { projectId: newTaskDraft.projectId })}
+          onUpdate={(tagIds) => updateNewTaskDraft({ tags: tagIds })}
+          onAddTag={(name, color) => addTag(name, color, { projectId: newTaskDraft.projectId ?? null })}
         />
       </div>
 
       <div className="task-panel-body">
+        {/* Project */}
         <div className="tp-row">
           <span className="tp-row__icon">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M2 2h10l-2 4 2 4H2l2-4-2-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
             </svg>
           </span>
-          <span className="tp-row__label">Dự án</span>
+          <span className="tp-row__label">Project</span>
           <span className="tp-row__value" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {newProjectId && (
+            {newTaskDraft.projectId && (
               <span style={{
                 width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                background: projects.find((p) => p.id === newProjectId)?.color || '#888',
+                background: projects.find((p) => p.id === newTaskDraft.projectId)?.color || '#888',
               }} />
             )}
             <select
               className="tp-select"
-              value={newProjectId || ''}
-              onChange={(e) => setNewProjectId(e.target.value || null)}
+              value={newTaskDraft.projectId || ''}
+              onChange={(e) => updateNewTaskDraft({ projectId: e.target.value || null })}
             >
-              <option value="">Không có</option>
+              <option value="">None</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -132,13 +107,14 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
           </span>
         </div>
 
+        {/* Priority */}
         <div className="tp-row" style={{ position: 'relative' }}>
           <span className="tp-row__icon">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: currentPriority?.color }}>
               <path d="M2 2h10l-2 4 2 4H2l2-4-2-4z"/>
             </svg>
           </span>
-          <span className="tp-row__label">Ưu tiên</span>
+          <span className="tp-row__label">Priority</span>
           <span className="tp-row__value">
             <button
               className="tp-inline-btn"
@@ -152,8 +128,8 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
                 {PRIORITY_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    className={`tp-popover-item${newPriority === opt.value ? ' active' : ''}`}
-                    onClick={() => { setNewPriority(opt.value); setShowPriorityMenu(false); }}
+                    className={`tp-popover-item${newTaskDraft.priority === opt.value ? ' active' : ''}`}
+                    onClick={() => { updateNewTaskDraft({ priority: opt.value }); setShowPriorityMenu(false); }}
                   >
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
                     {opt.label}
@@ -164,6 +140,7 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
           </span>
         </div>
 
+        {/* Pomodoro */}
         <div className="tp-row">
           <span className="tp-row__icon">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -177,20 +154,21 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
               className="pomo-trigger"
               onClick={() => { setShowPomoPicker(true); setShowDueDatePicker(false); setShowPriorityMenu(false); }}
             >
-              <span className="pomo-trigger__count">{newPomodoro}</span>
-              <span className="pomo-trigger__meta">{newPomodoro * 25}m</span>
+              <span className="pomo-trigger__count">{newTaskDraft.pomodoro}</span>
+              <span className="pomo-trigger__meta">{newTaskDraft.pomodoro * 25}m</span>
             </button>
           </span>
         </div>
         {showPomoPicker && (
           <PomodoroScrollPicker
-            estimate={newPomodoro}
+            estimate={newTaskDraft.pomodoro}
             pomoDuration={25}
-            onEstimateChange={(e) => setNewPomodoro(e)}
+            onEstimateChange={(e) => updateNewTaskDraft({ pomodoro: e })}
             onClose={() => setShowPomoPicker(false)}
           />
         )}
 
+        {/* Due date */}
         <div className="tp-row" style={{ position: 'relative' }}>
           <span className="tp-row__icon">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -198,11 +176,11 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
               <path d="M5 2v2M9 2v2M2 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </span>
-          <span className="tp-row__label">Hạn</span>
+          <span className="tp-row__label">Due</span>
           <span className="tp-row__value">
             <button
               className="tp-inline-btn"
-              style={{ color: newDueDate ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+              style={{ color: newTaskDraft.dueDate ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
               onClick={() => { setShowDueDatePicker((v) => !v); setShowPriorityMenu(false); }}
             >
               {dueDateText}
@@ -210,9 +188,9 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
             {showDueDatePicker && (
               <div className="tp-popover tp-popover--date">
                 <DatePicker
-                  value={newDueDate}
-                  onChange={(d) => { setNewDueDate(d); setShowDueDatePicker(false); }}
-                  onRemove={() => { setNewDueDate(null); setShowDueDatePicker(false); }}
+                  value={newTaskDraft.dueDate}
+                  onChange={(d) => { updateNewTaskDraft({ dueDate: d }); setShowDueDatePicker(false); }}
+                  onRemove={() => { updateNewTaskDraft({ dueDate: null }); setShowDueDatePicker(false); }}
                   onClose={() => setShowDueDatePicker(false)}
                 />
               </div>
@@ -220,25 +198,26 @@ const NewTaskPanel: React.FC<NewTaskPanelProps> = ({
           </span>
         </div>
 
+        {/* Note */}
         <div className="tp-note-section">
           <textarea
             className="tp-note"
-            placeholder="Ghi chú..."
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
+            placeholder="Notes..."
+            value={newTaskDraft.note}
+            onChange={(e) => updateNewTaskDraft({ note: e.target.value })}
             rows={4}
           />
         </div>
       </div>
 
       <div className="task-panel-footer">
-        <span className="panel-created-at">Enter để lưu</span>
+        <span className="panel-created-at">Enter to save</span>
         <button
           className="panel-add-btn"
-          onClick={handleNewTaskSubmit}
-          disabled={!newTitle.trim()}
+          onClick={handleSubmit}
+          disabled={!newTaskDraft.title.trim()}
         >
-          Thêm task
+          Add task
         </button>
       </div>
     </>

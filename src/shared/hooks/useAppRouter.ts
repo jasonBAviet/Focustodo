@@ -18,18 +18,18 @@ export function useAppRouter({
   setActiveProjectId,
   setShowReport,
 }: UseAppRouterProps) {
-  // Giữ các setter trong ref để effect popstate có deps [] (không chạy lại
-  // khi setter đổi identity) -> tránh re-run liên tục gây loop.
+  // Keep setters in ref so popstate effect has deps [] (don't re-run
+  // when setter identity changes) -> avoid continuous re-run causing loop.
   const settersRef = useRef({ setActiveView, setActiveProjectId, setShowReport });
   settersRef.current = { setActiveView, setActiveProjectId, setShowReport };
 
-  // 1. URL -> State: chạy 1 lần khi mount (deep link) + lắng nghe back/forward.
+  // 1. URL -> State: run once on mount (deep link) + listen to back/forward.
   useEffect(() => {
     const applyPathToState = () => {
       const path = window.location.pathname.replace(/\/$/, '') || '/';
       const setters = settersRef.current;
 
-      // Ở root '/', giữ nguyên trạng thái từ DB/localStorage.
+      // At root '/', keep state from DB/localStorage.
       if (path === '/') return;
 
       if (path === '/report') {
@@ -49,7 +49,7 @@ export function useAppRouter({
       }
     };
 
-    applyPathToState(); // deep-link khi load lần đầu
+    applyPathToState(); // deep-link on first load
     window.addEventListener('popstate', applyPathToState);
     return () => window.removeEventListener('popstate', applyPathToState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,7 +57,7 @@ export function useAppRouter({
 
   const isInitialMount = useRef(true);
 
-  // 2. State -> URL: đẩy URL khi state đổi (click sidebar...).
+  // 2. State -> URL: push URL when state changes (sidebar click...).
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;

@@ -5,21 +5,21 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-// Component hien thi goi y cai dat ung dung vao man hinh chinh
+// Component to display app install prompt to home screen
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    // Kiem tra xem nguoi dung da tu choi goi y chua
+    // Check if user has rejected the prompt
     const dismissed = sessionStorage.getItem('pwa-install-dismissed');
     if (dismissed) return;
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Hien thi goi y sau 30 giay de khong lam phien nguoi dung ngay
+      // Display prompt after 30 seconds to not bother user immediately
       setTimeout(() => setIsVisible(true), 30000);
     };
 
@@ -31,7 +31,7 @@ export default function InstallPrompt() {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log('[PWA] Nguoi dung chon:', outcome);
+    console.log('[PWA] User selected:', outcome);
     setDeferredPrompt(null);
     setIsVisible(false);
   };
@@ -45,7 +45,7 @@ export default function InstallPrompt() {
   if (!isVisible || isDismissed) return null;
 
   return (
-    <div className="install-prompt" role="dialog" aria-label="Goi y cai dat ung dung">
+    <div className="install-prompt" role="dialog" aria-label="App install prompt">
       <div className="install-prompt__icon">
         <svg width="28" height="28" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="192" height="192" rx="42" fill="#f25f5c" opacity="0.2"/>
@@ -56,15 +56,15 @@ export default function InstallPrompt() {
         </svg>
       </div>
       <div className="install-prompt__content">
-        <p className="install-prompt__title">Cai dat Focus Todo</p>
-        <p className="install-prompt__desc">Them vao man hinh chinh de truy cap nhanh hon</p>
+        <p className="install-prompt__title">Install Focus Todo</p>
+        <p className="install-prompt__desc">Add to home screen for faster access</p>
       </div>
       <div className="install-prompt__actions">
         <button className="install-prompt__btn install" onClick={handleInstall}>
-          Cai dat
+          Install
         </button>
         <button className="install-prompt__btn dismiss" onClick={handleDismiss}>
-          De sau
+          Later
         </button>
       </div>
 

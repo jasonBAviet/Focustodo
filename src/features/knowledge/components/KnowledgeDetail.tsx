@@ -1,33 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import type { Task } from '@/types';
+import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
+import type { Knowledge } from '@/types';
 import TagPicker from '@/features/tasks/components/TagPicker';
+import { formatNoteContent } from '../utils/note-formatter';
 
 interface KnowledgeDetailProps {
-  knowledge: Task;
+  knowledge: Knowledge;
   onClose?: () => void;
 }
 
 import Lightbox from '@/shared/components/Lightbox';
 
 const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose }) => {
-  const { updateTask, projects, tags, addTag, attachments, addAttachment, deleteAttachment } = useTaskContext();
+  const { projects, tags, addTag, attachments, addAttachment, deleteAttachment } = useTaskContext();
+  const { updateKnowledge } = useKnowledgeContext();
   const [title, setTitle] = useState(knowledge.title);
   const [note, setNote] = useState(knowledge.note);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImg, setLightboxImg] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitle(knowledge.title);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNote(knowledge.note);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaveStatus('idle');
   }, [knowledge.id]);
 
+
   const handleSave = () => {
     setSaveStatus('saving');
-    updateTask(knowledge.id, {
+    updateKnowledge(knowledge.id, {
       title: title.trim() || 'Ghi chú kiến thức chưa có tiêu đề',
       note,
     });
@@ -47,7 +56,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
     const replacement = before + selectedText + after;
     const newNote = text.substring(0, start) + replacement + text.substring(end);
     setNote(newNote);
-    updateTask(knowledge.id, { note: newNote });
+    updateKnowledge(knowledge.id, { note: newNote });
     setTimeout(() => {
       textarea.focus();
       if (start === end) {
@@ -192,7 +201,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
                 className="kd-meta-select"
                 value={knowledge.projectId || ''}
                 onChange={(e) => {
-                  updateTask(knowledge.id, { projectId: e.target.value || null });
+                  updateKnowledge(knowledge.id, { projectId: e.target.value || null });
                   setSaveStatus('saved');
                   setTimeout(() => setSaveStatus('idle'), 2000);
                 }}
@@ -211,7 +220,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
               taskTags={knowledge.tags || []}
               allTags={tags}
               onUpdate={(tagIds) => {
-                updateTask(knowledge.id, { tags: tagIds });
+                updateKnowledge(knowledge.id, { tags: tagIds });
                 setSaveStatus('saved');
                 setTimeout(() => setSaveStatus('idle'), 2000);
               }}
@@ -221,16 +230,38 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
         </div>
 
         <div className="kd-body-section">
-          <textarea
-            className="kd-note-editor"
-            placeholder="Viết nội dung kiến thức ở đây..."
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={handleTextareaKeyDown}
-            onBlur={handleSave}
-            rows={10}
-            autoFocus
-          />
+          <div className="kd-tabs-row">
+            <button
+              type="button"
+              className={`kd-tab-btn ${activeTab === 'edit' ? 'active' : ''}`}
+              onClick={() => setActiveTab('edit')}
+            >
+              Biên tập
+            </button>
+            <button
+              type="button"
+              className={`kd-tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preview')}
+            >
+              Xem trước
+            </button>
+          </div>
+
+          {activeTab === 'edit' ? (
+            <textarea
+              className="kd-note-editor"
+              placeholder="Viết nội dung kiến thức ở đây..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
+              onBlur={handleSave}
+              autoFocus
+            />
+          ) : (
+            <div className="kd-note-preview">
+              {formatNoteContent(note)}
+            </div>
+          )}
 
           {/* Anh dinh kem */}
           <div className="kd-attachments-section">
@@ -275,43 +306,44 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
       <Lightbox isOpen={lightboxOpen} imageUrl={lightboxImg} onClose={() => setLightboxOpen(false)} />
 
       <style>{`
-        .knowledge-detail-container { display: flex; flex-direction: column; height: 100%; background: var(--bg-card); border-left: 1px solid var(--border); }
-        .kd-header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); }
+        .knowledge-detail-container { display: flex; flex-direction: column; height: 100%; background: var(--bg-card); border-left: 1px solid var(--border); overflow: hidden; }
+        .kd-header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); flex-shrink: 0; }
         .kd-header-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
         .kd-close-btn { background: none; border: none; color: var(--text-tertiary); font-size: 16px; cursor: pointer; padding: 4px; }
         .kd-close-btn:hover { color: var(--text-primary); }
-        .kd-content-scroll { flex: 1; overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 20px; }
-        .kd-title-input { width: 100%; background: none; border: none; border-bottom: 1.5px solid transparent; color: var(--text-primary); font-size: 22px; font-weight: 600; outline: none; padding-bottom: 6px; transition: border-color var(--transition-fast); }
+        .kd-content-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+        .kd-title-input { width: 100%; background: none; border: none; border-bottom: 1.5px solid transparent; color: var(--text-primary); font-size: 20px; font-weight: 600; outline: none; padding-bottom: 4px; transition: border-color var(--transition-fast); flex-shrink: 0; }
         .kd-title-input:focus { border-color: var(--accent); }
-        .kd-metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; background: rgba(255, 255, 255, 0.015); padding: 14px; border-radius: 8px; border: 1px solid var(--border); }
-        .kd-meta-item { display: flex; flex-direction: column; gap: 6px; }
-        .kd-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); }
-        .kd-project-select-wrap { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; }
+        .kd-metadata-grid { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.015); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+        .kd-meta-item { display: flex; align-items: center; gap: 6px; }
+        .kd-meta-item.col-span-2 { flex: 1; min-width: 200px; }
+        .kd-meta-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); white-space: nowrap; flex-shrink: 0; }
+        .kd-project-select-wrap { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
         .kd-project-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .kd-meta-select { flex: 1; background: none; border: none; outline: none; color: var(--text-primary); font-size: 13px; cursor: pointer; }
         .kd-meta-select option { background: var(--bg-dialog); }
-        .kd-body-section { flex: 1; display: flex; flex-direction: column; gap: 14px; }
-        .kd-note-editor { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; color: var(--text-primary); font-size: 14px; line-height: 1.6; font-family: var(--font-main); resize: vertical; outline: none; transition: border-color var(--transition-fast); }
+        .kd-body-section { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+        .kd-note-editor { flex: 1; min-height: 120px; width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text-primary); font-size: 14px; line-height: 1.6; font-family: var(--font-main); resize: none; outline: none; transition: border-color var(--transition-fast); }
         .kd-note-editor:focus { border-color: var(--accent); }
-        .kd-action-row { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
-        .kd-shortcut-hint { font-size: 12px; color: var(--text-tertiary); }
-        .kd-save-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: var(--text-sm); font-weight: 500; cursor: pointer; transition: all var(--transition-fast); min-width: 120px; }
+        .kd-action-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; flex-shrink: 0; }
+        .kd-shortcut-hint { font-size: 11px; color: var(--text-tertiary); }
+        .kd-save-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: var(--text-sm); font-weight: 500; cursor: pointer; transition: all var(--transition-fast); min-width: 120px; }
         .kd-save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .kd-save-btn.saved { background: #2ec4b6; }
         .kd-save-btn.saving { opacity: 0.7; }
-        .kd-attachments-section { padding: 12px 0; border-top: 1px solid var(--border); margin-top: 12px; }
-        .kd-attachments-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-        .kd-attachments-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
-        .kd-attachments-add-btn { font-size: var(--text-xs); font-weight: 500; color: var(--accent); cursor: pointer; padding: 4px 8px; border-radius: 4px; background: var(--bg-card-hover); transition: background 0.2s; }
+        .kd-attachments-section { padding: 6px 0; border-top: 1px solid var(--border); flex-shrink: 0; }
+        .kd-attachments-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .kd-attachments-title { font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary); }
+        .kd-attachments-add-btn { font-size: var(--text-xs); font-weight: 500; color: var(--accent); cursor: pointer; padding: 2px 8px; border-radius: 4px; background: var(--bg-card-hover); transition: background 0.2s; }
         .kd-attachments-add-btn:hover { background: var(--divider); }
-        .kd-attachments-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .kd-attachment-card { position: relative; width: 64px; height: 64px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+        .kd-attachments-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .kd-attachment-card { position: relative; width: 56px; height: 56px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
         .kd-attachment-thumb { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s; }
         .kd-attachment-thumb:hover { transform: scale(1.05); }
         .kd-attachment-delete { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
         .kd-attachment-card:hover .kd-attachment-delete { opacity: 1; }
         .kd-attachment-delete:hover { background: var(--priority-high); }
-        .kd-attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border); border-radius: 8px; color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
+        .kd-attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 6px; color: var(--text-tertiary); font-size: 11px; }
       `}</style>
     </div>
   );

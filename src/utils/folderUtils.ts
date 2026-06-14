@@ -1,11 +1,11 @@
 import type { Folder } from '@/types';
 
 // ============================================================
-// Tiện ích cây thư mục lồng nhiều cấp (parent_id).
-// Mọi hàm chống chu trình bằng tập visited.
+// Multi-level nested folder utilities (parent_id).
+// All functions prevent cycles using visited set.
 // ============================================================
 
-// Thư mục gốc: không có parent, hoặc parent trỏ tới folder không tồn tại (orphan).
+// Root folder: no parent, or parent points to a non-existent folder (orphan).
 export function getRootFolders(folders: Folder[]): Folder[] {
   const ids = new Set(folders.map((f) => f.id));
   return folders.filter((f) => !f.parentId || !ids.has(f.parentId));
@@ -17,7 +17,7 @@ export function getChildFolders(folders: Folder[], parentId: string): Folder[] {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
-// Tất cả id thư mục trong cây con (gồm chính nó).
+// All folder ids in the subtree (including itself).
 export function getDescendantFolderIds(folders: Folder[], rootId: string): string[] {
   const childrenByParent = new Map<string, Folder[]>();
   for (const f of folders) {
@@ -41,8 +41,8 @@ export function getDescendantFolderIds(folders: Folder[], rootId: string): strin
   return result;
 }
 
-// Chuỗi tổ tiên của một folder (gồm chính nó): [folderId, parent, grandparent, ...].
-// Đi ngược theo parentId, chống chu trình bằng tập visited.
+// Ancestor chain of a folder (including itself): [folderId, parent, grandparent, ...].
+// Go backward by parentId, prevent cycles using visited set.
 export function getAncestorFolderIds(folders: Folder[], folderId: string): string[] {
   const byId = new Map(folders.map((f) => [f.id, f]));
   const result: string[] = [];
@@ -56,8 +56,8 @@ export function getAncestorFolderIds(folders: Folder[], folderId: string): strin
   return result;
 }
 
-// Có phải `candidateAncestorId` là tổ tiên (hoặc chính) của `folderId` không?
-// Dùng để chặn việc đặt một folder làm con của chính cây con của nó.
+// Is `candidateAncestorId` the ancestor (or itself) of `folderId`?
+// Used to prevent making a folder a child of its own subtree.
 export function isAncestor(folders: Folder[], candidateAncestorId: string, folderId: string): boolean {
   return getDescendantFolderIds(folders, candidateAncestorId).includes(folderId);
 }

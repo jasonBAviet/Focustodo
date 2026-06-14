@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import TaskDetail from '@/features/tasks/components/TaskDetail';
 import TagPicker from '@/features/tasks/components/TagPicker';
-import type { Priority } from '@/types';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import NewTaskPanel from '@/features/tasks/components/NewTaskPanel';
 import { getVisibleTags } from '@/utils/tagScope';
@@ -11,13 +10,15 @@ const TaskPanel: React.FC = () => {
   const {
     tasks, selectedTaskId, setSelectedTaskId,
     updateTask, completeTask, restoreTask, deleteTask,
-    addTask, tags, addTag, projects, folders,
-    activeView, activeProjectId,
+    tags, addTag, projects, folders,
+    newTaskPanelOpen, setNewTaskPanelOpen,
+    resetNewTaskDraft,
   } = useTaskContext();
 
   const [panelWidth, setPanelWidth] = useState(280);
   const [hasResized, setHasResized] = useState(false);
   const resizeRef = useRef(false);
+  const panelRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobile();
 
   // Existing task editing state
@@ -34,7 +35,22 @@ const TaskPanel: React.FC = () => {
     }
   }, [panelWidth, hasResized]);
 
-  if (isMobile && !selectedTaskId) {
+  // Close panel when clicking outside (only in new task mode)
+  useEffect(() => {
+    if (selectedTask || !newTaskPanelOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (panelRef.current?.contains(target)) return;
+      const addBar = document.querySelector('.task-add-bar');
+      if (addBar?.contains(target)) return;
+      resetNewTaskDraft();
+      setNewTaskPanelOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [selectedTask, newTaskPanelOpen, setNewTaskPanelOpen, resetNewTaskDraft]);
+
+  if (!selectedTask && !newTaskPanelOpen) {
     return null;
   }
 
@@ -90,14 +106,8 @@ const TaskPanel: React.FC = () => {
     deleteTask(id);
   };
 
-  const handleAddNewTask = (title: string, projectId: string | null, priority: Priority, pomodoro: number, extras: any) => {
-    const created = addTask(title, projectId, priority, pomodoro);
-    if (Object.keys(extras).length) updateTask(created.id, extras);
-    setSelectedTaskId(created.id);
-  };
-
   return (
-    <aside className="task-panel animate-slide-right">
+    <aside className="task-panel animate-slide-right" ref={panelRef}>
       <div className="panel-resize-handle" onMouseDown={handleResizeStart} />
 
       {selectedTask ? (
@@ -138,7 +148,7 @@ const TaskPanel: React.FC = () => {
               <h2
                 className="task-panel-title"
                 onClick={startEditTitle}
-                title="Bấm để đổi tên task"
+                title="Click to rename task"
                 style={{ cursor: 'text' }}
               >
                 {selectedTask.title}
@@ -156,7 +166,7 @@ const TaskPanel: React.FC = () => {
                   <path d="M3 2v10M3 2h8l-2 4 2 4H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
-              <button className="icon-btn" onClick={handleClose} title="Đóng">
+              <button className="icon-btn" onClick={handleClose} title="Close">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
@@ -184,7 +194,7 @@ const TaskPanel: React.FC = () => {
             <div className="panel-footer-actions">
               <button
                 className="icon-btn"
-                title="Xoá task"
+                title="Delete task"
                 onClick={handleDelete}
                 style={{ color: 'var(--text-tertiary)' }}
               >
@@ -197,13 +207,7 @@ const TaskPanel: React.FC = () => {
         </>
       ) : (
           <NewTaskPanel
-            activeView={activeView}
-            activeProjectId={activeProjectId}
-            projects={projects}
-            folders={folders}
-            tags={tags}
-            addTag={addTag}
-            onAdd={handleAddNewTask}
+            onClose={() => { resetNewTaskDraft(); setNewTaskPanelOpen(false); }}
           />
       )}
 

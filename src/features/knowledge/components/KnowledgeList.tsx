@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import type { Task } from '@/types';
+import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
+import type { Knowledge } from '@/types';
 
 interface KnowledgeListProps {
-  knowledges: Task[];
+  knowledges: Knowledge[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
@@ -15,7 +16,8 @@ const KnowledgeList: React.FC<KnowledgeListProps> = ({
   onSelect,
   onAdd,
 }) => {
-  const { projects, tags, folders, deleteTask } = useTaskContext();
+  const { projects, tags, folders } = useTaskContext();
+  const { deleteKnowledge } = useKnowledgeContext();
   const [search, setSearch] = useState('');
   const [selectedProj, setSelectedProj] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string>('all');
@@ -153,7 +155,7 @@ const KnowledgeList: React.FC<KnowledgeListProps> = ({
                     className="kl-delete-item-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteTask(item.id);
+                      deleteKnowledge(item.id);
                     }}
                     title="Xóa kiến thức"
                   >

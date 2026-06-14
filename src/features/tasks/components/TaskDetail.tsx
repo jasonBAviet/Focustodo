@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import type { Task, RepeatType } from '@/types';
+import type { Task, RepeatType, Priority } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { describeRecurrence, toRecurrence } from '@/utils/recurrence';
 import SubtaskList from '@/features/tasks/components/SubtaskList';
@@ -8,6 +8,13 @@ import DatePicker from '@/shared/components/DatePicker';
 import PomodoroScrollPicker from '@/shared/components/PomodoroScrollPicker';
 import RepeatEditor from '@/features/tasks/components/RepeatEditor';
 import { useInjectedStyle } from '@/shared/hooks/useInjectedStyle';
+
+const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
+  { value: 'high',   label: 'High',        color: 'var(--priority-high)' },
+  { value: 'medium', label: 'Medium',      color: 'var(--priority-medium)' },
+  { value: 'low',    label: 'Low',         color: 'var(--priority-low)' },
+  { value: 'none',   label: 'None',        color: '#888' },
+];
 
 interface TaskDetailProps {
   task: Task;
@@ -55,8 +62,7 @@ const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }
       >
         <button
           className="pomo-trigger"
-          onClick={() => setShowPicker(true)}
-          title="Chinh sua so Pomodoro"
+          title="Edit Pomodoros"
         >
           <span className="pomo-trigger__count">{task.pomodoroEstimate || 0}</span>
           <span className="pomo-trigger__meta">
@@ -100,6 +106,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [note, setNote] = useState(task.note);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImg, setLightboxImg] = useState('');
@@ -119,7 +126,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+    if (file.size > 5 * 1024 * 1024) return alert('Maximum image size is 5MB');
 
     setUploading(true);
     const fd = new FormData();
@@ -138,7 +145,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         createdAt: new Date().toISOString(),
       });
     } catch {
-      alert('Không thể tải ảnh lên');
+      alert('Could not upload image');
     } finally {
       setUploading(false);
     }
@@ -151,7 +158,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (!file) continue;
-        if (file.size > 5 * 1024 * 1024) return alert('Kích thước ảnh tối đa là 5MB');
+        if (file.size > 5 * 1024 * 1024) return alert('Maximum image size is 5MB');
         setUploading(true);
         const fd = new FormData();
         fd.append('file', file);
@@ -169,7 +176,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
             createdAt: new Date().toISOString(),
           });
         } catch {
-          alert('Không thể tải ảnh lên');
+          alert('Could not upload image');
         } finally {
           setUploading(false);
         }
@@ -195,6 +202,37 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   return (
     <div className="task-detail" onPaste={handlePaste}>
       <PomodoroRow task={task} onUpdate={(e) => updateTask(task.id, { pomodoroEstimate: e })} />
+
+      <DetailRow
+        icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.color || '#888' }}>
+          <path d="M2 2h10l-2 4 2 4H2l2-4-2-4z"/>
+        </svg>}
+        label="Priority"
+      >
+        <div style={{ position: 'relative' }}>
+          <button
+            className="detail-inline-btn"
+            style={{ color: PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.color || '#888' }}
+            onClick={() => { setShowPriorityPicker((v) => !v); setShowDatePicker(false); setShowReminderPicker(false); setShowRepeatPicker(false); }}
+          >
+            {PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.label || 'None'}
+          </button>
+          {showPriorityPicker && (
+            <div className="detail-date-popover" style={{ padding: 4, minWidth: 130 }}>
+              {PRIORITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`priority-option${task.priority === opt.value ? ' active' : ''}`}
+                  onClick={() => { updateTask(task.id, { priority: opt.value }); setShowPriorityPicker(false); }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </DetailRow>
 
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -319,9 +357,9 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
       <div className="detail-attachments-section">
         <div className="attachments-header">
-          <span className="attachments-title">Hình ảnh đính kèm</span>
+          <span className="attachments-title">Attached images</span>
           <label className="attachments-add-btn">
-            {uploading ? 'Đang tải...' : 'Thêm ảnh'}
+            {uploading ? 'Uploading...' : 'Add image'}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
           </label>
         </div>
@@ -330,7 +368,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
             {taskAttachments.map((a) => (
               <div key={a.id} className="attachment-card">
                 <img src={a.fileUrl} alt={a.fileName} className="attachment-thumb" onClick={() => { setLightboxImg(a.fileUrl); setLightboxOpen(true); }} />
-                <button type="button" className="attachment-delete" onClick={() => deleteAttachment(a.id)} title="Xoá ảnh">
+                <button type="button" className="attachment-delete" onClick={() => deleteAttachment(a.id)} title="Delete image">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                     <path d="M2 4h12M5 4v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4M6 4V2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
@@ -340,7 +378,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           </div>
         ) : (
           <div className="attachments-placeholder">
-            Nhấn Ctrl+V để dán ảnh chụp màn hình trực tiếp tại đây
+            Press Ctrl+V to paste screenshot directly here
           </div>
         )}
       </div>
@@ -383,6 +421,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         .attachment-card:hover .attachment-delete { opacity: 1; }
         .attachment-delete:hover { background: var(--priority-high); }
         .attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
+        .priority-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; background: none; cursor: pointer; border-radius: var(--radius-xs); font-size: var(--text-sm); color: var(--text-secondary); font-family: var(--font-main); transition: background var(--transition-fast); }
+        .priority-option:hover, .priority-option.active { background: var(--glass-bg-hover); color: var(--text-primary); }
       `}</style>
     </div>
   );

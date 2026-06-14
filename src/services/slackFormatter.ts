@@ -9,15 +9,15 @@ function buildSlackMessageForReminder(task: Task): Record<string, unknown> {
   }[task.priority] || '#888';
 
   const priorityLabel = {
-    high: 'Ưu tiên cao',
-    medium: 'Ưu tiên trung bình',
-    low: 'Ưu tiên thấp',
-    none: 'Không ưu tiên',
-  }[task.priority] || 'Không ưu tiên';
+    high: 'High priority',
+    medium: 'Medium priority',
+    low: 'Low priority',
+    none: 'No priority',
+  }[task.priority] || 'No priority';
 
   const dueDateText = task.dueDate
-    ? new Date(task.dueDate).toLocaleDateString('vi-VN')
-    : 'Không có';
+    ? new Date(task.dueDate).toLocaleDateString('en-US')
+    : 'None';
 
   return {
     blocks: [
@@ -25,7 +25,7 @@ function buildSlackMessageForReminder(task: Task): Record<string, unknown> {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*⏰ Task Reminder*\n_Bạn có một task cần thực hiện_`,
+          text: `*⏰ Task Reminder*\n_You have a task to do_`,
         },
       },
       {
@@ -36,19 +36,19 @@ function buildSlackMessageForReminder(task: Task): Record<string, unknown> {
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Tiêu đề*\n${task.title}`,
+            text: `*Title*\n${task.title}`,
           },
           {
             type: 'mrkdwn',
-            text: `*Ưu tiên*\n${priorityLabel}`,
+            text: `*Priority*\n${priorityLabel}`,
           },
           {
             type: 'mrkdwn',
-            text: `*Hạn chót*\n${dueDateText}`,
+            text: `*Due Date*\n${dueDateText}`,
           },
           {
             type: 'mrkdwn',
-            text: `*Thời gian*\n${new Date().toLocaleTimeString('vi-VN', {
+            text: `*Time*\n${new Date().toLocaleTimeString('en-US', {
               hour: '2-digit',
               minute: '2-digit',
             })}`,
@@ -64,7 +64,7 @@ function buildSlackMessageForReminder(task: Task): Record<string, unknown> {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*Ghi chú*\n${task.note}`,
+                text: `*Note*\n${task.note}`,
               },
             },
           ]
@@ -87,7 +87,7 @@ function buildSlackMessageForCompleted(data: Record<string, unknown>): Record<st
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*✅ Task Completed*\n_Bạn vừa hoàn thành một công việc!_`,
+          text: `*✅ Task Completed*\n_You just completed a task!_`,
         },
       },
       { type: 'divider' },
@@ -96,11 +96,11 @@ function buildSlackMessageForCompleted(data: Record<string, unknown>): Record<st
         fields: [
           {
             type: 'mrkdwn',
-            text: `*Tiêu đề*\n${data.title}`,
+            text: `*Title*\n${data.title}`,
           },
           {
             type: 'mrkdwn',
-            text: `*Thời gian tập trung*\n${data.totalFocusTime} phút (${data.pomodoroCompleted} Pomodoro)`,
+            text: `*Focus Time*\n${data.totalFocusTime} minutes (${data.pomodoroCompleted} Pomodoro)`,
           },
         ],
       },
@@ -110,13 +110,13 @@ function buildSlackMessageForCompleted(data: Record<string, unknown>): Record<st
 
 function buildSlackMessageForCreated(data: Record<string, unknown>): Record<string, unknown> {
   return {
-    text: `🆕 Task mới được tạo: *${data.title}*`
+    text: `🆕 New task created: *${data.title}*`
   };
 }
 
 function buildSlackMessageForPomodoroCompleted(data: Record<string, unknown>): Record<string, unknown> {
   return {
-    text: `🍅 Hoàn thành một Pomodoro: *${data.taskTitle || 'Tự do'}* (${data.duration} phút)`
+    text: `🍅 Pomodoro completed: *${data.taskTitle || 'Free'}* (${data.duration} minutes)`
   };
 }
 

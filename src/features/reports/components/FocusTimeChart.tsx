@@ -1,14 +1,10 @@
-// ============================================================
-// FOCUS TO-DO - FocusTimeChart
-// Biểu đồ cột Focus Time vẽ bằng Canvas API
-// ============================================================
-import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import type { ChartPeriod, BarData } from '@/features/reports/components/focusTimeChartHelpers';
-import {
-  buildBarData,
-  drawChart
-} from '@/features/reports/components/focusTimeChartHelpers';
+import { useECharts } from '@/shared/hooks/useECharts';
+import { buildBarData } from '@/features/reports/components/focusTimeChartHelpers';
+import type { EChartsOption } from 'echarts';
+
+export type ChartPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface FocusTimeChartProps {
   period: ChartPeriod;
@@ -17,6 +13,15 @@ interface FocusTimeChartProps {
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes <= 0) return '0m';
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
 
 const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
@@ -28,149 +33,112 @@ const FocusTimeChart: React.FC<FocusTimeChartProps> = ({
   selectedTagId = 'all',
 }) => {
   const { pomodoroSessions, tasks, projects } = useTaskContext();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [canvasW, setCanvasW] = useState(560);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
-  const barsRef = useRef<BarData[]>([]);
 
-  // Canvas vẽ đúng theo bề ngang container (tránh bị CSS kéo méo trên mobile)
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0].contentRect.width);
-      if (w > 0) setCanvasW(w);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // Lọc các session dựa trên Folder/Project/Tag được chọn
   const focusSessions = useMemo(() => {
     return pomodoroSessions
       .filter((s) => s.type === 'focus')
       .filter((s) => {
         const task = tasks.find((t) => t.id === s.taskId);
         if (!task) return false;
-
         if (selectedFolderId !== 'all') {
           if (!task.projectId) return false;
           const project = projects.find((p) => p.id === task.projectId);
           if (!project || project.folderId !== selectedFolderId) return false;
         }
-
         if (selectedProjectId !== 'all') {
           if (task.projectId !== selectedProjectId) return false;
         }
-
         if (selectedTagId !== 'all') {
           if (!task.tags || !task.tags.includes(selectedTagId)) return false;
         }
-
         return true;
       });
   }, [pomodoroSessions, tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
 
-  const bars = buildBarData(focusSessions, period, currentDate);
-  barsRef.current = bars;
+  const bars = useMemo(
+    () => buildBarData(focusSessions, period, currentDate),
+    [focusSessions, period, currentDate],
+  );
+
   const hasData = bars.some((b) => b.minutes > 0);
 
-  // Vẽ lại khi bars hoặc accentColor thay đổi
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    drawChart(canvas, bars, accentColor);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, accentColor, canvasW]);
+  const option = useMemo<EChartsOption>(() => ({
+    backgroundColor: 'transparent',
+    grid: { top: 20, right: 16, bottom: 36, left: 52, containLabel: false },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(20,20,30,0.92)',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
+      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      formatter: (params: any) => {
+        const p = Array.isArray(params) ? params[0] : params;
+        return `<b>${p.name}</b><br/>Focus: ${formatDuration(p.value as number)}`;
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: bars.map((b) => b.label),
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#777',
+        fontSize: 10,
+        interval: bars.length > 20 ? Math.ceil(bars.length / 12) - 1 : 0,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#777',
+        fontSize: 10,
+        formatter: (v: number) => (v === 0 ? '0' : formatDuration(v)),
+      },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    series: [
+      {
+        type: 'bar',
+        data: bars.map((b) => b.minutes),
+        barMaxWidth: 32,
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: accentColor },
+              { offset: 1, color: accentColor + '40' },
+            ],
+          },
+        },
+        emphasis: {
+          itemStyle: { color: accentColor, opacity: 0.9 },
+        },
+      },
+    ],
+  }), [bars, accentColor]);
 
-  // Tooltip khi hover
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-
-    const barsData = barsRef.current;
-    const paddingLeft = 44;
-    const chartW = canvas.width - paddingLeft - 12;
-    const gap = 3;
-    const barW = Math.max(2, (chartW - gap * (barsData.length - 1)) / barsData.length);
-
-    let found: BarData | null = null;
-    let foundX = 0;
-    barsData.forEach((bar, i) => {
-      const x = paddingLeft + i * (barW + gap);
-      if (mx >= x && mx <= x + barW) {
-        found = bar;
-        foundX = x + barW / 2;
-      }
-    });
-
-    if (found) {
-      setTooltip({
-        x: foundX,
-        y: my,
-        text: `${(found as BarData).label}: ${Math.round((found as BarData).minutes)}m`,
-      });
-    } else {
-      setTooltip(null);
-    }
-  }, []);
+  const containerRef = useECharts(hasData ? option : null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Canvas area */}
-      <div ref={containerRef} style={{
-        position: 'relative',
-        background: 'var(--glass-bg)',
-        borderRadius: 12,
-        overflow: 'hidden',
-        height: 200,
-      }}>
-        {hasData ? (
-          <>
-            <canvas
-              ref={canvasRef}
-              width={canvasW}
-              height={200}
-              style={{ width: '100%', height: '100%', display: 'block' }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={() => setTooltip(null)}
-            />
-            {tooltip && (
-              <div style={{
-                position: 'absolute',
-                left: tooltip.x,
-                top: Math.max(4, tooltip.y - 32),
-                transform: 'translateX(-50%)',
-                background: 'rgba(0,0,0,0.85)',
-                color: '#fff',
-                padding: '3px 8px',
-                borderRadius: 6,
-                fontSize: 11,
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-              }}>
-                {tooltip.text}
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            height: '100%', gap: 8,
-          }}>
-            <span style={{ fontSize: 32 }}>📭</span>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Không có dữ liệu tập trung</span>
-          </div>
-        )}
-      </div>
+    <div style={{ position: 'relative', height: 220 }}>
+      {hasData ? (
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      ) : (
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          height: '100%', gap: 8,
+        }}>
+          <span style={{ fontSize: 32 }}>📭</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>No focus data</span>
+        </div>
+      )}
     </div>
   );
 };
 
-export type { ChartPeriod };
 export default FocusTimeChart;

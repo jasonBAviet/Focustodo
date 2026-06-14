@@ -1,13 +1,13 @@
 // ============================================================
 // FOCUS TO-DO - AppearanceSettings
-// Tab Appearance - Dark Mode + Theme Wallpaper selection
+// Appearance Tab - Dark Mode + Theme Wallpaper selection
 // ============================================================
 import React from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
 import type { ThemeMode } from '@/types';
 
 // ----------------------------------------------------------
-// Cau hinh wallpaper
+// Wallpaper config
 // ----------------------------------------------------------
 interface WallpaperItem {
   id: string;
@@ -70,7 +70,7 @@ const gridStyle: React.CSSProperties = {
 };
 
 // ----------------------------------------------------------
-// Component wallpaper thumbnail
+// Wallpaper thumbnail component
 // ----------------------------------------------------------
 interface WallpaperCardProps {
   item: WallpaperItem;
@@ -97,7 +97,7 @@ const WallpaperCard: React.FC<WallpaperCardProps> = ({ item, selected, onClick }
     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.03)'; }}
     onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
   >
-    {/* Label ben duoi */}
+    {/* Bottom label */}
     <span style={{
       position: 'absolute',
       bottom: 0,
@@ -113,7 +113,7 @@ const WallpaperCard: React.FC<WallpaperCardProps> = ({ item, selected, onClick }
       {item.label}
     </span>
 
-    {/* Checkmark khi duoc chon - goc phai duoi */}
+    {/* Checkmark when selected - bottom right corner */}
     {selected && (
       <span style={{
         position: 'absolute',
@@ -136,7 +136,7 @@ const WallpaperCard: React.FC<WallpaperCardProps> = ({ item, selected, onClick }
 );
 
 // ----------------------------------------------------------
-// Component chinh
+// Main component
 // ----------------------------------------------------------
 const AppearanceSettings: React.FC = () => {
   const { settings, updateSettings } = useAppContext();
@@ -154,17 +154,17 @@ const AppearanceSettings: React.FC = () => {
       {/* Dark Mode */}
       <div>
         <label style={{ display: 'block', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-          Chế độ hiển thị
+          Display Mode
         </label>
         <select style={selectStyle} value={settings.darkMode} onChange={handleDarkModeChange}>
-          <option value="light">Sáng</option>
-          <option value="dark">Tối</option>
-          <option value="auto">Tự động (theo hệ thống)</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="auto">Auto (system default)</option>
         </select>
       </div>
 
       {/* Theme Wallpaper */}
-      <div style={sectionLabelStyle}>Chủ đề</div>
+      <div style={sectionLabelStyle}>Theme</div>
       <div style={gridStyle}>
         {WALLPAPERS.map((wp) => (
           <WallpaperCard
@@ -176,9 +176,9 @@ const AppearanceSettings: React.FC = () => {
         ))}
       </div>
 
-      {/* Thong tin them */}
+      {/* Additional info */}
       <div style={{ marginTop: 20, fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-        Hình nền sẽ được áp dụng làm nền màn hình chính của ứng dụng.
+        The wallpaper will be applied as the main background of the application.
       </div>
     </div>
   );
