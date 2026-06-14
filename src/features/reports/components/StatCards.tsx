@@ -1,7 +1,3 @@
-// ============================================================
-// FOCUS TO-DO - StatCards
-// Thống kê trên đầu trang Report, được lọc theo khoảng thời gian global
-// ============================================================
 import React, { useMemo } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import { dateUtils } from '@/utils/dateUtils';
@@ -13,44 +9,7 @@ function isInRange(dateStr: string | null, start: Date, end: Date): boolean {
   return d >= start && d <= end;
 }
 
-interface StatCardData {
-  label: string;
-  value: string;
-  color: 'red' | 'blue';
-}
-
-interface StatCardProps {
-  data: StatCardData;
-  accentRed: string;
-  accentBlue: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ data }) => {
-  return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border-color, rgba(255,255,255,0.08))',
-      borderRadius: 14,
-      padding: '16px 20px',
-      minWidth: 140,
-      flex: '1 1 140px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-    }}>
-      <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: 26, lineHeight: 1 }}>
-        {data.value}
-      </div>
-      <div style={{ color: 'var(--text-tertiary)', fontSize: 11, letterSpacing: 0.5, lineHeight: 1.4 }}>
-        {data.label}
-      </div>
-    </div>
-  );
-};
-
 interface StatCardsProps {
-  accentRed?: string;
-  accentBlue?: string;
   selectedFolderId?: string;
   selectedProjectId?: string;
   selectedTagId?: string;
@@ -60,8 +19,6 @@ interface StatCardsProps {
 }
 
 const StatCards: React.FC<StatCardsProps> = ({
-  accentRed = '#f25f5c',
-  accentBlue = '#4cc9f0',
   selectedFolderId = 'all',
   selectedProjectId = 'all',
   selectedTagId = 'all',
@@ -72,8 +29,7 @@ const StatCards: React.FC<StatCardsProps> = ({
   const { tasks, projects, pomodoroSessions, pomodoroRecords } = useTaskContext();
 
   const stats = useMemo(() => {
-    // ---- Lọc danh sách task theo bộ lọc chọn ----
-    const filteredTasks = tasks.filter((task) => {
+    const applyCommonFilters = (task: typeof tasks[number]) => {
       if (selectedFolderId !== 'all') {
         if (!task.projectId) return false;
         const project = projects.find((p) => p.id === task.projectId);
@@ -86,41 +42,33 @@ const StatCards: React.FC<StatCardsProps> = ({
         if (!task.tags || !task.tags.includes(selectedTagId)) return false;
       }
       return true;
-    });
+    };
+
+    // Only real tasks (not knowledge items) for task metrics
+    const filteredTasks = tasks.filter((t) => !t.isKnowledge && applyCommonFilters(t));
+    // All items (tasks + knowledge) matching filters for knowledge count
+    const filteredAllItems = tasks.filter(applyCommonFilters);
 
     const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
 
-    // ---- Total Focus Time (phút) tích lũy ----
     const totalFocusTime = filteredTasks.reduce((acc, t) => acc + (t.totalFocusTime ?? 0), 0);
 
-    // ---- Lọc session focus thuộc bộ lọc dự án/nhãn ----
     const focusSessions = pomodoroSessions
       .filter((s) => s.type === 'focus')
       .filter((s) => s.taskId && filteredTaskIds.has(s.taskId));
 
-    // Focus time trong kỳ
     const periodFocusTime = focusSessions
       .filter((s) => isInRange(s.startTime, startDate, endDate))
       .reduce((acc, s) => acc + (s.duration ?? 0), 0);
 
-    // ---- Task Created trong kỳ ----
-    const periodCreated = filteredTasks.filter(
-      (t) => isInRange(t.createdAt, startDate, endDate)
-    ).length;
-
-    // ---- Completed tasks ----
+    const periodCreated = filteredTasks.filter((t) => isInRange(t.createdAt, startDate, endDate)).length;
     const totalCompleted = filteredTasks.filter((t) => t.completed).length;
-
     const periodCompleted = filteredTasks.filter(
-      (t) => t.completed && isInRange(t.completedAt, startDate, endDate)
+      (t) => t.completed && isInRange(t.completedAt, startDate, endDate),
     ).length;
-
-    // ---- Knowledge Created trong kỳ ----
-    const periodKnowledgeCreated = filteredTasks.filter(
-      (t) => t.isKnowledge && isInRange(t.createdAt, startDate, endDate)
+    const periodKnowledgeCreated = filteredAllItems.filter(
+      (t) => t.isKnowledge && isInRange(t.createdAt, startDate, endDate),
     ).length;
-
-    // ---- Overdue Tasks tính đến ngày endDate ----
     const overdueCount = filteredTasks.filter((t) => {
       if (t.completed || !t.dueDate) return false;
       const due = new Date(t.dueDate);
@@ -128,14 +76,13 @@ const StatCards: React.FC<StatCardsProps> = ({
       return due < endDate;
     }).length;
 
-    // ---- Lead Time (Thời gian hoàn thành trung bình) ----
     const completedTasksInPeriod = filteredTasks.filter(
-      (t) => t.completed && t.completedAt && isInRange(t.completedAt, startDate, endDate)
+      (t) => t.completed && t.completedAt && isInRange(t.completedAt, startDate, endDate),
     );
     let avgCompletionTimeStr = '—';
     if (completedTasksInPeriod.length > 0) {
       let totalMs = 0;
-      completedTasksInPeriod.forEach(t => {
+      completedTasksInPeriod.forEach((t) => {
         if (t.completedAt) {
           const created = new Date(t.createdAt).getTime();
           const completed = new Date(t.completedAt).getTime();
@@ -144,35 +91,30 @@ const StatCards: React.FC<StatCardsProps> = ({
       });
       const avgDays = totalMs / (1000 * 60 * 60 * 24) / completedTasksInPeriod.length;
       if (avgDays < 1) {
-        const avgHours = Math.round(avgDays * 24 * 10) / 10;
-        avgCompletionTimeStr = `${avgHours} giờ`;
+        avgCompletionTimeStr = `${Math.round(avgDays * 24 * 10) / 10} giờ`;
       } else {
-        const avgDaysRounded = Math.round(avgDays * 10) / 10;
-        avgCompletionTimeStr = `${avgDaysRounded} ngày`;
+        avgCompletionTimeStr = `${Math.round(avgDays * 10) / 10} ngày`;
       }
     }
 
-    // ---- On-time Completion Rate trong kỳ ----
-    const tasksWithDueDate = completedTasksInPeriod.filter(t => t.dueDate);
+    const tasksWithDueDate = completedTasksInPeriod.filter((t) => t.dueDate);
     let onTimeRate: number | null = null;
     if (tasksWithDueDate.length > 0) {
-      const onTimeTasks = tasksWithDueDate.filter(t => {
+      const onTimeTasks = tasksWithDueDate.filter((t) => {
         if (!t.completedAt || !t.dueDate) return false;
         const due = new Date(t.dueDate);
         due.setHours(23, 59, 59, 999);
-        const comp = new Date(t.completedAt);
-        return comp <= due;
+        return new Date(t.completedAt) <= due;
       });
       onTimeRate = Math.round((onTimeTasks.length / tasksWithDueDate.length) * 100);
     }
 
-    // ---- Interruption Rate trong kỳ ----
     let interruptionRate: number | null = null;
     const finishedRecords = pomodoroRecords.filter(
-      r => r.taskId && filteredTaskIds.has(r.taskId) && r.endTime && isInRange(r.startTime, startDate, endDate)
+      (r) => r.taskId && filteredTaskIds.has(r.taskId) && r.endTime && isInRange(r.startTime, startDate, endDate),
     );
     if (finishedRecords.length > 0) {
-      const interrupted = finishedRecords.filter(r => !r.completed);
+      const interrupted = finishedRecords.filter((r) => !r.completed);
       interruptionRate = Math.round((interrupted.length / finishedRecords.length) * 100);
     }
 
@@ -194,75 +136,137 @@ const StatCards: React.FC<StatCardsProps> = ({
     return dateUtils.formatDuration(Math.round(minutes));
   }
 
-  // Nhãn động dựa trên period
   let periodLabel = 'Trong kỳ';
   if (period === 'daily') periodLabel = 'Ngày này';
   else if (period === 'weekly') periodLabel = 'Tuần này';
   else if (period === 'monthly') periodLabel = 'Tháng này';
   else if (period === 'yearly') periodLabel = 'Năm này';
 
-  const cards: StatCardData[] = [
+  const warningColor = '#f25f5c';
+  const successColor = '#06d6a0';
+  const primaryColor = '#4cc9f0';
+  const accentColor = '#f25f5c';
+
+  const groupIcons: Record<string, React.ReactNode> = {
+    'Thời gian': (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    ),
+    'Công việc': (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 11 12 14 22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    ),
+    'Chất lượng': (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+    ),
+  };
+
+  const groups: Array<{
+    groupLabel: string;
+    accent: string;
+    cards: Array<{ label: string; value: string; warning?: boolean }>;
+  }> = [
     {
-      label: `Thời gian tập trung (${periodLabel})`,
-      value: fmtMin(stats.periodFocusTime),
-      color: 'red',
+      groupLabel: 'Thời gian',
+      accent: accentColor,
+      cards: [
+        { label: `Focus (${periodLabel})`, value: fmtMin(stats.periodFocusTime) },
+        { label: 'Focus tích lũy', value: fmtMin(stats.totalFocusTime) },
+      ],
     },
     {
-      label: 'Tổng thời gian tập trung',
-      value: fmtMin(stats.totalFocusTime),
-      color: 'red',
+      groupLabel: 'Công việc',
+      accent: primaryColor,
+      cards: [
+        { label: `Tạo mới (${periodLabel})`, value: String(stats.periodCreated) },
+        { label: `Hoàn thành (${periodLabel})`, value: String(stats.periodCompleted) },
+        { label: 'Hoàn thành (tổng)', value: String(stats.totalCompleted) },
+        { label: `Kiến thức (${periodLabel})`, value: String(stats.periodKnowledgeCreated) },
+      ],
     },
     {
-      label: `Số task mới tạo (${periodLabel})`,
-      value: String(stats.periodCreated),
-      color: 'blue',
-    },
-    {
-      label: `Task đã hoàn thành (${periodLabel})`,
-      value: String(stats.periodCompleted),
-      color: 'blue',
-    },
-    {
-      label: 'Tổng task đã hoàn thành',
-      value: String(stats.totalCompleted),
-      color: 'blue',
-    },
-    {
-      label: `Kiến thức đã tạo (${periodLabel})`,
-      value: String(stats.periodKnowledgeCreated),
-      color: 'blue',
-    },
-    {
-      label: `Lead Time TB (${periodLabel})`,
-      value: stats.avgCompletionTimeStr,
-      color: 'blue',
-    },
-    {
-      label: `Tỉ lệ đúng hạn (${periodLabel})`,
-      value: stats.onTimeRate === null ? '—' : `${stats.onTimeRate}%`,
-      color: 'blue',
-    },
-    {
-      label: 'Số task trễ hạn (Cuối kỳ)',
-      value: String(stats.overdueCount),
-      color: 'red',
+      groupLabel: 'Chất lượng',
+      accent: successColor,
+      cards: [
+        { label: `Lead Time TB (${periodLabel})`, value: stats.avgCompletionTimeStr },
+        { label: `Đúng hạn (${periodLabel})`, value: stats.onTimeRate === null ? '—' : `${stats.onTimeRate}%` },
+        {
+          label: 'Trễ hạn (cuối kỳ)',
+          value: String(stats.overdueCount),
+          warning: stats.overdueCount > 0,
+        },
+      ],
     },
   ];
 
   return (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: 12,
-      padding: '0 0 4px',
-    }}>
-      {cards.map((card) => (
-        <StatCard
-          key={card.label}
-          data={card}
-          accentRed={accentRed}
-          accentBlue={accentBlue}
-        />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 4 }}>
+      {groups.map((group) => (
+        <div key={group.groupLabel}>
+          {/* Group header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            marginBottom: 8,
+          }}>
+            <span style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center' }}>
+              {groupIcons[group.groupLabel]}
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              color: 'var(--text-secondary)',
+            }}>
+              {group.groupLabel}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--divider)', marginLeft: 4 }} />
+          </div>
+
+          {/* Cards grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: 10,
+          }}>
+            {group.cards.map((card) => (
+              <div key={card.label} style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}>
+                <div style={{
+                  color: card.warning ? warningColor : group.accent,
+                  fontWeight: 700,
+                  fontSize: 22,
+                  lineHeight: 1,
+                  letterSpacing: '-0.02em',
+                }}>
+                  {card.value}
+                </div>
+                <div style={{
+                  color: 'var(--text-tertiary)',
+                  fontSize: 10,
+                  lineHeight: 1.4,
+                }}>
+                  {card.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );

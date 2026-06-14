@@ -1,13 +1,18 @@
-import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useECharts } from '@/shared/hooks/useECharts';
 import type { ChartPeriod, ActivityData } from '@/features/reports/components/taskActivityChartHelpers';
 import {
   buildActivityDailyData,
   buildActivityWeeklyData,
   buildActivityMonthlyData,
   buildActivityYearlyData,
-  drawActivityChart
 } from '@/features/reports/components/taskActivityChartHelpers';
+import type { EChartsOption } from 'echarts';
+
+const COLOR_CREATED = '#f4a261';
+const COLOR_COMPLETED = '#4361ee';
+const COLOR_OVERDUE = '#f25f5c';
 
 interface TaskActivityChartProps {
   period: ChartPeriod;
@@ -27,27 +32,10 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
   onDataCalculated,
 }) => {
   const { tasks, projects } = useTaskContext();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [canvasW, setCanvasW] = useState(560);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
-  const dataRef = useRef<ActivityData[]>([]);
 
-  // Tinh chỉnh kích thước canvas theo container
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0].contentRect.width);
-      if (w > 0) setCanvasW(w);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // Lọc task theo các tiêu chí đã chọn
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
+      if (t.isKnowledge) return false;
       if (selectedFolderId !== 'all') {
         if (!t.projectId) return false;
         const project = projects.find((p) => p.id === t.projectId);
@@ -63,136 +51,113 @@ const TaskActivityChart: React.FC<TaskActivityChartProps> = ({
     });
   }, [tasks, projects, selectedFolderId, selectedProjectId, selectedTagId]);
 
-  // Xây dựng dữ liệu hoạt động task
-  const chartData = useMemo(() => {
-    let result: ActivityData[] = [];
+  const chartData = useMemo<ActivityData[]>(() => {
     switch (period) {
-      case 'daily':
-        result = buildActivityDailyData(filteredTasks, currentDate);
-        break;
-      case 'weekly':
-        result = buildActivityWeeklyData(filteredTasks, currentDate);
-        break;
-      case 'monthly':
-        result = buildActivityMonthlyData(filteredTasks, currentDate);
-        break;
-      case 'yearly':
-        result = buildActivityYearlyData(filteredTasks, currentDate);
-        break;
+      case 'daily':   return buildActivityDailyData(filteredTasks, currentDate);
+      case 'weekly':  return buildActivityWeeklyData(filteredTasks, currentDate);
+      case 'monthly': return buildActivityMonthlyData(filteredTasks, currentDate);
+      case 'yearly':  return buildActivityYearlyData(filteredTasks, currentDate);
     }
-    return result;
   }, [filteredTasks, period, currentDate]);
 
-  // Lưu trữ dữ liệu vào ref và bắn callback về component cha để render bảng chi tiết
-  dataRef.current = chartData;
   useEffect(() => {
     onDataCalculated?.(chartData);
   }, [chartData, onDataCalculated]);
 
   const hasData = chartData.some(
-    (d) => d.createdCount > 0 || d.completedCount > 0 || d.overdueCount > 0
+    (d) => d.createdCount > 0 || d.completedCount > 0 || d.overdueCount > 0,
   );
 
-  // Vẽ biểu đồ khi dữ liệu thay đổi
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    drawActivityChart(canvas, chartData);
-  }, [chartData, canvasW]);
+  const option = useMemo<EChartsOption>(() => ({
+    backgroundColor: 'transparent',
+    grid: { top: 20, right: 16, bottom: 52, left: 40, containLabel: false },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(20,20,30,0.92)',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
+      textStyle: { color: '#e0e0e0', fontSize: 12 },
+      formatter: (params: any) => {
+        const list = Array.isArray(params) ? params : [params];
+        const label = list[0]?.name ?? '';
+        const created = list.find((p: any) => p.seriesName === 'Tạo mới');
+        const done = list.find((p: any) => p.seriesName === 'Hoàn thành');
+        const overdue = list.find((p: any) => p.seriesName === 'Trễ hạn');
+        return [
+          `<b>${label}</b>`,
+          created ? `🟠 Tạo mới: ${created.value}` : '',
+          done ? `🔵 Hoàn thành: ${done.value}` : '',
+          overdue ? `🔴 Trễ hạn: ${overdue.value}` : '',
+        ].filter(Boolean).join('<br/>');
+      },
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: '#999', fontSize: 10 },
+      itemWidth: 10,
+      itemHeight: 10,
+      icon: 'roundRect',
+    },
+    xAxis: {
+      type: 'category',
+      data: chartData.map((d) => d.label),
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#777',
+        fontSize: 10,
+        interval: chartData.length > 20 ? Math.ceil(chartData.length / 12) - 1 : 0,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#777', fontSize: 10 },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)', type: 'dashed' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      minInterval: 1,
+    },
+    series: [
+      {
+        name: 'Tạo mới',
+        type: 'bar',
+        data: chartData.map((d) => d.createdCount),
+        barMaxWidth: 20,
+        itemStyle: { borderRadius: [3, 3, 0, 0], color: COLOR_CREATED },
+      },
+      {
+        name: 'Hoàn thành',
+        type: 'bar',
+        data: chartData.map((d) => d.completedCount),
+        barMaxWidth: 20,
+        itemStyle: { borderRadius: [3, 3, 0, 0], color: COLOR_COMPLETED },
+      },
+      {
+        name: 'Trễ hạn',
+        type: 'bar',
+        data: chartData.map((d) => d.overdueCount),
+        barMaxWidth: 20,
+        itemStyle: { borderRadius: [3, 3, 0, 0], color: COLOR_OVERDUE },
+      },
+    ],
+  }), [chartData]);
 
-  // Xử lý tooltip khi hover qua biểu đồ
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-
-    const barsData = dataRef.current;
-    const paddingLeft = 44;
-    const paddingRight = 24;
-    const chartW = canvas.width - paddingLeft - paddingRight;
-    const slotW = chartW / barsData.length;
-
-    let idx = Math.floor((mx - paddingLeft) / slotW);
-    if (idx >= 0 && idx < barsData.length) {
-      const bar = barsData[idx];
-      const xPoint = paddingLeft + idx * slotW + slotW / 2;
-      setTooltip({
-        x: xPoint,
-        y: my,
-        text: `${bar.label} - Tạo: ${bar.createdCount}, Xong: ${bar.completedCount}, Trễ: ${bar.overdueCount}`,
-      });
-    } else {
-      setTooltip(null);
-    }
-  }, []);
+  const containerRef = useECharts(hasData ? option : null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div ref={containerRef} style={{
-        position: 'relative',
-        background: 'var(--glass-bg)',
-        borderRadius: 12,
-        overflow: 'hidden',
-        height: 200,
-      }}>
-        {hasData ? (
-          <>
-            <canvas
-              ref={canvasRef}
-              width={canvasW}
-              height={200}
-              style={{ width: '100%', height: '100%', display: 'block' }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={() => setTooltip(null)}
-            />
-            {tooltip && (
-              <div style={{
-                position: 'absolute',
-                left: tooltip.x,
-                top: Math.max(4, tooltip.y - 32),
-                transform: 'translateX(-50%)',
-                background: 'rgba(0,0,0,0.85)',
-                color: '#fff',
-                padding: '4px 10px',
-                borderRadius: 6,
-                fontSize: 10,
-                pointerEvents: 'none',
-                whiteSpace: 'nowrap',
-                zIndex: 10,
-              }}>
-                {tooltip.text}
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            height: '100%', gap: 8,
-          }}>
-            <span style={{ fontSize: 32 }}>📊</span>
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Không có hoạt động nào trong thời gian này</span>
-          </div>
-        )}
-      </div>
-
-      {/* Chú thích màu sắc */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 10, color: 'var(--text-secondary)' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, background: '#f4a261', borderRadius: 2 }} />
-          Tạo mới
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, background: '#4361ee', borderRadius: 2 }} />
-          Đã hoàn thành
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 8, height: 8, background: '#f25f5c', borderRadius: 2 }} />
-          Trễ hạn
-        </span>
-      </div>
+    <div style={{ position: 'relative', height: 220 }}>
+      {hasData ? (
+        <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      ) : (
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          height: '100%', gap: 8,
+        }}>
+          <span style={{ fontSize: 32 }}>📊</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Không có hoạt động nào trong thời gian này</span>
+        </div>
+      )}
     </div>
   );
 };
