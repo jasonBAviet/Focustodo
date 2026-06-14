@@ -19,64 +19,7 @@ type ImportState =
 // ----------------------------------------------------------
 // Styles
 // ----------------------------------------------------------
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 'var(--text-xs)',
-  fontWeight: 700,
-  color: 'var(--text-muted)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  marginBottom: 12,
-  marginTop: 20,
-};
-
-const btnStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
-  borderRadius: 'var(--radius-md)',
-  border: '1px solid var(--border)',
-  background: 'var(--bg-card)',
-  color: 'var(--text-primary)',
-  fontSize: 'var(--text-sm)',
-  cursor: 'pointer',
-  transition: 'background var(--transition-fast)',
-  marginRight: 8,
-};
-
-const btnPrimaryStyle: React.CSSProperties = {
-  ...btnStyle,
-  background: 'var(--accent)',
-  color: 'var(--text-on-accent)',
-  border: '1px solid var(--accent)',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: 100,
-  padding: '8px 10px',
-  background: 'var(--bg-input)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-md)',
-  color: 'var(--text-primary)',
-  fontSize: 'var(--text-sm)',
-  outline: 'none',
-  textAlign: 'right',
-};
-
-const dividerStyle: React.CSSProperties = {
-  height: 1,
-  background: 'var(--divider)',
-  margin: '16px 0',
-};
-
-const infoRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '8px 0',
-  fontSize: 'var(--text-sm)',
-  borderBottom: '1px solid var(--divider)',
-};
+// Custom styles removed in favor of styled JSX style block below to support hover & focus transitions cleanly.
 
 // ----------------------------------------------------------
 // Main component
@@ -159,112 +102,203 @@ const GeneralSettings: React.FC = () => {
   };
 
   return (
-    <div>
-      {/* Data Section */}
-      <div style={sectionTitleStyle}>Data</div>
+    <>
+      <style>{`
+        .general-settings-container {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .settings-section-title {
+          font-size: var(--text-xs);
+          font-weight: 700;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 10px;
+        }
+        .settings-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .settings-btn-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .settings-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: var(--radius-md);
+          font-size: var(--text-sm);
+          font-weight: 500;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+        .settings-btn-secondary {
+          background: var(--bg-input);
+          color: var(--text-primary);
+          border: 1px solid var(--border);
+        }
+        .settings-btn-secondary:hover {
+          background: var(--bg-card-hover);
+          border-color: var(--border-strong);
+        }
+        .settings-btn-primary {
+          background: var(--accent);
+          color: var(--text-on-accent);
+          border: 1px solid var(--accent);
+        }
+        .settings-btn-primary:hover {
+          background: var(--accent-hover);
+          box-shadow: var(--shadow-sm);
+        }
+        .settings-input {
+          width: 72px;
+          padding: 8px 12px;
+          background: var(--bg-input);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          font-weight: 500;
+          outline: none;
+          text-align: center;
+          transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        .settings-input:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+        .settings-info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: var(--text-sm);
+          padding: 4px 0;
+        }
+        .settings-divider {
+          height: 1px;
+          background: var(--divider);
+        }
+      `}</style>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-        <button type="button" style={btnPrimaryStyle} onClick={handleExport}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Export data (CSV)
-        </button>
+      <div className="general-settings-container">
+        {/* Data Section */}
+        <div>
+          <div className="settings-section-title">Data</div>
+          <div className="settings-card">
+            <div className="settings-btn-group">
+              <button type="button" className="settings-btn settings-btn-primary" onClick={handleExport}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Export data (CSV)
+              </button>
 
-        <button type="button" style={btnStyle} onClick={handleImportClick}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 9V1M4 4l3-3 3 3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Import from CSV
-        </button>
-        
+              <button type="button" className="settings-btn settings-btn-secondary" onClick={handleImportClick}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 9V1M4 4l3-3 3 3M2 10v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Import from CSV
+              </button>
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+            </div>
+
+            {/* Import notification */}
+            {importState.status === 'success' && (
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(6,214,160,0.12)',
+                color: '#06d6a0',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 500,
+              }}>
+                Successfully imported {importState.count} tasks from CSV.
+              </div>
+            )}
+            {importState.status === 'error' && (
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(242,95,92,0.12)',
+                color: '#f25f5c',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 500,
+              }}>
+                Error: {importState.message}
+              </div>
+            )}
+
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              Currently {tasks.length} tasks in the system.
+            </div>
+          </div>
+        </div>
+
+        {/* Focus Goal Section */}
+        <div>
+          <div className="settings-section-title">Focus Goal</div>
+          <div className="settings-card" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>
+              Daily focus goal
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="number"
+                min={0}
+                max={24}
+                step={0.5}
+                className="settings-input"
+                value={settings.dailyFocusGoalHours}
+                onChange={handleGoalChange}
+              />
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>hours/day</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Info Section */}
+        <div>
+          <div className="settings-section-title">App Information</div>
+          <div className="settings-card" style={{ gap: 12 }}>
+            <div className="settings-info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>Version</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>1.0.0</span>
+            </div>
+            <div className="settings-divider" />
+            <div className="settings-info-row">
+              <span style={{ color: 'var(--text-secondary)' }}>GitHub</span>
+              <a
+                href="https://github.com/focus-todo"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent)', fontSize: 'var(--text-sm)', textDecoration: 'none', fontWeight: 500 }}
+              >
+                github.com/focus-todo
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Import notification */}
-      {importState.status === 'success' && (
-        <div style={{
-          padding: '8px 12px',
-          borderRadius: 'var(--radius-sm)',
-          background: 'rgba(6,214,160,0.12)',
-          color: '#06d6a0',
-          fontSize: 'var(--text-sm)',
-          marginBottom: 10,
-        }}>
-          Successfully imported {importState.count} tasks from CSV.
-        </div>
-      )}
-      {importState.status === 'error' && (
-        <div style={{
-          padding: '8px 12px',
-          borderRadius: 'var(--radius-sm)',
-          background: 'rgba(242,95,92,0.12)',
-          color: '#f25f5c',
-          fontSize: 'var(--text-sm)',
-          marginBottom: 10,
-        }}>
-          Error: {importState.message}
-        </div>
-      )}
-
-      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>
-        Currently {tasks.length} tasks in the system.
-      </div>
-
-      <div style={dividerStyle} />
-
-      {/* Focus Goal Section */}
-      <div style={sectionTitleStyle}>Focus Goal</div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <label style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', flex: 1 }}>
-          Daily focus goal
-        </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="number"
-            min={0}
-            max={24}
-            step={0.5}
-            style={inputStyle}
-            value={settings.dailyFocusGoalHours}
-            onChange={handleGoalChange}
-          />
-          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>hours/day</span>
-        </div>
-      </div>
-
-      <div style={{ ...dividerStyle, marginTop: 20 }} />
-
-      {/* Info Section */}
-      <div style={sectionTitleStyle}>App Information</div>
-
-      <div>
-        <div style={infoRowStyle}>
-          <span style={{ color: 'var(--text-secondary)' }}>Version</span>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>1.0.0</span>
-        </div>
-        <div style={{ ...infoRowStyle, borderBottom: 'none' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>GitHub</span>
-          <a
-            href="https://github.com/focus-todo"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'var(--accent)', fontSize: 'var(--text-sm)', textDecoration: 'none' }}
-          >
-            github.com/focus-todo
-          </a>
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 

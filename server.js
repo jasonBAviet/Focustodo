@@ -11,6 +11,7 @@ import { pool, ensureSchema } from './db.js';
 import { createTasksRouter } from './src/backend/modules/tasks/task.route.js';
 import swaggerRouter from './routes/swagger.js';
 import { createAuth, createUserAuthRouter } from './src/backend/modules/auth/auth.route.js';
+import { authService } from './src/backend/modules/auth/auth.service.js';
 import { authenticateUser, requireScope } from './src/backend/modules/auth/auth.middleware.js';
 import { webhookService } from './src/backend/modules/webhooks/webhook.service.js';
 import { createProjectsRouter } from './src/backend/modules/projects/project.route.js';
@@ -282,6 +283,12 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
         webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Periodic logs cleanup failed:', err));
       }, 24 * 60 * 60 * 1000);
 
+      // Auto-revoke expired API keys after 24h (startup & periodic every 24h)
+      authService.cleanExpiredApiKeys().catch((err) => console.error('[cleanup] Initial API keys cleanup failed:', err));
+      setInterval(() => {
+        authService.cleanExpiredApiKeys().catch((err) => console.error('[cleanup] Periodic API keys cleanup failed:', err));
+      }, 24 * 60 * 60 * 1000);
+
       app.listen(PORT, () => {
         console.log(`Focus To Do backend is running on http://localhost:${PORT}`);
       });
@@ -301,7 +308,10 @@ async function startWithRetry(maxAttempts = 5, delayMs = 3000) {
 const isServerless = !!process.env.VERCEL;
 if (isServerless) {
   ensureSchema()
-    .then(() => webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Serverless logs cleanup failed:', err)))
+    .then(() => {
+      webhookService.cleanOldLogs().catch((err) => console.error('[cleanup] Serverless logs cleanup failed:', err));
+      authService.cleanExpiredApiKeys().catch((err) => console.error('[cleanup] Serverless API keys cleanup failed:', err));
+    })
     .catch(err => console.error('Failed to init schema:', err));
 } else {
   startWithRetry();

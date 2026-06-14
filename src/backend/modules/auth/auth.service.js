@@ -45,6 +45,17 @@ export class AuthService {
     const keyRecord = await authRepository.findKeyByHash(hashed);
     
     if (keyRecord && !keyRecord.revoked) {
+      // Tu dong revoke neu key qua han 24h
+      if (keyRecord.created_at) {
+        const createdTime = new Date(keyRecord.created_at).getTime();
+        if (Date.now() - createdTime > 24 * 60 * 60 * 1000) {
+          await authRepository.revokeApiKey(keyRecord.id).catch((err) =>
+            console.error('[auth] Failed to revoke expired key:', keyRecord.id, err?.message)
+          );
+          return { valid: false, error: 'Unauthorized: X-API-Key đã hết hạn (24h).' };
+        }
+      }
+
       const scopes = Array.isArray(keyRecord.scopes) ? keyRecord.scopes : [];
       if (scopes.includes('admin') || scopes.includes(scope)) {
         await authRepository.updateKeyLastUsed(keyRecord.id, new Date().toISOString()).catch(() => {});
@@ -79,6 +90,9 @@ export class AuthService {
   }
 
   async getAllApiKeys() {
+    await authRepository.revokeExpiredApiKeys().catch((err) =>
+      console.error('[auth] Failed to cleanup expired keys:', err?.message)
+    );
     return await authRepository.getAllApiKeys();
   }
 
@@ -87,11 +101,18 @@ export class AuthService {
   }
 
   async getApiKeysByUser(userId) {
+    await authRepository.revokeExpiredApiKeys().catch((err) =>
+      console.error('[auth] Failed to cleanup expired keys:', err?.message)
+    );
     return await authRepository.getApiKeysByUser(userId);
   }
 
   async revokeApiKeyByUser(id, userId) {
     return await authRepository.revokeApiKeyByUser(id, userId);
+  }
+
+  async cleanExpiredApiKeys() {
+    return await authRepository.revokeExpiredApiKeys();
   }
 
   async registerUser(email, password) {

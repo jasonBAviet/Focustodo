@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
 import { useWebhookContext } from '@/core/contexts/WebhookContext';
+import { useAuth } from '@/features/auth/AuthContext';
 import type useWebhook from '@/shared/hooks/useWebhook';
 import Toggle from '@/shared/components/Toggle';
 import ApiSchemaDoc from '@/features/settings/components/ApiSchemaDoc';
@@ -165,9 +166,13 @@ const WebhookSubscribersSection: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const token = localStorage.getItem('focus-token') || sessionStorage.getItem('focus-token') || '';
+  const { token } = useAuth();
 
   const load = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/webhooks/subscribers', { headers: { Authorization: `Bearer ${token}` } });
@@ -183,6 +188,7 @@ const WebhookSubscribersSection: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const handleToggle = async (sub: Subscriber) => {
+    if (!token) return;
     await fetch(`/api/webhooks/subscribers/${sub.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -192,12 +198,14 @@ const WebhookSubscribersSection: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!token) return;
     if (!confirm('Delete this subscriber?')) return;
     await fetch(`/api/webhooks/subscribers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     load();
   };
 
   const handleAdd = async () => {
+    if (!token) return;
     setError('');
     if (!form.name.trim() || !form.url.trim()) { setError('Name and URL are required.'); return; }
     if (form.events.length === 0) { setError('Select at least 1 event.'); return; }
@@ -299,9 +307,13 @@ const ApiKeysSection: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [newKey, setNewKey] = useState('');
 
-  const token = localStorage.getItem('focus-token') || sessionStorage.getItem('focus-token') || '';
+  const { token } = useAuth();
 
   const load = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/keys', { headers: { Authorization: `Bearer ${token}` } });
@@ -312,6 +324,7 @@ const ApiKeysSection: React.FC = () => {
   useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
+    if (!token) return;
     setSaving(true);
     setNewKey('');
     try {
@@ -331,6 +344,7 @@ const ApiKeysSection: React.FC = () => {
   };
 
   const handleRevoke = async (id: string) => {
+    if (!token) return;
     if (!confirm('Revoke this key?')) return;
     await fetch(`/api/auth/keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     setNewKey('');

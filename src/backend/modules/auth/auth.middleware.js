@@ -68,6 +68,12 @@ export function requireScope(scope) {
     // 2) Co X-API-Key -> doi chieu api_keys
     const provided = req.headers['x-api-key'];
     if (provided) {
+      // LEGACY_KEY check first — plaintext master key, no scope enforcement
+      if (LEGACY_KEY && provided === LEGACY_KEY) {
+        req.user = { id: 'default_user' };
+        return next();
+      }
+
       try {
         const validation = await authService.validateApiKey(provided, scope);
         if (validation.valid) {
@@ -82,10 +88,6 @@ export function requireScope(scope) {
         return res.status(500).json({ error: 'Auth error' });
       }
 
-      if (LEGACY_KEY && provided === LEGACY_KEY) {
-        req.user = { id: 'default_user' };
-        return next();
-      }
       return res.status(401).json({ error: 'Unauthorized: X-API-Key khong hop le hoac da thu hoi.' });
     }
 

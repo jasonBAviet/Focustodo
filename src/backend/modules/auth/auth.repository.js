@@ -46,6 +46,18 @@ export class AuthRepository {
     return result.rows[0];
   }
 
+  async revokeExpiredApiKeys() {
+    const result = await pool.query(
+      `UPDATE api_keys 
+       SET revoked = true 
+       WHERE revoked = false 
+         AND created_at IS NOT NULL 
+         AND created_at::timestamptz < NOW() - INTERVAL '24 hours'
+       RETURNING id`
+    );
+    return result.rows.map(row => row.id);
+  }
+
   async findUserByEmail(email) {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0];
