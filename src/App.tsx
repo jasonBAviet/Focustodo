@@ -6,7 +6,7 @@ import { PomodoroProvider } from '@/features/pomodoro/PomodoroContext';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { KnowledgeProvider } from '@/features/knowledge/KnowledgeContext';
 import { DiaryProvider } from '@/features/diary/DiaryContext';
-// import AuthScreen from '@/features/auth/components/AuthScreen'; // temporarily disabled
+import AuthScreen from '@/features/auth/components/AuthScreen';
 import Sidebar from '@/shared/layout/Sidebar';
 import TaskList from '@/features/tasks/components/TaskList';
 import TaskPanel from '@/shared/layout/TaskPanel';
@@ -128,9 +128,7 @@ const SettingsDialogLazy = React.lazy(
 );
 
 const AppContent: React.FC = () => {
-  // ---- AUTH TEMPORARILY DISABLED: removed AuthScreen, keep loading to wait for token ----
-  const { loading } = useAuth();
-  // if (!token) return <AuthScreen />; // temporarily disabled
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -140,6 +138,8 @@ const AppContent: React.FC = () => {
       </div>
     );
   }
+
+  if (!user) return <AuthScreen />;
 
   return (
     <WebhookProvider>

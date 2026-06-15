@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { randomUUID } from 'crypto';
-import { hashPassword, generateSalt } from '../../../../db.js';
+import { hashPassword, generateSalt, pool } from '../../../../db.js';
 import { authRepository } from './auth.repository.js';
 
 // Khong cho phep fallback neu thieu JWT_SECRET
@@ -129,7 +129,31 @@ export class AuthService {
     const now = new Date().toISOString();
 
     await authRepository.insertUser({ userId, email, hashedPw, salt, now });
-    await authRepository.seedDefaultProjects(userId, now);
+
+    // Nếu đây là user thực đầu tiên, migrate toàn bộ data từ default_user
+    const TABLES = ['tasks', 'knowleadge', 'diary', 'projects', 'folders', 'tags',
+                    'settings', 'ui_state', 'attachments', 'pomodoro_records',
+                    'api_keys', 'webhook_endpoints', 'webhook_subscribers'];
+    try {
+      const hasDefault = await pool.query(
+        `SELECT count(*)::int AS n FROM users WHERE id = 'default_user'`
+      );
+      if (hasDefault.rows[0].n > 0) {
+        for (const tbl of TABLES) {
+          await pool.query(
+            `UPDATE ${tbl} SET user_id = $1 WHERE user_id = 'default_user'`,
+            [userId]
+          ).catch(() => {}); // bảng không tồn tại hoặc thiếu cột → bỏ qua
+        }
+        await pool.query(`DELETE FROM users WHERE id = 'default_user'`);
+        console.log(`[auth] Migrated default_user data → ${email}`);
+      } else {
+        await authRepository.seedDefaultProjects(userId, now);
+      }
+    } catch (err) {
+      console.warn('[auth] Migration default_user failed:', err.message);
+      await authRepository.seedDefaultProjects(userId, now);
+    }
 
     const token = this.generateToken({ id: userId, email });
     return { token, user: { id: userId, email } };
