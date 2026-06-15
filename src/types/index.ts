@@ -282,6 +282,8 @@ export const DEFAULT_SETTINGS: Settings = {
     planned: true,
     events: true,
     completed: true,
+    knowledge: true,
+    diary: true,
     all: false,
     someday: false,
     'high-priority': false,

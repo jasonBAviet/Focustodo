@@ -53,6 +53,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     DEFAULT_SETTINGS,
   );
 
+  // Merge visibleViews so any new view added to DEFAULT_SETTINGS becomes visible
+  // for existing users whose stored settings predate the new view.
+  const mergedSettings: Settings = {
+    ...settings,
+    visibleViews: {
+      ...DEFAULT_SETTINGS.visibleViews,
+      ...settings.visibleViews,
+    },
+  };
+
   // UI state - no need to save to localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
@@ -60,15 +70,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Determine isDark from current settings
   const [isDark, setIsDark] = useState<boolean>(() =>
-    resolveIsDark(settings.darkMode),
+    resolveIsDark(settings.darkMode ?? DEFAULT_SETTINGS.darkMode),
   );
 
   // --------------------------------------------------------
   // Track darkMode changes from settings
   // --------------------------------------------------------
   useEffect(() => {
-    if (settings.darkMode !== 'auto') {
-      setIsDark(settings.darkMode === 'dark');
+    if (mergedSettings.darkMode !== 'auto') {
+      setIsDark(mergedSettings.darkMode === 'dark');
       return;
     }
 
@@ -111,7 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
   const value = useMemo<AppContextType>(
     () => ({
-      settings,
+      settings: mergedSettings,
       updateSettings,
       isDark,
       openModal,
@@ -121,7 +131,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       viewMode,
       setViewMode,
     }),
-    [settings, updateSettings, isDark, openModal, isReportOpen, viewMode, setViewMode],
+    [mergedSettings, updateSettings, isDark, openModal, isReportOpen, viewMode, setViewMode],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
