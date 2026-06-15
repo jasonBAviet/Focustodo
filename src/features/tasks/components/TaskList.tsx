@@ -120,6 +120,9 @@ const TaskList: React.FC = () => {
     } else if (activeView === 'project') {
       // Default in project view: by position (drag & drop order).
       result.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    } else {
+      // Default: newest first so a newly created task appears at the top.
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     return result;
