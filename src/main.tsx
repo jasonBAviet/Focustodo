@@ -23,9 +23,8 @@ if (!import.meta.env.DEV && 'serviceWorker' in navigator) {
   import('virtual:pwa-register').then(({ registerSW }) => {
     const updateSW = registerSW({
       onNeedRefresh() {
-        if (window.confirm('Co phien ban moi cua Focus Todo. Tai lai de cap nhat?')) {
-          updateSW(true);
-        }
+        // Tự động reload khi có version mới — dữ liệu an toàn vì sync DB/localStorage
+        updateSW(true);
       },
       onOfflineReady() {
         console.log('[PWA] Ung dung san sang hoat dong ngoai tuyen!');
