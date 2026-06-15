@@ -25,8 +25,8 @@ interface AppContextType {
   setOpenModal: (name: string | null) => void;
   isReportOpen: boolean;
   setIsReportOpen: (v: boolean) => void;
-  viewMode: 'list' | 'calendar';
-  setViewMode: (v: 'list' | 'calendar') => void;
+  viewMode: 'list' | 'calendar' | 'kg';
+  setViewMode: (v: 'list' | 'calendar' | 'kg') => void;
 }
 
 // ----------------------------------------------------------
@@ -56,7 +56,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // UI state - no need to save to localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar'>('focus-view-mode', 'list');
+  const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar' | 'kg'>('focus-view-mode', 'list');
 
   // Determine isDark from current settings
   const [isDark, setIsDark] = useState<boolean>(() =>

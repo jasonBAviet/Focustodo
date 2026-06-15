@@ -1,6 +1,27 @@
 import { taskService } from './task.service.js';
+import { getTaskKGData } from './task-graph.service.js';
 
 export class TaskController {
+  async getTaskKG(req, res) {
+    try {
+      const userId = req.user.id;
+      const { projectId, priority, completed, dueDate } = req.query;
+
+      const filters = {
+        projectId,
+        priority,
+        completed: completed !== undefined ? completed === 'true' : undefined,
+        dueDate,
+      };
+
+      const result = await getTaskKGData(userId, filters);
+      res.json(result);
+    } catch (err) {
+      console.error('[GET /api/tasks/kg]', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
   async getTasks(req, res) {
     try {
       const userId = req.user.id;

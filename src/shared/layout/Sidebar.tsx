@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
+import { useDiaryContext } from '@/features/diary/DiaryContext';
 import { useAppContext } from '@/core/contexts/AppContext';
 import type { ViewType, Project, Folder } from '@/types';
 import { getRootFolders, getChildFolders } from '@/utils/folderUtils';
@@ -50,6 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
     setActiveFolderId,
   } = useTaskContext();
   const { knowledges } = useKnowledgeContext();
+  const { diaries } = useDiaryContext();
 
   const normalTasks = tasks;
   const { settings, setOpenModal } = useAppContext();
@@ -233,7 +235,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         {visibleViews.map((view) => {
           const isActive =
             activeView === view.id && activeProjectId === null;
-          const { count, time } = getViewStats(tasks, knowledges, normalTasks, view.id, settings);
+          const { count, time } = getViewStats(tasks, knowledges, diaries, normalTasks, view.id, settings);
           return (
             <div
               key={view.id}

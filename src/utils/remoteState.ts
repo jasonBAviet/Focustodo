@@ -1,4 +1,4 @@
-import type { Project, Task, Knowledge, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
+import type { Project, Task, Knowledge, Diary, Folder, Tag, ViewType, Settings, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
 import { getApiBaseUrl } from '@/utils/capacitorConfig';
 import { loadTokenSync } from '@/utils/secureStorage';
 
@@ -66,6 +66,7 @@ export async function completeTaskRemote(id: string, completed = true): Promise<
 export interface DeletedIds {
   tasks: string[];
   knowledges: string[];
+  diaries: string[];
   projects: string[];
   folders: string[];
   tags: string[];
@@ -76,6 +77,7 @@ export interface DeletedIds {
 export interface RemoteAppState {
   tasks: Task[];
   knowledges: Knowledge[];
+  diaries: Diary[];
   projects: Project[];
   folders: Folder[];
   tags: Tag[];
@@ -95,6 +97,7 @@ export interface ChangesResponse {
   changes: {
     tasks: Task[];
     knowledges: Knowledge[];
+    diaries: Diary[];
     projects: Project[];
     folders: Folder[];
     tags: Tag[];
@@ -104,6 +107,7 @@ export interface ChangesResponse {
   deletedIds: {
     tasks: string[];
     knowledges: string[];
+    diaries: string[];
     projects: string[];
     folders: string[];
     tags: string[];
@@ -134,6 +138,7 @@ export async function loadRemoteAppState(): Promise<RemoteAppState | null> {
   return {
     tasks: state.tasks ?? [],
     knowledges: state.knowledges ?? [],
+    diaries: state.diaries ?? [],
     projects: state.projects ?? [],
     folders: state.folders ?? [],
     tags: state.tags ?? [],

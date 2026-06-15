@@ -12,8 +12,9 @@ import React from 'react';
 function parseInline(text: string): React.ReactNode[] {
   if (!text) return [];
 
-  // Capture bold (**), italic (*), and key phrases (case-insensitive, with accents)
-  const regex = /(\*\*.*?\*\*|\*.*?\*|Luận điểm chính|Dẫn chứng|Kết luận|luận điểm chính|dẫn chứng|kết luận)/gi;
+  // [^*]+ instead of .*? prevents italic pattern from consuming ** bold markers.
+  // /gi covers all case variants so duplicate lowercase keywords are not needed.
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|Luận điểm chính|Dẫn chứng|Kết luận)/gi;
   const parts = text.split(regex);
 
   return parts.map((part, idx) => {

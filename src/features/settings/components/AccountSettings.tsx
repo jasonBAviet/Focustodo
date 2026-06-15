@@ -81,7 +81,7 @@ const AccountSettings: React.FC = () => {
   const { settings } = useAppContext();
   const { user, logout } = useAuth();
   const {
-    tasks, projects, folders, tags, pomodoroSessions, pomodoroRecords, attachments,
+    tasks, knowledges, diaries, projects, folders, tags, pomodoroSessions, pomodoroRecords, attachments,
     selectedTaskId, activeView, activeProjectId, searchQuery,
   } = useTaskContext();
 
@@ -123,7 +123,7 @@ const AccountSettings: React.FC = () => {
     setBusy('save');
     setMessage(null);
     const state: RemoteAppState = {
-      tasks, projects, folders, tags, settings, pomodoroSessions, pomodoroRecords, attachments,
+      tasks, knowledges, diaries, projects, folders, tags, settings, pomodoroSessions, pomodoroRecords, attachments,
       selectedTaskId, activeView, activeProjectId, searchQuery,
     };
     try {
@@ -233,6 +233,8 @@ const AccountSettings: React.FC = () => {
             <div style={rowStyle}><span>Projects</span><span style={{ color: 'var(--text-primary)' }}>{projects.length}</span></div>
             <div style={rowStyle}><span>Tags</span><span style={{ color: 'var(--text-primary)' }}>{tags.length}</span></div>
             <div style={rowStyle}><span>Folders</span><span style={{ color: 'var(--text-primary)' }}>{folders.length}</span></div>
+            <div style={rowStyle}><span>Kiến thức</span><span style={{ color: 'var(--text-primary)' }}>{knowledges.length}</span></div>
+            <div style={rowStyle}><span>Nhật ký</span><span style={{ color: 'var(--text-primary)' }}>{diaries.length}</span></div>
             <div style={rowStyle}><span>Pomodoro sessions</span><span style={{ color: 'var(--text-primary)' }}>{pomodoroSessions.length}</span></div>
             <div style={{ ...rowStyle, borderBottom: 'none' }}><span>Pomodoro runs</span><span style={{ color: 'var(--text-primary)' }}>{pomodoroRecords.length}</span></div>
           </div>

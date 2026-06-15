@@ -1,4 +1,4 @@
-import type { Task, Knowledge, Project, Folder, ViewType, Settings } from '@/types';
+import type { Task, Knowledge, Diary, Project, Folder, ViewType, Settings } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { getDescendantFolderIds } from '@/utils/folderUtils';
 
@@ -59,8 +59,9 @@ const hasValidDueDate = (task: Task) =>
   typeof task.dueDate === 'string' && task.dueDate.trim() !== '';
 
 export const getViewStats = (
-  tasks: Task[],
+  _tasks: Task[],
   knowledges: Knowledge[],
+  diaries: Diary[],
   normalTasks: Task[],
   viewId: ViewType,
   settings: Settings
@@ -94,6 +95,8 @@ export const getViewStats = (
       return getTasksStats(normalTasks.filter((t) => !t.completed && hasValidDueDate(t)), settings);
     case 'knowledge':
       return { count: knowledges.length, time: 0 };
+    case 'diary':
+      return { count: diaries.length, time: 0 };
     case 'unassigned':
       return getTasksStats(
         normalTasks.filter((t) => !t.completed && !t.projectId && (t.tags ?? []).length === 0),

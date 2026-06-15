@@ -22,6 +22,7 @@ export type ViewType =
   | 'tag'
   | 'folder'
   | 'knowledge'
+  | 'diary'
   | 'unassigned';
 
 export interface Attachment {
@@ -89,6 +90,31 @@ export interface Knowledge {
   completedAt: string | null;
   updatedAt: string;
   attachments?: Attachment[];
+}
+
+export interface Diary {
+  id: string;
+  title: string;
+  projectId: string | null;
+  priority: Priority;
+  dueDate: string | null;
+  reminder: string | null;
+  repeat: RepeatType;
+  repeatCustom: string | null;
+  note: string;
+  subtasks: Subtask[];
+  pomodoroEstimate: number;
+  pomodoroCompleted: number;
+  totalFocusTime: number; // in minutes
+  completed: boolean;
+  flagged: boolean;
+  tags: string[];
+  position?: number;
+  createdAt: string;
+  completedAt: string | null;
+  updatedAt: string;
+  attachments?: Attachment[];
+  taskId?: string | null;
 }
 
 export interface Project {
@@ -192,6 +218,7 @@ export interface Settings {
 export interface AppState {
   tasks: Task[];
   knowledges: Knowledge[];
+  diaries: Diary[];
   projects: Project[];
   folders: Folder[];
   tags: Tag[];

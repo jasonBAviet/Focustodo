@@ -43,6 +43,7 @@ export interface UseTaskSyncParams {
   token?: string | null;
   tasks: any[]; setTasks: any;
   knowledges: any[]; setKnowledges: any;
+  diaries: any[]; setDiaries: any;
   projects: any[]; setProjects: any;
   folders: any[]; setFolders: any;
   tags: any[]; setTags: any;
@@ -57,7 +58,7 @@ export interface UseTaskSyncParams {
 }
 
 export function useTaskSync({
-  token, tasks, setTasks, knowledges, setKnowledges, projects, setProjects, folders, setFolders, tags, setTags,
+  token, tasks, setTasks, knowledges, setKnowledges, diaries, setDiaries, projects, setProjects, folders, setFolders, tags, setTags,
   pomodoroSessions, setPomodoroSessions, pomodoroRecords, setPomodoroRecords,
   attachments, setAttachments, selectedTaskId, setSelectedTaskId,
   activeView, activeProjectId, searchQuery, settings, updateSettings, deletedIdsRef,
@@ -77,6 +78,7 @@ export function useTaskSync({
   const applyRemoteState = (remoteState: RemoteAppState) => {
     setTasks(remoteState.tasks);
     setKnowledges(remoteState.knowledges || []);
+    setDiaries(remoteState.diaries || []);
     setProjects(remoteState.projects.length > 0 ? remoteState.projects : []);
     setFolders(remoteState.folders || []);
     setTags(remoteState.tags || []);
@@ -149,6 +151,7 @@ export function useTaskSync({
     const sentDeleted: DeletedIds = {
       tasks: [...deletedIdsRef.current.tasks],
       knowledges: [...deletedIdsRef.current.knowledges],
+      diaries: [...deletedIdsRef.current.diaries],
       projects: [...deletedIdsRef.current.projects],
       folders: [...deletedIdsRef.current.folders],
       tags: [...deletedIdsRef.current.tags],
@@ -156,7 +159,7 @@ export function useTaskSync({
       pomodoroRecords: [...deletedIdsRef.current.pomodoroRecords],
     };
     const currentState: RemoteAppState = {
-      tasks, knowledges, projects, folders, tags, settings, pomodoroSessions,
+      tasks, knowledges, diaries, projects, folders, tags, settings, pomodoroSessions,
       pomodoroRecords, attachments, selectedTaskId, activeView,
       activeProjectId, searchQuery, deletedIds: sentDeleted,
     };
@@ -170,6 +173,7 @@ export function useTaskSync({
           const drop = (queue: string[], sent: string[]) => queue.filter((id) => !sent.includes(id));
           deletedIdsRef.current.tasks = drop(deletedIdsRef.current.tasks, sentDeleted.tasks);
           deletedIdsRef.current.knowledges = drop(deletedIdsRef.current.knowledges, sentDeleted.knowledges);
+          deletedIdsRef.current.diaries = drop(deletedIdsRef.current.diaries, sentDeleted.diaries);
           deletedIdsRef.current.projects = drop(deletedIdsRef.current.projects, sentDeleted.projects);
           deletedIdsRef.current.folders = drop(deletedIdsRef.current.folders, sentDeleted.folders);
           deletedIdsRef.current.tags = drop(deletedIdsRef.current.tags, sentDeleted.tags);
@@ -188,7 +192,7 @@ export function useTaskSync({
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [tasks, knowledges, projects, folders, tags, settings, pomodoroSessions, pomodoroRecords, attachments, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
+  }, [tasks, knowledges, diaries, projects, folders, tags, settings, pomodoroSessions, pomodoroRecords, attachments, selectedTaskId, activeView, activeProjectId, searchQuery, remoteSyncEnabled]);
 
   useEffect(() => {
     if (!remoteSyncEnabled) return;
@@ -201,6 +205,7 @@ export function useTaskSync({
         const skip = selectedTaskIdRef.current;
         setTasks((prev: any) => mergeList(prev, res.changes.tasks, res.deletedIds.tasks, pd.tasks, skip));
         setKnowledges((prev: any) => mergeList(prev, res.changes.knowledges || [], res.deletedIds.knowledges || [], pd.knowledges, skip));
+        setDiaries((prev: any) => mergeList(prev, res.changes.diaries || [], res.deletedIds.diaries || [], pd.diaries, null));
         setProjects((prev: any) => mergeList(prev, res.changes.projects, res.deletedIds.projects, pd.projects, null));
         setFolders((prev: any) => mergeList(prev, res.changes.folders, res.deletedIds.folders, pd.folders, null));
         setTags((prev: any) => mergeList(prev, res.changes.tags, res.deletedIds.tags, pd.tags, null));
@@ -225,5 +230,5 @@ export function useTaskSync({
       window.removeEventListener('focus', onFocus);
       if (es) es.close();
     };
-  }, [remoteSyncEnabled, setTasks, setKnowledges, setProjects, setFolders, setTags, setAttachments, setPomodoroRecords]);
+  }, [remoteSyncEnabled, setTasks, setKnowledges, setDiaries, setProjects, setFolders, setTags, setAttachments, setPomodoroRecords]);
 }

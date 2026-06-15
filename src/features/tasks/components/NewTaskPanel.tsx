@@ -20,7 +20,7 @@ interface NewTaskPanelProps {
 
 const NewTaskPanel: React.FC<NewTaskPanelProps> = ({ onClose }) => {
   const {
-    activeView, activeProjectId, projects, folders, tags, addTag,
+    projects, folders, tags, addTag,
     newTaskDraft, updateNewTaskDraft, submitNewTask,
   } = useTaskContext();
 

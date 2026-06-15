@@ -47,7 +47,6 @@ const StatCards: React.FC<StatCardsProps> = ({
     };
 
     const filteredTasks = tasks.filter((t) => applyCommonFilters(t));
-    const filteredAllItems = [...tasks, ...knowledges].filter(applyCommonFilters);
 
     const filteredTaskIds = new Set(filteredTasks.map((t) => t.id));
 

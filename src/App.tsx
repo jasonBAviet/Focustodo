@@ -5,11 +5,13 @@ import { WebhookProvider, useWebhookContext } from '@/core/contexts/WebhookConte
 import { PomodoroProvider } from '@/features/pomodoro/PomodoroContext';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { KnowledgeProvider } from '@/features/knowledge/KnowledgeContext';
+import { DiaryProvider } from '@/features/diary/DiaryContext';
 // import AuthScreen from '@/features/auth/components/AuthScreen'; // temporarily disabled
 import Sidebar from '@/shared/layout/Sidebar';
 import TaskList from '@/features/tasks/components/TaskList';
 import TaskPanel from '@/shared/layout/TaskPanel';
 import KnowledgeHub from '@/features/knowledge/components/KnowledgeHub';
+import DiaryHub from '@/features/diary/components/DiaryHub';
 import AddProjectDialog from '@/shared/components/AddProjectDialog';
 import AddFolderDialog from '@/shared/components/AddFolderDialog';
 import AddTagDialog from '@/shared/components/AddTagDialog';
@@ -27,7 +29,7 @@ import { isNativeMobile } from '@/utils/capacitorConfig';
 import './styles/index.css';
 
 const AppInner: React.FC = () => {
-  const { openModal, settings } = useAppContext();
+  const { openModal, settings, viewMode, setViewMode } = useAppContext();
   const { tasks, activeView, activeProjectId, setActiveView, setActiveProjectId, selectedTaskId, newTaskPanelOpen } = useTaskContext();
   const [showReport, setShowReport] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -49,9 +51,11 @@ const AppInner: React.FC = () => {
     activeView,
     activeProjectId,
     showReport,
+    viewMode,
     setActiveView,
     setActiveProjectId,
-    setShowReport
+    setShowReport,
+    setViewMode,
   });
 
   // Swipe gesture to open/close sidebar on touch devices
@@ -63,7 +67,7 @@ const AppInner: React.FC = () => {
 
   const handleShowReport = () => setShowReport((v) => !v);
 
-  const panelVisible = !showReport && activeView !== 'knowledge' && (!!selectedTaskId || newTaskPanelOpen);
+  const panelVisible = !showReport && activeView !== 'knowledge' && viewMode !== 'kg' && (!!selectedTaskId || newTaskPanelOpen);
 
   return (
     <div className={`app-layout ${!panelVisible ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
@@ -88,12 +92,14 @@ const AppInner: React.FC = () => {
           <ReportPage onClose={handleShowReport} />
         ) : activeView === 'knowledge' ? (
           <KnowledgeHub />
+        ) : activeView === 'diary' ? (
+          <DiaryHub />
         ) : (
           <TaskList />
         )}
       </main>
 
-      {activeView !== 'knowledge' && !showReport && <TaskPanel />}
+      {activeView !== 'knowledge' && viewMode !== 'kg' && !showReport && <TaskPanel />}
 
       <CommandPalette onToggleReport={handleShowReport} />
 
@@ -140,7 +146,9 @@ const AppContent: React.FC = () => {
       <TaskProvider>
         <PomodoroProvider>
           <KnowledgeProvider>
-            <AppInner />
+            <DiaryProvider>
+              <AppInner />
+            </DiaryProvider>
           </KnowledgeProvider>
         </PomodoroProvider>
       </TaskProvider>

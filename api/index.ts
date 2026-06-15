@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+// @ts-ignore
 import app from '../server.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {

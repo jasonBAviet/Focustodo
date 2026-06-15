@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { TaskGraphData, TaskGraphNode } from "../types";
+import { useEffect, useRef, useState } from "react";
+import type { TaskGraphData, TaskGraphNode } from "../types";
 import { useTaskD3Simulation } from "../hooks/useTaskD3Simulation";
 
 interface TaskKGRendererProps {
@@ -43,7 +43,7 @@ export function TaskKGRenderer({ data, loading, onNodeClick }: TaskKGRendererPro
     const isEmpty = data.nodes.length === 0;
 
     return (
-        <div ref={wrapperRef} className="relative h-[72vh] min-h-[560px] w-full">
+        <div ref={wrapperRef} className="relative h-[55vh] min-h-[400px] sm:h-[72vh] sm:min-h-[560px] w-full">
             {loading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm dark:bg-neutral-950/70">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-300 border-t-blue-600 dark:border-neutral-700 dark:border-t-blue-500" />

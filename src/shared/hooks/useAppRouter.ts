@@ -5,28 +5,31 @@ interface UseAppRouterProps {
   activeView: ViewType;
   activeProjectId: string | null;
   showReport: boolean;
+  viewMode: 'list' | 'calendar' | 'kg';
   setActiveView: (view: ViewType) => void;
   setActiveProjectId: (id: string | null) => void;
   setShowReport: (v: boolean) => void;
+  setViewMode: (mode: 'list' | 'calendar' | 'kg') => void;
 }
 
 export function useAppRouter({
   activeView,
   activeProjectId,
   showReport,
+  viewMode,
   setActiveView,
   setActiveProjectId,
   setShowReport,
+  setViewMode,
 }: UseAppRouterProps) {
-  // Keep setters in ref so popstate effect has deps [] (don't re-run
-  // when setter identity changes) -> avoid continuous re-run causing loop.
-  const settersRef = useRef({ setActiveView, setActiveProjectId, setShowReport });
-  settersRef.current = { setActiveView, setActiveProjectId, setShowReport };
+  // Keep setters in ref so popstate effect has deps []
+  const settersRef = useRef({ setActiveView, setActiveProjectId, setShowReport, setViewMode });
+  settersRef.current = { setActiveView, setActiveProjectId, setShowReport, setViewMode };
 
   // 1. URL -> State: run once on mount (deep link) + listen to back/forward.
   useEffect(() => {
     const applyPathToState = () => {
-      const path = window.location.pathname.replace(/\/$/, '') || '/';
+      let path = window.location.pathname.replace(/\/$/, '') || '/';
       const setters = settersRef.current;
 
       // At root '/', keep state from DB/localStorage.
@@ -38,6 +41,18 @@ export function useAppRouter({
       }
 
       setters.setShowReport(false);
+
+      // Determine viewMode from suffix
+      let mode: 'list' | 'calendar' | 'kg' = 'list';
+      if (path.endsWith('/calendar')) {
+        mode = 'calendar';
+        path = path.slice(0, -9); // remove '/calendar'
+      } else if (path.endsWith('/kg')) {
+        mode = 'kg';
+        path = path.slice(0, -3); // remove '/kg'
+      }
+      setters.setViewMode(mode);
+
       if (path.startsWith('/project/')) {
         const pid = path.replace('/project/', '');
         setters.setActiveView('project');
@@ -57,7 +72,7 @@ export function useAppRouter({
 
   const isInitialMount = useRef(true);
 
-  // 2. State -> URL: push URL when state changes (sidebar click...).
+  // 2. State -> URL: push URL when state changes (sidebar click, view mode change...).
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -73,6 +88,13 @@ export function useAppRouter({
       targetPath = `/${activeView}`;
     }
 
+    // Add view mode suffix if not list
+    if (viewMode === 'calendar') {
+      targetPath += '/calendar';
+    } else if (viewMode === 'kg') {
+      targetPath += '/kg';
+    }
+
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     if (currentPath !== targetPath) {
       if (currentPath === '/' && targetPath === '/today') {
@@ -81,5 +103,5 @@ export function useAppRouter({
         window.history.pushState(null, '', targetPath);
       }
     }
-  }, [activeView, activeProjectId, showReport]);
+  }, [activeView, activeProjectId, showReport, viewMode]);
 }

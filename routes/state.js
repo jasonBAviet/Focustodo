@@ -1,166 +1,21 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { authenticateUser } from '../src/backend/modules/auth/auth.middleware.js';
+import {
+  rowToTask,
+  rowToKnowledge,
+  rowToDiary,
+  rowToProject,
+  rowToFolder,
+  rowToTag,
+  rowToSettings,
+  rowToSession,
+  rowToAttachment,
+  rowToPomodoroRecord,
+} from './state-mappers.js';
 
 const router = Router();
 
-function rowToTask(r) {
-  return {
-    id: r.id,
-    title: r.title ?? '',
-    projectId: r.project_id ?? null,
-    priority: r.priority ?? 'none',
-    dueDate: r.due_date ?? null,
-    reminder: r.reminder ?? null,
-    repeat: r.repeat ?? 'none',
-    repeatCustom: r.repeat_custom ?? null,
-    note: r.note ?? '',
-    subtasks: r.subtasks ?? [],
-    pomodoroEstimate: r.pomodoro_estimate ?? 1,
-    pomodoroCompleted: r.pomodoro_completed ?? 0,
-    totalFocusTime: r.total_focus_time ?? 0,
-    completed: r.completed ?? false,
-    flagged: r.flagged ?? false,
-    tags: r.tags ?? [],
-    position: r.position ?? 0,
-    createdAt: r.created_at ?? null,
-    completedAt: r.completed_at ?? null,
-    updatedAt: r.updated_at ?? null,
-    updatedAt: r.updated_at ?? null,
-  };
-}
-
-function rowToKnowledge(r) {
-  return {
-    id: r.id,
-    title: r.title ?? '',
-    projectId: r.project_id ?? null,
-    priority: r.priority ?? 'none',
-    dueDate: r.due_date ?? null,
-    reminder: r.reminder ?? null,
-    repeat: r.repeat ?? 'none',
-    repeatCustom: r.repeat_custom ?? null,
-    note: r.note ?? '',
-    subtasks: r.subtasks ?? [],
-    pomodoroEstimate: r.pomodoro_estimate ?? 1,
-    pomodoroCompleted: r.pomodoro_completed ?? 0,
-    totalFocusTime: r.total_focus_time ?? 0,
-    completed: r.completed ?? false,
-    flagged: r.flagged ?? false,
-    tags: r.tags ?? [],
-    position: r.position ?? 0,
-    createdAt: r.created_at ?? null,
-    completedAt: r.completed_at ?? null,
-    updatedAt: r.updated_at ?? null,
-  };
-}
-
-function rowToProject(r) {
-  return {
-    id: r.id,
-    name: r.name ?? '',
-    color: r.color ?? '#7ec8e3',
-    isVisible: r.is_visible ?? true,
-    taskCount: r.task_count ?? 0,
-    folderId: r.folder_id ?? null,
-    position: r.position ?? 0,
-    createdAt: r.created_at ?? null,
-    updatedAt: r.updated_at ?? null,
-  };
-}
-
-function rowToFolder(r) {
-  return {
-    id: r.id,
-    name: r.name ?? '',
-    color: r.color ?? '#7ec8e3',
-    projectIds: r.project_ids ?? [],
-    parentId: r.parent_id ?? null,
-    position: r.position ?? 0,
-    isVisible: r.is_visible ?? true,
-    createdAt: r.created_at ?? null,
-    updatedAt: r.updated_at ?? null,
-  };
-}
-
-function rowToTag(r) {
-  return {
-    id: r.id,
-    name: r.name ?? '',
-    color: r.color ?? '#7ec8e3',
-    projectId: r.project_id ?? null,
-    folderId: r.folder_id ?? null,
-    isVisible: r.is_visible ?? true,
-    createdAt: r.created_at ?? null,
-    updatedAt: r.updated_at ?? null,
-  };
-}
-
-function rowToSettings(r) {
-  return {
-    pomodoroLength: r.pomodoro_length ?? 25,
-    shortBreakLength: r.short_break_length ?? 5,
-    longBreakLength: r.long_break_length ?? 15,
-    longBreakAfter: r.long_break_after ?? 4,
-    autoStartNextPomodoro: r.auto_start_next_pomodoro ?? false,
-    autoStartBreak: r.auto_start_break ?? false,
-    disableBreak: r.disable_break ?? false,
-    alarmSound: r.alarm_sound ?? true,
-    darkMode: r.dark_mode ?? 'dark',
-    themeWallpaper: r.theme_wallpaper ?? 'dark-forest',
-    accentColor: r.accent_color ?? '#f25f5c',
-    webhookUrl: r.webhook_url ?? '',
-    webhookEnabled: r.webhook_enabled ?? false,
-    externalApiUrl: r.external_api_url ?? '',
-    externalApiEnabled: r.external_api_enabled ?? false,
-    dailyFocusGoalHours: r.daily_focus_goal_hours != null ? Number(r.daily_focus_goal_hours) : 3,
-    visibleViews: r.visible_views ?? {},
-    calendarScale: r.calendar_scale ?? 'month',
-    calendarDateField: r.calendar_date_field ?? 'dueDate',
-  };
-}
-
-function rowToSession(r) {
-  return {
-    id: r.id,
-    taskId: r.task_id ?? null,
-    taskTitle: r.task_title ?? null,
-    type: r.type ?? 'focus',
-    duration: r.duration ?? 0,
-    startTime: r.start_time ?? null,
-    endTime: r.end_time ?? null,
-    completed: r.completed ?? true,
-  };
-}
-
-function rowToAttachment(r) {
-  return {
-    id: r.id,
-    taskId: r.task_id,
-    fileName: r.file_name,
-    fileUrl: r.file_url,
-    fileSize: r.file_size,
-    mimeType: r.mime_type,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  };
-}
-
-function rowToPomodoroRecord(r) {
-  return {
-    id: r.id,
-    taskId: r.task_id ?? null,
-    taskTitle: r.task_title ?? null,
-    startTime: r.start_time,
-    endTime: r.end_time ?? null,
-    breakStart: r.break_start ?? null,
-    breakEnd: r.break_end ?? null,
-    completed: r.completed ?? false,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    isDeleted: r.is_deleted ?? false,
-  };
-}
 
 async function reconcileTable(client, table, rows, columns, toValues, lwwColumn, userId) {
   const sortedRows = [...rows].sort((a, b) => String(a.id).localeCompare(String(b.id)));
@@ -232,6 +87,22 @@ async function persistState(incoming, userId) {
     );
 
     await reconcileTable(
+      client, 'diary', incoming.diaries ?? [],
+      ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
+        'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
+        'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at', 'task_id'],
+      (t) => [
+        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
+        t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
+        JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
+        Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
+        JSON.stringify(t.tags ?? []), t.position ?? 0, t.createdAt ?? null, t.completedAt ?? null,
+        t.updatedAt ?? t.createdAt ?? nowIso, t.taskId ?? null,
+      ],
+      'updated_at', userId
+    );
+
+    await reconcileTable(
       client, 'projects', incoming.projects ?? [],
       ['id', 'name', 'color', 'is_visible', 'task_count', 'folder_id', 'position', 'created_at', 'updated_at'],
       (p) => [
@@ -297,6 +168,7 @@ async function persistState(incoming, userId) {
     const del = incoming.deletedIds ?? {};
     await applyDeletedIds(client, 'tasks', del.tasks, userId);
     await applyDeletedIds(client, 'knowleadge', del.knowledges, userId);
+    await applyDeletedIds(client, 'diary', del.diaries, userId);
     await applyDeletedIds(client, 'projects', del.projects, userId);
     await applyDeletedIds(client, 'folders', del.folders, userId);
     await applyDeletedIds(client, 'tags', del.tags, userId);
@@ -377,9 +249,10 @@ async function persistState(incoming, userId) {
 router.get('/', authenticateUser, async (req, res) => {
   try {
     const userId = req.user.id;
-    const [tasks, knowledges, projects, folders, tags, settings, ui, sessions, attachments, pomodoroRecords] = await Promise.all([
+    const [tasks, knowledges, diaries, projects, folders, tags, settings, ui, sessions, attachments, pomodoroRecords] = await Promise.all([
       pool.query('SELECT * FROM tasks WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at DESC', [userId]),
       pool.query('SELECT * FROM knowleadge WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at DESC', [userId]),
+      pool.query('SELECT * FROM diary WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at DESC', [userId]),
       pool.query('SELECT * FROM projects WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at ASC', [userId]),
       pool.query('SELECT * FROM folders WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY position ASC, created_at ASC', [userId]),
       pool.query('SELECT * FROM tags WHERE (is_deleted = false OR is_deleted IS NULL) AND user_id = $1 ORDER BY created_at ASC', [userId]),
@@ -395,6 +268,7 @@ router.get('/', authenticateUser, async (req, res) => {
     const state = {
       tasks: tasks.rows.map(rowToTask),
       knowledges: knowledges.rows.map(rowToKnowledge),
+      diaries: diaries.rows.map(rowToDiary),
       projects: projects.rows.map(rowToProject),
       folders: folders.rows.map(rowToFolder),
       tags: tags.rows.map(rowToTag),

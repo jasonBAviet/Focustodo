@@ -4,43 +4,46 @@ import KnowledgeList from '@/features/knowledge/components/KnowledgeList';
 import KnowledgeDetail from '@/features/knowledge/components/KnowledgeDetail';
 
 const KnowledgeHub: React.FC = () => {
-  const { knowledges, addKnowledge, updateKnowledge } = useKnowledgeContext();
+  const { knowledges, addKnowledge, updateKnowledge, setSelectedKnowledgeId } = useKnowledgeContext();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Mobile master-detail: the detail pane is a slide-over shown only after the
   // user taps a note (on desktop this flag is inert — no effect outside the
   // mobile media query).
   const [detailOpenMobile, setDetailOpenMobile] = useState(false);
 
-  // Lọc toàn bộ danh sách kiến thức từ Context
+  // Keeps both local state and context in sync so siblings can read selectedKnowledgeId
+  const selectNote = (id: string | null) => {
+    setSelectedId(id);
+    setSelectedKnowledgeId(id);
+  };
+
   // Tự động chọn ghi chú đầu tiên nếu chưa chọn gì
   useEffect(() => {
     if (knowledges.length > 0 && !selectedId) {
-      // Nếu có danh sách và chưa chọn id nào, chọn cái đầu tiên
-      setSelectedId(knowledges[0].id);
+      selectNote(knowledges[0].id);
     } else if (knowledges.length === 0) {
-      setSelectedId(null);
+      selectNote(null);
     }
-  }, [knowledges, selectedId]);
+  }, [knowledges, selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Đảm bảo selectedId hợp lệ (nếu item bị xoá)
   const currentKnowledge = knowledges.find((k) => k.id === selectedId);
   const activeKnowledge = currentKnowledge || (knowledges.length > 0 ? knowledges[0] : null);
 
   const handleAddKnowledge = () => {
-    const template = `Kết luận: 
+    const template = `Kết luận:
 
 Luận điểm chính:
-• 
-• 
-• 
+•
+•
+•
 
 Dẫn chứng:
 - `;
-    // Gọi hàm tạo knowledge mới
     const newNote = addKnowledge('Ghi chú kiến thức mới', null, 'none');
     if (newNote) {
       updateKnowledge(newNote.id, { note: template });
-      setSelectedId(newNote.id);
+      selectNote(newNote.id);
       setDetailOpenMobile(true);
     }
   };
@@ -52,7 +55,7 @@ Dẫn chứng:
         <KnowledgeList
           knowledges={knowledges}
           selectedId={activeKnowledge ? activeKnowledge.id : null}
-          onSelect={(id) => { setSelectedId(id); setDetailOpenMobile(true); }}
+          onSelect={(id) => { selectNote(id); setDetailOpenMobile(true); }}
           onAdd={handleAddKnowledge}
         />
       </div>

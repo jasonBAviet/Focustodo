@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import TaskDetail from '@/features/tasks/components/TaskDetail';
 import TagPicker from '@/features/tasks/components/TagPicker';
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import NewTaskPanel from '@/features/tasks/components/NewTaskPanel';
 import { getVisibleTags } from '@/utils/tagScope';
 
@@ -19,7 +18,6 @@ const TaskPanel: React.FC = () => {
   const [hasResized, setHasResized] = useState(false);
   const resizeRef = useRef(false);
   const panelRef = useRef<HTMLElement>(null);
-  const isMobile = useIsMobile();
 
   // Existing task editing state
   const [editingTitle, setEditingTitle] = useState(false);

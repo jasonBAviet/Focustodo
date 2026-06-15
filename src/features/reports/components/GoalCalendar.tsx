@@ -4,7 +4,6 @@
 // ============================================================
 import React, { useMemo, useState } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { dateUtils } from '@/utils/dateUtils';
 import type { PomodoroSession } from '@/types';
 
@@ -71,7 +70,6 @@ const GoalCalendar: React.FC<GoalCalendarProps> = ({
   accentColor = '#f25f5c',
 }) => {
   const { pomodoroSessions } = useTaskContext();
-  const isMobile = useIsMobile();
   const today = new Date();
 
   const [viewYear, setViewYear] = useState(today.getFullYear());

@@ -95,7 +95,7 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
     series: [
       {
         type: 'bar',
-        data: hoursData.map((mins, i) => ({
+        data: hoursData.map((mins) => ({
           value: mins,
           itemStyle: {
             borderRadius: [4, 4, 0, 0],

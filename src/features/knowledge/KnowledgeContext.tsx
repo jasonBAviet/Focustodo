@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useState } from 'react';
+import React, { createContext, useContext, useCallback, useState, useMemo } from 'react';
 import type { Knowledge, Priority } from '@/types';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import { uuid } from '@/utils/uuid';
@@ -68,17 +68,17 @@ export function KnowledgeProvider({ children }: { children: React.ReactNode }) {
     [setKnowledges, deletedIdsRef]
   );
 
+  const value = useMemo(() => ({
+    knowledges,
+    addKnowledge,
+    updateKnowledge,
+    deleteKnowledge,
+    selectedKnowledgeId,
+    setSelectedKnowledgeId,
+  }), [knowledges, addKnowledge, updateKnowledge, deleteKnowledge, selectedKnowledgeId]);
+
   return (
-    <KnowledgeContext.Provider
-      value={{
-        knowledges,
-        addKnowledge,
-        updateKnowledge,
-        deleteKnowledge,
-        selectedKnowledgeId,
-        setSelectedKnowledgeId,
-      }}
-    >
+    <KnowledgeContext.Provider value={value}>
       {children}
     </KnowledgeContext.Provider>
   );

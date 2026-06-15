@@ -1,11 +1,11 @@
 import { pool } from '../../../../db.js';
 import { randomUUID } from 'crypto';
 
-// Single source of truth for the table name — avoids grep-and-replace across all SQL strings
-const TABLE = 'knowleadge';
+// Single source of truth for the table name
+const TABLE = 'diary';
 
-export class KnowledgeRepository {
-  async getKnowledges(userId, filters) {
+export class DiaryRepository {
+  async getDiaries(userId, filters) {
     const conditions = ['user_id = $1', '(is_deleted = false OR is_deleted IS NULL)'];
     const params = [userId];
 
@@ -27,7 +27,6 @@ export class KnowledgeRepository {
     }
 
     const where = `WHERE ${conditions.join(' AND ')}`;
-    // Default limit/offset so callers that omit them never send LIMIT NULL to Postgres
     const limitVal = filters.limit ?? 50;
     const offsetVal = filters.offset ?? 0;
 
@@ -50,8 +49,7 @@ export class KnowledgeRepository {
     };
   }
 
-  // client param lets callers thread a transaction connection through
-  async getKnowledgeById(id, userId, client = null) {
+  async getDiaryById(id, userId, client = null) {
     const db = client || pool;
     const result = await db.query(
       `SELECT * FROM ${TABLE} WHERE id = $1 AND user_id = $2 AND (is_deleted = false OR is_deleted IS NULL)`,
@@ -65,7 +63,7 @@ export class KnowledgeRepository {
     return proj.rows[0];
   }
 
-  async getNextKnowledgePosition(projectId, userId, client = null) {
+  async getNextDiaryPosition(projectId, userId, client = null) {
     const db = client || pool;
     const r = await db.query(
       `SELECT COALESCE(MAX(position), -1) + 1 AS pos FROM ${TABLE}
@@ -75,32 +73,32 @@ export class KnowledgeRepository {
     return r.rows[0].pos;
   }
 
-  async insertKnowledge(input, userId, client = null) {
+  async insertDiary(input, userId, client = null) {
     const db = client || pool;
     const now = new Date().toISOString();
     const projectId = input.projectId ?? null;
-    const position = input.position ?? (await this.getNextKnowledgePosition(projectId, userId, client));
+    const position = input.position ?? (await this.getNextDiaryPosition(projectId, userId, client));
     const id = input.id ?? randomUUID();
 
     const result = await db.query(
       `INSERT INTO ${TABLE}
          (id, title, project_id, priority, due_date, reminder, repeat, repeat_custom,
           note, subtasks, pomodoro_estimate, pomodoro_completed, total_focus_time,
-          completed, flagged, tags, position, created_at, completed_at, updated_at, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+          completed, flagged, tags, position, created_at, completed_at, updated_at, user_id, task_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        RETURNING *`,
       [
         id, String(input.title ?? '').trim(), projectId, input.priority ?? 'none',
         input.dueDate ?? null, input.reminder ?? null, input.repeat ?? 'none', input.repeatCustom ?? null,
         input.note ?? '', JSON.stringify(input.subtasks ?? []), input.pomodoroEstimate ?? 1,
         0, 0, false, input.flagged ?? false, JSON.stringify(input.tags ?? []),
-        position, now, null, now, userId
+        position, now, null, now, userId, input.taskId ?? null
       ]
     );
     return result.rows[0];
   }
 
-  async updateKnowledgeCompleteStatus(id, userId, completed, completedAt, now, client = null) {
+  async updateDiaryCompleteStatus(id, userId, completed, completedAt, now, client = null) {
     const db = client || pool;
     const result = await db.query(
       `UPDATE ${TABLE} SET completed = $1, completed_at = $2, updated_at = $3 WHERE id = $4 AND user_id = $5 RETURNING *`,
@@ -109,25 +107,27 @@ export class KnowledgeRepository {
     return result.rows[0];
   }
 
-  async updateKnowledge(id, userId, updated) {
+  async updateDiary(id, userId, updated) {
     const result = await pool.query(
       `UPDATE ${TABLE} SET
         title=$1, project_id=$2, priority=$3, due_date=$4, reminder=$5,
         repeat=$6, repeat_custom=$7, note=$8, subtasks=$9, pomodoro_estimate=$10,
-        completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16
-       WHERE id=$17 AND user_id=$18 RETURNING *`,
+        completed=$11, flagged=$12, tags=$13, position=$14, completed_at=$15, updated_at=$16,
+        task_id=$17
+       WHERE id=$18 AND user_id=$19 RETURNING *`,
       [
         updated.title, updated.project_id, updated.priority, updated.due_date,
         updated.reminder, updated.repeat, updated.repeat_custom, updated.note,
         updated.subtasks, updated.pomodoro_estimate, updated.completed,
         updated.flagged, updated.tags, updated.position, updated.completed_at, updated.updated_at,
+        updated.task_id ?? null,
         id, userId
       ]
     );
     return result.rows[0];
   }
 
-  async deleteKnowledge(id, userId, now) {
+  async deleteDiary(id, userId, now) {
     const result = await pool.query(
       `UPDATE ${TABLE} SET is_deleted = true, updated_at = $2 WHERE id = $1 AND user_id = $3 AND (is_deleted = false OR is_deleted IS NULL) RETURNING *`,
       [id, now, userId]
@@ -135,13 +135,12 @@ export class KnowledgeRepository {
     return result.rows[0];
   }
 
-  async reorderKnowledges(userId, orderedIds) {
+  async reorderDiaries(userId, orderedIds) {
     if (orderedIds.length === 0) return;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const now = new Date().toISOString();
-      // Single bulk UPDATE instead of N round-trips
       const valuePlaceholders = orderedIds.map((_, i) => `($${i + 3}::uuid, ${i}::int)`).join(', ');
       await client.query(
         `UPDATE ${TABLE} t
@@ -175,4 +174,4 @@ export class KnowledgeRepository {
   }
 }
 
-export const knowledgeRepository = new KnowledgeRepository();
+export const diaryRepository = new DiaryRepository();

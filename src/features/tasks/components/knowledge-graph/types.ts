@@ -1,4 +1,4 @@
-export type TaskNodeType = "folder" | "project" | "task" | "subtask";
+export type TaskNodeType = "folder" | "project" | "tag" | "task" | "subtask";
 
 export interface TaskGraphNode {
     id: string;

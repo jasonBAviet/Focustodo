@@ -7,6 +7,7 @@ export function createTasksRouter(pool, auth) {
   const requireWrite = auth.requireScope('tasks:write');
 
   router.get('/', requireRead, taskController.getTasks);
+  router.get('/kg', requireRead, taskController.getTaskKG);
   router.post('/reorder', requireWrite, taskController.reorderTasks);
   router.get('/:id', requireRead, taskController.getTaskById);
   router.post('/', requireWrite, taskController.createTask);

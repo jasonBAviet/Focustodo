@@ -145,7 +145,7 @@ export class KnowledgeService {
     webhookService.dispatchToAll(userId, eventType, data);
   }
 
-  async spawnNextOccurrence(knowledgeRow, userId) {
+  async spawnNextOccurrence(knowledgeRow, userId, client = null) {
     const repeat = knowledgeRow.repeat ?? 'none';
     if (repeat === 'none') return null;
     const dueDate = knowledgeRow.due_date ?? knowledgeRow.dueDate ?? null;
@@ -167,7 +167,7 @@ export class KnowledgeService {
       pomodoroEstimate: knowledgeRow.pomodoro_estimate ?? knowledgeRow.pomodoroEstimate ?? 1,
       flagged: false,
       tags: Array.isArray(tags) ? tags : [],
-    }, userId);
+    }, userId, client);
   }
 
   async getKnowledges(userId, filters) {
@@ -215,20 +215,18 @@ export class KnowledgeService {
 
   async completeKnowledge(id, userId, completed) {
     return await knowledgeRepository.runInTransaction(async (client) => {
-      // Temporary workaround for transaction: we pass pool inside repository by default.
-      // We will read knowledge normally
-      const cur = await knowledgeRepository.getKnowledgeById(id, userId);
+      const cur = await knowledgeRepository.getKnowledgeById(id, userId, client);
       if (!cur) throw new Error('Knowledge khong tim thay');
 
       const now = new Date().toISOString();
       const wasCompleted = cur.completed === true;
       const completedAt = completed ? cur.completed_at ?? now : null;
 
-      const upd = await knowledgeRepository.updateKnowledgeCompleteStatus(id, userId, completed, completedAt, now);
-      
+      const upd = await knowledgeRepository.updateKnowledgeCompleteStatus(id, userId, completed, completedAt, now, client);
+
       let spawned = null;
       if (completed && !wasCompleted && cur.repeat && cur.repeat !== 'none') {
-        spawned = await this.spawnNextOccurrence(cur, userId);
+        spawned = await this.spawnNextOccurrence(cur, userId, client);
       }
       const updatedKnowledge = rowToKnowledge(upd);
       if (completed && !wasCompleted) {

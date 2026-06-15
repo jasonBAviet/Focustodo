@@ -6,11 +6,13 @@ import {
     forceLink,
     forceManyBody,
     forceSimulation,
-    SimulationNodeDatum,
+    forceX,
+    forceY,
 } from "d3-force";
+import type { SimulationNodeDatum } from "d3-force";
 import { drag } from "d3-drag";
 import { zoom } from "d3-zoom";
-import { TaskGraphData, TaskGraphNode, TaskNodeType } from "../types";
+import type { TaskGraphData, TaskGraphNode, TaskNodeType } from "../types";
 
 interface UseTaskD3SimulationProps {
     data: TaskGraphData;
@@ -22,19 +24,21 @@ interface UseTaskD3SimulationProps {
 const TYPE_COLORS: Record<TaskNodeType, string> = {
     folder: "#1d4ed8",  // Xanh lam
     project: "#b45309", // Cam đậm
+    tag: "#8b5cf6",     // Tím (Tag)
     task: "#15803d",    // Xanh lá
     subtask: "#6b7280", // Xám
 };
 
-function getNodeRadius(type: TaskNodeType, childrenCount: number = 0): number {
+function getNodeRadius(type: TaskNodeType, childrenCount: number = 0, isMobile: boolean = false): number {
     const baseRadius = {
-        folder: 20,
-        project: 15,
-        task: 10,
-        subtask: 6,
+        folder: isMobile ? 14 : 20,
+        project: isMobile ? 11 : 15,
+        tag: isMobile ? 9 : 12,
+        task: isMobile ? 7 : 10,
+        subtask: isMobile ? 4.5 : 6,
     }[type];
     
-    return baseRadius + Math.min(childrenCount, 5) * 1.5;
+    return baseRadius + Math.min(childrenCount, 5) * (isMobile ? 1 : 1.5);
 }
 
 export function useTaskD3Simulation(
@@ -45,6 +49,8 @@ export function useTaskD3Simulation(
 
     useEffect(() => {
         if (!svgRef.current || data.nodes.length === 0 || width === 0 || height === 0) return;
+
+        const isMobile = width < 640;
 
         const svg = select(svgRef.current);
         svg.selectAll("*").remove(); // Xoá render cũ
@@ -60,7 +66,7 @@ export function useTaskD3Simulation(
             .data(data.links)
             .join("line")
             .attr("stroke", "rgba(150, 150, 150, 0.4)")
-            .attr("stroke-width", 1.5);
+            .attr("stroke-width", isMobile ? 1.0 : 1.5);
 
         // 2. Render Nodes
         const nodes = nodeLayer
@@ -76,23 +82,68 @@ export function useTaskD3Simulation(
 
         nodes
             .append("circle")
-            .attr("r", (d) => getNodeRadius(d.type, d.childrenCount))
-            .attr("fill", (d) => TYPE_COLORS[d.type])
-            .attr("stroke", "#ffffff")
-            .attr("stroke-width", 1.5);
+            .attr("r", (d) => getNodeRadius(d.type, d.childrenCount, isMobile))
+            .attr("fill", (d) => {
+                if (d.isCompleted) return "#d4d4d8"; // Muted gray cho task đã hoàn thành
+                return d.meta?.color || TYPE_COLORS[d.type];
+            })
+            .attr("stroke", (d) => (d.isCompleted ? "#a3a3a3" : "#ffffff"))
+            .attr("stroke-width", isMobile ? 1.0 : 1.5)
+            .attr("stroke-dasharray", (d) => (d.isCompleted ? "3,3" : "none"));
 
-        nodes
+        const textElements = nodes
             .append("text")
-            .text((d) => d.title)
             .attr("x", 0)
-            .attr("y", (d) => getNodeRadius(d.type, d.childrenCount) + 12)
+            .attr("y", (d) => getNodeRadius(d.type, d.childrenCount, isMobile) + (isMobile ? 9 : 12))
             .attr("text-anchor", "middle")
-            .attr("font-size", (d) => (d.type === 'folder' || d.type === 'project' ? 12 : 10))
-            .attr("font-weight", (d) => (d.type === 'folder' || d.type === 'project' ? "bold" : "normal"))
-            .attr("fill", "currentColor")
+            .attr("font-size", (d) => {
+                const isLarge = d.type === 'folder' || d.type === 'project' || d.type === 'tag';
+                if (isMobile) return isLarge ? 10 : 8;
+                return isLarge ? 12 : 10;
+            })
+            .attr("font-weight", (d) => (d.type === 'folder' || d.type === 'project' || d.type === 'tag' ? "bold" : "normal"))
+            .attr("fill", (d) => (d.isCompleted ? "#a3a3a3" : "currentColor"))
             .attr("class", "select-none fill-neutral-700 dark:fill-neutral-200")
-            // Thư mục và dự án hiển thị text luôn, task/subtask mờ đi trừ khi hover (tuỳ biến sau)
-            .attr("opacity", (d) => (d.type === 'folder' || d.type === 'project' ? 1 : 0.7));
+            // Gạch ngang tiêu đề của công việc đã hoàn thành
+            .attr("text-decoration", (d) => (d.isCompleted ? "line-through" : "none"))
+            // Giảm độ đậm/đậm mờ cho các node đã hoàn thành
+            .attr("opacity", (d) => {
+                if (d.isCompleted) return 0.35;
+                return (d.type === 'folder' || d.type === 'project' || d.type === 'tag' ? 1 : 0.7);
+            });
+
+        textElements.each(function(d: any) {
+            const el = select(this);
+            const title = d.title || "";
+            const maxLength = isMobile ? 12 : 16; // Trên di động chữ ngắn hơn sẽ ngắt dòng
+            
+            if (title.length <= maxLength) {
+                el.text(title);
+            } else {
+                // Tìm vị trí khoảng trắng gần giữa chuỗi nhất để ngắt dòng
+                const mid = Math.floor(title.length / 2);
+                let splitIdx = title.indexOf(" ", mid);
+                if (splitIdx === -1) {
+                    splitIdx = title.lastIndexOf(" ", mid);
+                }
+                if (splitIdx === -1) {
+                    splitIdx = mid; // Ngắt đôi ở giữa nếu không có khoảng trắng
+                }
+                
+                const line1 = title.substring(0, splitIdx).trim();
+                const line2 = title.substring(splitIdx).trim();
+                
+                el.append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", 0)
+                    .text(line1);
+                    
+                el.append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", isMobile ? 9 : 12) // Xuống dòng 9px trên mobile, 12px trên desktop
+                    .text(line2);
+            }
+        });
 
         nodes.append("title").text((d) => `${d.title} (${d.type})`);
 
@@ -103,14 +154,27 @@ export function useTaskD3Simulation(
                 forceLink(data.links)
                     .id((d: any) => d.id)
                     .distance((d: any) => {
-                        // Khoảng cách tuỳ thuộc vào loại link
-                        return 80;
+                        const sType = d.source?.type;
+                        const tType = d.target?.type;
+                        if (isMobile) {
+                            if (sType === 'folder' || tType === 'folder') return 140;
+                            if (sType === 'project' || tType === 'project') return 100;
+                            if (sType === 'tag' || tType === 'tag') return 85;
+                            return 65;
+                        } else {
+                            if (sType === 'folder' || tType === 'folder') return 280;
+                            if (sType === 'project' || tType === 'project') return 180;
+                            if (sType === 'tag' || tType === 'tag') return 150;
+                            return 120;
+                        }
                     })
                     .strength(1)
             )
-            .force("charge", forceManyBody().strength(-300))
-            .force("center", forceCenter(width / 2, height / 2))
-            .force("collision", forceCollide().radius((d: any) => getNodeRadius(d.type, d.childrenCount) + 20));
+            .force("charge", forceManyBody().strength(isMobile ? -250 : -900))
+            .force("center", forceCenter(width / 2, height / 2).strength(isMobile ? 0.12 : 0.08))
+            .force("collision", forceCollide().radius((d: any) => getNodeRadius(d.type, d.childrenCount, isMobile) + (isMobile ? 22 : 55)))
+            .force("boundX", forceX(width / 2).strength(isMobile ? 0.08 : 0.05))
+            .force("boundY", forceY(height / 2).strength(isMobile ? 0.08 : 0.05));
 
         // 4. Drag Behavior
         const dragBehavior = drag<SVGGElement, TaskGraphNode>()

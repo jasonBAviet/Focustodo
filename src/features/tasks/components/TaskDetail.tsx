@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useDiaryContext } from '@/features/diary/DiaryContext';
 import type { Task, RepeatType, Priority } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { describeRecurrence, toRecurrence } from '@/utils/recurrence';
 import SubtaskList from '@/features/tasks/components/SubtaskList';
 import DatePicker from '@/shared/components/DatePicker';
-import PomodoroScrollPicker from '@/shared/components/PomodoroScrollPicker';
 import RepeatEditor from '@/features/tasks/components/RepeatEditor';
-import { useInjectedStyle } from '@/shared/hooks/useInjectedStyle';
+import { DetailRow, PomodoroRow } from './TaskDetailHelpers';
+import Lightbox from '@/shared/components/Lightbox';
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
   { value: 'high',   label: 'High',        color: 'var(--priority-high)' },
@@ -20,89 +21,9 @@ interface TaskDetailProps {
   task: Task;
 }
 
-const DETAIL_ROW_CSS = `
-      .detail-row {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 0; border-bottom: 1px solid var(--divider);
-        font-size: var(--text-sm); min-height: 40px;
-        position: relative;
-      }
-      .detail-row__icon { color: var(--text-tertiary); flex-shrink: 0; width: 16px; }
-      .detail-row__label { color: var(--text-secondary); flex: 1; }
-      .detail-row__value { color: var(--text-primary); font-size: var(--text-sm); }
-`;
-
-const DetailRow: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-}> = ({ icon, label, children }) => {
-  useInjectedStyle('detail-row', DETAIL_ROW_CSS);
-  return (
-    <div className="detail-row">
-      <span className="detail-row__icon">{icon}</span>
-      <span className="detail-row__label">{label}</span>
-      <span className="detail-row__value">{children}</span>
-    </div>
-  );
-};
-
-const PomodoroRow: React.FC<{ task: Task; onUpdate: (estimate: number) => void }> = ({ task, onUpdate }) => {
-  const [showPicker, setShowPicker] = useState(false);
-  const POMO_DURATION = 25;
-
-  return (
-    <>
-      <DetailRow
-        icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M7 4v3l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>}
-        label="Pomodoro"
-      >
-        <button
-          className="pomo-trigger"
-          title="Edit Pomodoros"
-        >
-          <span className="pomo-trigger__count">{task.pomodoroEstimate || 0}</span>
-          <span className="pomo-trigger__meta">
-            {task.pomodoroCompleted}/{task.pomodoroEstimate || 0} = {(task.pomodoroEstimate || 0) * POMO_DURATION}m
-          </span>
-        </button>
-        <style>{`
-          .pomo-trigger {
-            display: flex; align-items: center; gap: 8px;
-            background: none; border: none; cursor: pointer;
-            padding: 2px 4px; border-radius: 6px;
-            transition: background var(--transition-fast);
-          }
-          .pomo-trigger:hover { background: var(--bg-card-hover); }
-          .pomo-trigger__count {
-            font-weight: 600; font-size: 15px;
-            color: var(--text-primary); min-width: 18px; text-align: center;
-            font-family: var(--font-main);
-          }
-          .pomo-trigger__meta {
-            font-size: var(--text-xs); color: var(--text-tertiary);
-          }
-        `}</style>
-      </DetailRow>
-      {showPicker && (
-        <PomodoroScrollPicker
-          estimate={task.pomodoroEstimate || 0}
-          pomoDuration={POMO_DURATION}
-          onEstimateChange={onUpdate}
-          onClose={() => setShowPicker(false)}
-        />
-      )}
-    </>
-  );
-};
-
-import Lightbox from '@/shared/components/Lightbox';
-
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
-  const { updateTask, projects, attachments, addAttachment, deleteAttachment } = useTaskContext();
+  const { updateTask, projects, attachments, addAttachment, deleteAttachment, setActiveView } = useTaskContext();
+  const { diaries, addDiary, setSelectedDiaryId } = useDiaryContext();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
@@ -116,6 +37,23 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
   const project = projects.find((p) => p.id === task.projectId);
   const taskAttachments = (attachments || []).filter((a) => a.taskId === task.id);
+
+  const linkedDiaries = diaries.filter((d) => d.taskId === task.id);
+
+  const handleCreateDiaryForTask = () => {
+    const today = new Date();
+    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+    const newDiary = addDiary(`Nhật ký: ${task.title} (${dateStr})`, task.projectId, task.priority, task.id);
+    if (newDiary) {
+      setSelectedDiaryId(newDiary.id);
+      setActiveView('diary');
+    }
+  };
+
+  const handleGoToDiary = (diaryId: string) => {
+    setSelectedDiaryId(diaryId);
+    setActiveView('diary');
+  };
 
   const handleNoteBlur = () => {
     if (note !== task.note) {
@@ -383,6 +321,38 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         )}
       </div>
 
+      {/* Nhat ky lien ket */}
+      <div className="detail-diary-section">
+        <div className="diary-header">
+          <span className="diary-section-title">Nhật ký liên kết</span>
+          <button 
+            type="button" 
+            className="diary-add-btn"
+            onClick={handleCreateDiaryForTask}
+          >
+            + Viết nhật ký
+          </button>
+        </div>
+        {linkedDiaries.length > 0 ? (
+          <div className="diary-list">
+            {linkedDiaries.map((d) => (
+              <div 
+                key={d.id} 
+                className="diary-item-link"
+                onClick={() => handleGoToDiary(d.id)}
+              >
+                <span className="diary-item-title">{d.title}</span>
+                <span className="diary-item-date">{dateUtils.formatShort(d.createdAt)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="diary-placeholder">
+            Chưa có nhật ký nào liên kết với công việc này.
+          </div>
+        )}
+      </div>
+
       <div className="detail-note-section">
         <textarea
           className="detail-note"
@@ -423,6 +393,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         .attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
         .priority-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; background: none; cursor: pointer; border-radius: var(--radius-xs); font-size: var(--text-sm); color: var(--text-secondary); font-family: var(--font-main); transition: background var(--transition-fast); }
         .priority-option:hover, .priority-option.active { background: var(--glass-bg-hover); color: var(--text-primary); }
+        .detail-diary-section { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+        .diary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .diary-section-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+        .diary-add-btn { font-size: var(--text-xs); font-weight: 500; color: var(--accent); cursor: pointer; padding: 4px 8px; border-radius: 4px; background: var(--bg-card-hover); border: none; font-family: var(--font-main); transition: background 0.2s; }
+        .diary-add-btn:hover { background: var(--divider); }
+        .diary-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .diary-item-link { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-input); cursor: pointer; transition: all 0.2s; }
+        .diary-item-link:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+        .diary-item-title { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .diary-item-date { font-size: var(--text-xs); color: var(--text-tertiary); flex-shrink: 0; }
+        .diary-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
       `}</style>
     </div>
   );

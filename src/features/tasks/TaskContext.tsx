@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useRef, useState } from 'react';
-import type { Task, Knowledge, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
+import type { Task, Knowledge, Diary, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { DeletedIds } from '@/utils/remoteState';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -90,6 +90,8 @@ interface TaskContextType {
   getProjectName: (projectId: string | null) => string;
   knowledges: Knowledge[];
   setKnowledges: React.Dispatch<React.SetStateAction<Knowledge[]>>;
+  diaries: Diary[];
+  setDiaries: React.Dispatch<React.SetStateAction<Diary[]>>;
   deletedIdsRef: React.MutableRefObject<DeletedIds>;
 }
 
@@ -98,6 +100,7 @@ export const TaskContext = createContext<TaskContextType | null>(null);
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useLocalStorage<Task[]>('focus-tasks', []);
   const [knowledges, setKnowledges] = useLocalStorage<Knowledge[]>('focus-knowledges', []);
+  const [diaries, setDiaries] = useLocalStorage<Diary[]>('focus-diaries', []);
   const [projects, setProjects] = useLocalStorage<Project[]>('focus-projects', DEFAULT_PROJECTS);
   const [folders, setFolders] = useLocalStorage<Folder[]>('focus-folders', []);
   const [tags, setTags] = useLocalStorage<Tag[]>('focus-tags', []);
@@ -126,11 +129,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
   const isMobile = useIsMobile();
 
-  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], knowledges: [], projects: [], folders: [], tags: [], attachments: [], pomodoroRecords: [] });
+  const deletedIdsRef = useRef<DeletedIds>({ tasks: [], knowledges: [], diaries: [], projects: [], folders: [], tags: [], attachments: [], pomodoroRecords: [] });
 
   useTaskSync({
     token,
-    tasks, setTasks, knowledges, setKnowledges, projects, setProjects, folders, setFolders, tags, setTags,
+    tasks, setTasks, knowledges, setKnowledges, diaries, setDiaries, projects, setProjects, folders, setFolders, tags, setTags,
     pomodoroSessions, setPomodoroSessions, pomodoroRecords, setPomodoroRecords,
     attachments, setAttachments, selectedTaskId, setSelectedTaskId,
     activeView, activeProjectId, searchQuery, settings, updateSettings, deletedIdsRef,
@@ -172,7 +175,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       newTaskPanelOpen, setNewTaskPanelOpen,
       newTaskDraft, updateNewTaskDraft, resetNewTaskDraft, submitNewTask,
       setFilters, setSelectedTaskId, setActiveView, setActiveProjectId, setActiveTagId, setActiveFolderId, setSearchQuery,
-      getFilteredTasks, knowledges, setKnowledges, deletedIdsRef, ...actions
+      getFilteredTasks, knowledges, setKnowledges, diaries, setDiaries, deletedIdsRef, ...actions
     }}>
       {children}
     </TaskContext.Provider>
