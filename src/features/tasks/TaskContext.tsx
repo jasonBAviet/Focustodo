@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { Task, Knowledge, Diary, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { DeletedIds } from '@/utils/remoteState';
@@ -115,7 +115,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useLocalStorage<string>('focus-search', '');
   const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
   const [newTaskPanelOpen, setNewTaskPanelOpen] = useState(false);
-  const [newTaskDraft, setNewTaskDraftState] = useState<NewTaskDraft>(DEFAULT_NEW_TASK_DRAFT);
+  const [newTaskDraft, setNewTaskDraftState] = useState<NewTaskDraft>(() => ({
+    ...DEFAULT_NEW_TASK_DRAFT,
+    projectId: activeView === 'project' ? activeProjectId : null,
+  }));
   const updateNewTaskDraft = (fields: Partial<NewTaskDraft>) =>
     setNewTaskDraftState(prev => ({ ...prev, ...fields }));
   const resetNewTaskDraft = () =>
@@ -123,6 +126,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       ...DEFAULT_NEW_TASK_DRAFT,
       projectId: activeView === 'project' ? activeProjectId : null,
     });
+
+  // Khi user chuyển sang project view hoặc đổi project → cập nhật projectId trong draft
+  useEffect(() => {
+    if (activeView === 'project') {
+      setNewTaskDraftState(prev => ({ ...prev, projectId: activeProjectId }));
+    }
+  }, [activeView, activeProjectId]);
 
   const { settings, updateSettings } = useAppContext();
   const { onTaskCreated, onTaskCompleted, onPomodoroCompleted } = useWebhookContext();
