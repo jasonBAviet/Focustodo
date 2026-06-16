@@ -31,18 +31,9 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle database client:', err.message);
 });
 
-// Tao salt ngau nhien 32 bytes cho moi user
-export function generateSalt() {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-// Hash mat khau voi salt truyen vao (salt la hex string)
-export function hashPassword(password, salt) {
-  if (!salt) {
-    // Backward compat: salt co dinh cu (chi dung de kiem tra user cu, khong tao moi)
-    salt = 'focustodo_salt_secure_123';
-  }
-  return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+export function generateSalt() { return crypto.randomBytes(32).toString('hex'); }
+export function hashPassword(password, salt = 'focustodo_salt_secure_123') {
+  return crypto.pbkdf2Sync(password, salt || 'focustodo_salt_secure_123', 100000, 64, 'sha512').toString('hex');
 }
 
 export async function ensureSchema() {
@@ -80,6 +71,15 @@ export async function ensureSchema() {
     console.warn('[schema] Khong the them task_id vao bang diary:', err.message);
   }
 
+  // Migration: them cot start_date vao cac bang
+  try {
+    await pool.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS start_date TEXT;`);
+    await pool.query(`ALTER TABLE knowleadge ADD COLUMN IF NOT EXISTS start_date TEXT;`);
+    await pool.query(`ALTER TABLE diary ADD COLUMN IF NOT EXISTS start_date TEXT;`);
+  } catch (err) {
+    console.warn('[schema] Khong the them start_date vao cac bang:', err.message);
+  }
+
   // 2. Tao cac bang khac neu chua ton tai
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -88,6 +88,7 @@ export async function ensureSchema() {
       project_id TEXT,
       priority TEXT,
       due_date TEXT,
+      start_date TEXT,
       reminder TEXT,
       repeat TEXT,
       repeat_custom TEXT,
@@ -113,6 +114,7 @@ export async function ensureSchema() {
       project_id TEXT,
       priority TEXT,
       due_date TEXT,
+      start_date TEXT,
       reminder TEXT,
       repeat TEXT,
       repeat_custom TEXT,
@@ -138,6 +140,7 @@ export async function ensureSchema() {
       project_id TEXT,
       priority TEXT,
       due_date TEXT,
+      start_date TEXT,
       reminder TEXT,
       repeat TEXT,
       repeat_custom TEXT,
@@ -304,6 +307,15 @@ export async function ensureSchema() {
       error TEXT,
       timestamp TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS user_learning_states (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      item_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'unlearned',
+      created_at TEXT,
+      updated_at TEXT
+    );
   `);
 
   // 3. Them cot user_id vao cac bang neu chua co
@@ -358,18 +370,24 @@ export async function ensureSchema() {
 
   // 5. Tao cac Index can thiet
   try {
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_knowleadge_user_id ON knowleadge(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_diary_user_id ON diary(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_diary_task_id ON diary(task_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_folders_user_id ON folders(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tags_user_id ON tags(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pomodoro_records_task_id ON pomodoro_records(task_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_subscribers_user_id ON webhook_subscribers(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_delivery_logs_user_id ON webhook_delivery_logs(user_id);');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_webhook_delivery_logs_timestamp ON webhook_delivery_logs(timestamp);');
+    const indexes = [
+      'idx_tasks_user_id ON tasks(user_id)',
+      'idx_knowleadge_user_id ON knowleadge(user_id)',
+      'idx_diary_user_id ON diary(user_id)',
+      'idx_diary_task_id ON diary(task_id)',
+      'idx_projects_user_id ON projects(user_id)',
+      'idx_folders_user_id ON folders(user_id)',
+      'idx_tags_user_id ON tags(user_id)',
+      'idx_attachments_task_id ON attachments(task_id)',
+      'idx_pomodoro_records_task_id ON pomodoro_records(task_id)',
+      'idx_webhook_subscribers_user_id ON webhook_subscribers(user_id)',
+      'idx_webhook_delivery_logs_user_id ON webhook_delivery_logs(user_id)',
+      'idx_webhook_delivery_logs_timestamp ON webhook_delivery_logs(timestamp)',
+      'idx_user_learning_states_user_id ON user_learning_states(user_id)'
+    ];
+    for (const idx of indexes) {
+      await pool.query(`CREATE INDEX IF NOT EXISTS ${idx};`);
+    }
   } catch (err) {
     console.warn('[safety] Khong the tao cac index:', err.message);
   }

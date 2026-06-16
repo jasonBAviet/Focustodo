@@ -12,6 +12,8 @@ import TaskList from '@/features/tasks/components/TaskList';
 import TaskPanel from '@/shared/layout/TaskPanel';
 import KnowledgeHub from '@/features/knowledge/components/KnowledgeHub';
 import DiaryHub from '@/features/diary/components/DiaryHub';
+import LearningHub from '@/features/learning/components/LearningHub';
+import { LearningProvider } from '@/features/learning/LearningContext';
 import AddProjectDialog from '@/shared/components/AddProjectDialog';
 import AddFolderDialog from '@/shared/components/AddFolderDialog';
 import AddTagDialog from '@/shared/components/AddTagDialog';
@@ -67,7 +69,7 @@ const AppInner: React.FC = () => {
 
   const handleShowReport = () => setShowReport((v) => !v);
 
-  const panelVisible = !showReport && activeView !== 'knowledge' && viewMode !== 'kg' && (!!selectedTaskId || newTaskPanelOpen);
+  const panelVisible = !showReport && activeView !== 'knowledge' && activeView !== 'learning' && viewMode !== 'kg' && (!!selectedTaskId || newTaskPanelOpen);
 
   return (
     <div className={`app-layout ${!panelVisible ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
@@ -92,6 +94,8 @@ const AppInner: React.FC = () => {
           <ReportPage onClose={handleShowReport} />
         ) : activeView === 'knowledge' ? (
           <KnowledgeHub />
+        ) : activeView === 'learning' ? (
+          <LearningHub />
         ) : activeView === 'diary' ? (
           <DiaryHub />
         ) : (
@@ -99,7 +103,7 @@ const AppInner: React.FC = () => {
         )}
       </main>
 
-      {activeView !== 'knowledge' && viewMode !== 'kg' && !showReport && <TaskPanel />}
+      {activeView !== 'knowledge' && activeView !== 'learning' && viewMode !== 'kg' && !showReport && <TaskPanel />}
 
       <CommandPalette onToggleReport={handleShowReport} />
 
@@ -147,7 +151,9 @@ const AppContent: React.FC = () => {
         <PomodoroProvider>
           <KnowledgeProvider>
             <DiaryProvider>
-              <AppInner />
+              <LearningProvider>
+                <AppInner />
+              </LearningProvider>
             </DiaryProvider>
           </KnowledgeProvider>
         </PomodoroProvider>

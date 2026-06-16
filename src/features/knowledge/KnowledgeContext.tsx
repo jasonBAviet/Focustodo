@@ -28,6 +28,7 @@ export function KnowledgeProvider({ children }: { children: React.ReactNode }) {
         projectId,
         priority,
         dueDate: null,
+        startDate: null,
         reminder: null,
         repeat: 'none',
         repeatCustom: null,

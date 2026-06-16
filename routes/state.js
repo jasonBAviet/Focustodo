@@ -56,11 +56,11 @@ async function persistState(incoming, userId) {
     // 1. Reconcile tables
     await reconcileTable(
       client, 'tasks', incoming.tasks ?? [],
-      ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
+      ['id', 'title', 'project_id', 'priority', 'due_date', 'start_date', 'reminder', 'repeat',
         'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
         'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at'],
       (t) => [
-        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
+        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null, t.startDate ?? null,
         t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
         JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
         Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
@@ -72,11 +72,11 @@ async function persistState(incoming, userId) {
 
     await reconcileTable(
       client, 'knowleadge', incoming.knowledges ?? [],
-      ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
+      ['id', 'title', 'project_id', 'priority', 'due_date', 'start_date', 'reminder', 'repeat',
         'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
         'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at'],
       (t) => [
-        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
+        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null, t.startDate ?? null,
         t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
         JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
         Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,
@@ -88,11 +88,11 @@ async function persistState(incoming, userId) {
 
     await reconcileTable(
       client, 'diary', incoming.diaries ?? [],
-      ['id', 'title', 'project_id', 'priority', 'due_date', 'reminder', 'repeat',
+      ['id', 'title', 'project_id', 'priority', 'due_date', 'start_date', 'reminder', 'repeat',
         'repeat_custom', 'note', 'subtasks', 'pomodoro_estimate', 'pomodoro_completed',
         'total_focus_time', 'completed', 'flagged', 'tags', 'position', 'created_at', 'completed_at', 'updated_at', 'task_id'],
       (t) => [
-        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null,
+        t.id, t.title ?? '', t.projectId ?? null, t.priority ?? 'none', t.dueDate ?? null, t.startDate ?? null,
         t.reminder ?? null, t.repeat ?? 'none', t.repeatCustom ?? null, t.note ?? '',
         JSON.stringify(t.subtasks ?? []), t.pomodoroEstimate ?? 1, t.pomodoroCompleted ?? 0,
         Math.round(t.totalFocusTime ?? 0), t.completed ?? false, t.flagged ?? false,

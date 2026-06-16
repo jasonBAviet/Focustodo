@@ -24,6 +24,8 @@ import stateRouter from './routes/state.js';
 import notifyRouter from './routes/notify.js';
 import { createWebhookRouter } from './src/backend/modules/webhooks/webhook.route.js';
 import { createExternalTaskRouter } from './src/backend/modules/external/external.route.js';
+import { createLearningRouter } from './src/backend/modules/learning/learning.route.js';
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -201,7 +203,9 @@ app.use('/api/state', stateRouter);
 app.use('/api/events', createEventsRouter(pool, auth));
 app.use('/api/keys', auth.keysRouter);
 app.use('/api/tasks', createTasksRouter(pool, auth));
+app.use('/api/learning', createLearningRouter());
 app.use('/api/projects', createProjectsRouter(pool, auth));
+
 app.use('/api/folders', createFoldersRouter(pool, auth));
 app.use('/api/tags', createTagsRouter(pool, auth));
 app.use('/api/changes', createChangesRouter(pool, auth));

@@ -30,6 +30,18 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
   const getTasksForDate = (dateString: string) => {
     return tasks.filter((t) => {
       const rawDate = t[dateField];
+      if (dateField === 'dueDate') {
+        const startStr = t.startDate ? calendarUtils.toDateString(new Date(t.startDate)) : null;
+        const dueStr = rawDate ? calendarUtils.toDateString(new Date(rawDate)) : null;
+        if (startStr && dueStr) {
+          return dateString >= startStr && dateString <= dueStr;
+        } else if (dueStr) {
+          return dateString === dueStr;
+        } else if (startStr) {
+          return dateString === startStr;
+        }
+        return false;
+      }
       if (!rawDate) return false;
       const d = new Date(rawDate);
       const cellD = new Date(dateString);
@@ -37,8 +49,9 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
     });
   };
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = (e: React.DragEvent, taskId: string, type: 'start' | 'end' | 'all') => {
     e.dataTransfer.setData('text/plain', taskId);
+    e.dataTransfer.setData('drag-type', type);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -57,12 +70,48 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
     e.preventDefault();
     setDragOverDate(null);
     const taskId = e.dataTransfer.getData('text/plain');
+    const dragType = e.dataTransfer.getData('drag-type') || 'all';
+    
     if (taskId) {
-      // Update task dueDate
       const targetDate = new Date(dateString);
-      // Default to 9:00 AM
       targetDate.setHours(9, 0, 0, 0);
-      updateTask(taskId, { dueDate: targetDate.toISOString() });
+      const targetIso = targetDate.toISOString();
+      
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      if (dragType === 'start') {
+        if (task.dueDate && targetIso > task.dueDate) {
+          updateTask(taskId, { startDate: targetIso, dueDate: targetIso });
+        } else {
+          updateTask(taskId, { startDate: targetIso });
+        }
+      } else if (dragType === 'end') {
+        if (task.startDate && targetIso < task.startDate) {
+          updateTask(taskId, { startDate: targetIso, dueDate: targetIso });
+        } else {
+          updateTask(taskId, { dueDate: targetIso });
+        }
+      } else {
+        if (task.startDate && task.dueDate) {
+          const startD = new Date(task.startDate!);
+          const dueD = new Date(task.dueDate!);
+          const diffDays = Math.round((dueD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
+          
+          const newStart = new Date(dateString);
+          newStart.setHours(9, 0, 0, 0);
+          
+          const newDue = new Date(newStart);
+          newDue.setDate(newStart.getDate() + diffDays);
+          
+          updateTask(taskId, {
+            startDate: newStart.toISOString(),
+            dueDate: newDue.toISOString()
+          });
+        } else {
+          updateTask(taskId, { dueDate: targetIso });
+        }
+      }
     }
   };
 
@@ -102,21 +151,48 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
                 <span className="calendar-day-number">{day.date.getDate()}</span>
               </div>
               <div className="calendar-cell-tasks">
-                {dayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`calendar-task-badge priority-${task.priority} ${task.completed ? 'completed' : ''} ${task.id === selectedTaskId ? 'selected' : ''}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectTask(task.id);
-                    }}
-                    title={task.title}
-                  >
-                    {task.title}
-                  </div>
-                ))}
+                {dayTasks.map((task) => {
+                  const isSpanning = !!(task.startDate && task.dueDate && 
+                    calendarUtils.toDateString(new Date(task.startDate)) !== calendarUtils.toDateString(new Date(task.dueDate)));
+                  
+                  return (
+                    <div
+                      key={task.id}
+                      className={`calendar-task-badge priority-${task.priority} ${task.completed ? 'completed' : ''} ${task.id === selectedTaskId ? 'selected' : ''} ${isSpanning ? 'spanning' : ''}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task.id, 'all')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectTask(task.id);
+                      }}
+                      title={`${task.title}${task.startDate ? `\nStart: ${calendarUtils.toDateString(new Date(task.startDate))}` : ''}${task.dueDate ? `\nDue: ${calendarUtils.toDateString(new Date(task.dueDate))}` : ''}`}
+                    >
+                      <span
+                        className="calendar-task-handle start-handle"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          handleDragStart(e, task.id, 'start');
+                        }}
+                        title="Drag to change Start Date"
+                      >
+                        •
+                      </span>
+                      <span className="calendar-task-badge-title">{task.title}</span>
+                      <span
+                        className="calendar-task-handle end-handle"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          handleDragStart(e, task.id, 'end');
+                        }}
+                        title="Drag to change End Date"
+                      >
+                        •
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -216,16 +292,49 @@ const CalendarMonth: React.FC<CalendarMonthProps> = ({
         }
         .calendar-task-badge {
           font-size: 10px;
-          padding: 2px 6px;
+          padding: 2px 4px;
           border-radius: 4px;
           background: var(--bg-input, rgba(0, 0, 0, 0.05));
           border: 1px solid var(--border);
           color: var(--text-primary);
           cursor: grab;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: relative;
+          overflow: visible;
+          transition: all var(--transition-fast);
+          gap: 2px;
+        }
+        .calendar-task-badge.spanning {
+          background: color-mix(in srgb, var(--accent) 5%, var(--bg-input, rgba(0, 0, 0, 0.05)));
+          border-style: dashed;
+        }
+        .calendar-task-badge-title {
+          flex: 1;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          transition: all var(--transition-fast);
+        }
+        .calendar-task-handle {
+          width: 8px;
+          height: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: col-resize;
+          font-size: 10px;
+          font-weight: bold;
+          color: var(--text-tertiary);
+          opacity: 0;
+          transition: opacity var(--transition-fast), color var(--transition-fast);
+        }
+        .calendar-task-badge:hover .calendar-task-handle {
+          opacity: 0.7;
+        }
+        .calendar-task-handle:hover {
+          opacity: 1 !important;
+          color: var(--accent);
         }
         .calendar-task-badge:hover {
           border-color: var(--border-strong);

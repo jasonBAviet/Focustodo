@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
-import { useDiaryContext } from '@/features/diary/DiaryContext';
 import type { Task, RepeatType, Priority } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { describeRecurrence, toRecurrence } from '@/utils/recurrence';
@@ -8,7 +7,8 @@ import SubtaskList from '@/features/tasks/components/SubtaskList';
 import DatePicker from '@/shared/components/DatePicker';
 import RepeatEditor from '@/features/tasks/components/RepeatEditor';
 import { DetailRow, PomodoroRow } from './TaskDetailHelpers';
-import Lightbox from '@/shared/components/Lightbox';
+import TaskAttachments from '@/features/tasks/components/TaskAttachments';
+import TaskDiaries from '@/features/tasks/components/TaskDiaries';
 
 const PRIORITY_OPTIONS: { value: Priority; label: string; color: string }[] = [
   { value: 'high',   label: 'High',        color: 'var(--priority-high)' },
@@ -22,38 +22,16 @@ interface TaskDetailProps {
 }
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
-  const { updateTask, projects, attachments, addAttachment, deleteAttachment, setActiveView } = useTaskContext();
-  const { diaries, addDiary, setSelectedDiaryId } = useDiaryContext();
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const { updateTask, projects } = useTaskContext();
+  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'due' | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [note, setNote] = useState(task.note);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImg, setLightboxImg] = useState('');
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { setNote(task.note); }, [task.id]);
 
   const project = projects.find((p) => p.id === task.projectId);
-  const taskAttachments = (attachments || []).filter((a) => a.taskId === task.id);
-
-  const linkedDiaries = diaries.filter((d) => d.taskId === task.id);
-
-  const handleCreateDiaryForTask = () => {
-    const today = new Date();
-    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-    const newDiary = addDiary(`Nhật ký: ${task.title} (${dateStr})`, task.projectId, task.priority, task.id);
-    if (newDiary) {
-      setSelectedDiaryId(newDiary.id);
-      setActiveView('diary');
-    }
-  };
-
-  const handleGoToDiary = (diaryId: string) => {
-    setSelectedDiaryId(diaryId);
-    setActiveView('diary');
-  };
 
   const handleNoteBlur = () => {
     if (note !== task.note) {
@@ -61,67 +39,15 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return alert('Maximum image size is 5MB');
+  const startDateText = task.startDate
+    ? dateUtils.isToday(task.startDate)
+      ? 'Today'
+      : dateUtils.isTomorrow(task.startDate)
+        ? 'Tomorrow'
+        : dateUtils.formatShort(task.startDate)
+    : 'None';
 
-    setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/upload`, { method: 'POST', body: fd });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      addAttachment({
-        id: Math.random().toString(36).substring(2, 9),
-        taskId: task.id,
-        fileName: file.name,
-        fileUrl: data.url,
-        fileSize: file.size,
-        mimeType: file.type,
-        createdAt: new Date().toISOString(),
-      });
-    } catch {
-      alert('Could not upload image');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (!file) continue;
-        if (file.size > 5 * 1024 * 1024) return alert('Maximum image size is 5MB');
-        setUploading(true);
-        const fd = new FormData();
-        fd.append('file', file);
-        try {
-          const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/api/upload`, { method: 'POST', body: fd });
-          if (!res.ok) throw new Error();
-          const data = await res.json();
-          addAttachment({
-            id: Math.random().toString(36).substring(2, 9),
-            taskId: task.id,
-            fileName: file.name || `clipboard-${Date.now()}.png`,
-            fileUrl: data.url,
-            fileSize: file.size,
-            mimeType: file.type,
-            createdAt: new Date().toISOString(),
-          });
-        } catch {
-          alert('Could not upload image');
-        } finally {
-          setUploading(false);
-        }
-        break;
-      }
-    }
-  };
+  const startDateColor = task.startDate ? 'var(--text-primary)' : 'var(--text-tertiary)';
 
   const dueDateText = task.dueDate
     ? dateUtils.isToday(task.dueDate)
@@ -138,9 +64,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       : 'var(--text-tertiary)';
 
   return (
-    <div className="task-detail" onPaste={handlePaste}>
+    <div className="task-detail">
       <PomodoroRow task={task} onUpdate={(e) => updateTask(task.id, { pomodoroEstimate: e })} />
 
+      {/* Priority Row */}
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" style={{ color: PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.color || '#888' }}>
           <path d="M2 2h10l-2 4 2 4H2l2-4-2-4z"/>
@@ -151,7 +78,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           <button
             className="detail-inline-btn"
             style={{ color: PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.color || '#888' }}
-            onClick={() => { setShowPriorityPicker((v) => !v); setShowDatePicker(false); setShowReminderPicker(false); setShowRepeatPicker(false); }}
+            onClick={() => { setShowPriorityPicker((v) => !v); setActiveDatePicker(null); setShowReminderPicker(false); setShowRepeatPicker(false); }}
           >
             {PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.label || 'None'}
           </button>
@@ -172,6 +99,37 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </div>
       </DetailRow>
 
+      {/* Start Date Row */}
+      <DetailRow
+        icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+          <path d="M2 6h10M5 6v6M9 6v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>}
+        label="Start Date"
+      >
+        <button
+          className="detail-inline-btn"
+          style={{ color: startDateColor }}
+          onClick={() => { setActiveDatePicker(activeDatePicker === 'start' ? null : 'start'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
+        >
+          {startDateText}
+        </button>
+        {activeDatePicker === 'start' && (
+          <div className="detail-date-popover">
+            <DatePicker
+              isRange
+              startDateValue={task.startDate}
+              endDateValue={task.dueDate}
+              onRangeChange={(start, end) => {
+                updateTask(task.id, { startDate: start, dueDate: end });
+              }}
+              onClose={() => setActiveDatePicker(null)}
+            />
+          </div>
+        )}
+      </DetailRow>
+
+      {/* Due Date Row */}
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -182,28 +140,26 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         <button
           className="detail-inline-btn"
           style={{ color: dueDateColor }}
-          onClick={() => { setShowDatePicker(!showDatePicker); setShowReminderPicker(false); }}
+          onClick={() => { setActiveDatePicker(activeDatePicker === 'due' ? null : 'due'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
         >
           {dueDateText}
         </button>
-        {showDatePicker && (
+        {activeDatePicker === 'due' && (
           <div className="detail-date-popover">
             <DatePicker
-              value={task.dueDate}
-              onChange={(d) => {
-                updateTask(task.id, { dueDate: d });
-                setShowDatePicker(false);
+              isRange
+              startDateValue={task.startDate}
+              endDateValue={task.dueDate}
+              onRangeChange={(start, end) => {
+                updateTask(task.id, { startDate: start, dueDate: end });
               }}
-              onRemove={() => {
-                updateTask(task.id, { dueDate: null });
-                setShowDatePicker(false);
-              }}
-              onClose={() => setShowDatePicker(false)}
+              onClose={() => setActiveDatePicker(null)}
             />
           </div>
         )}
       </DetailRow>
 
+      {/* Project Row */}
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 2h10l-2 4 2 4H2l2-4-2-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -226,6 +182,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </div>
       </DetailRow>
 
+      {/* Reminder Row */}
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 2v2M7 10v2M2 7h2M10 7h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -235,7 +192,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       >
         <button
           className="detail-inline-btn"
-          onClick={() => { setShowReminderPicker(!showReminderPicker); setShowDatePicker(false); }}
+          onClick={() => { setShowReminderPicker(!showReminderPicker); setActiveDatePicker(null); }}
           style={{ color: task.reminder ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
         >
           {task.reminder
@@ -264,6 +221,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         )}
       </DetailRow>
 
+      {/* Repeat Row */}
       <DetailRow
         icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 7a5 5 0 1 0 10 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -273,7 +231,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       >
         <button
           className="detail-inline-btn"
-          onClick={() => { setShowRepeatPicker(!showRepeatPicker); setShowDatePicker(false); setShowReminderPicker(false); }}
+          onClick={() => { setShowRepeatPicker(!showRepeatPicker); setActiveDatePicker(null); setShowReminderPicker(false); }}
           style={{ color: task.repeat && task.repeat !== 'none' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
         >
           {describeRecurrence(task.repeat, task.repeatCustom)}
@@ -293,65 +251,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
 
       <SubtaskList task={task} />
 
-      <div className="detail-attachments-section">
-        <div className="attachments-header">
-          <span className="attachments-title">Attached images</span>
-          <label className="attachments-add-btn">
-            {uploading ? 'Uploading...' : 'Add image'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploading} />
-          </label>
-        </div>
-        {taskAttachments.length > 0 ? (
-          <div className="attachments-grid">
-            {taskAttachments.map((a) => (
-              <div key={a.id} className="attachment-card">
-                <img src={a.fileUrl} alt={a.fileName} className="attachment-thumb" onClick={() => { setLightboxImg(a.fileUrl); setLightboxOpen(true); }} />
-                <button type="button" className="attachment-delete" onClick={() => deleteAttachment(a.id)} title="Delete image">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 4h12M5 4v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4M6 4V2.5A1.5 1.5 0 0 1 7.5 1h1A1.5 1.5 0 0 1 10 2.5V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="attachments-placeholder">
-            Press Ctrl+V to paste screenshot directly here
-          </div>
-        )}
-      </div>
+      {/* Component quản lý ảnh đính kèm */}
+      <TaskAttachments task={task} />
 
-      {/* Nhat ky lien ket */}
-      <div className="detail-diary-section">
-        <div className="diary-header">
-          <span className="diary-section-title">Nhật ký liên kết</span>
-          <button 
-            type="button" 
-            className="diary-add-btn"
-            onClick={handleCreateDiaryForTask}
-          >
-            + Viết nhật ký
-          </button>
-        </div>
-        {linkedDiaries.length > 0 ? (
-          <div className="diary-list">
-            {linkedDiaries.map((d) => (
-              <div 
-                key={d.id} 
-                className="diary-item-link"
-                onClick={() => handleGoToDiary(d.id)}
-              >
-                <span className="diary-item-title">{d.title}</span>
-                <span className="diary-item-date">{dateUtils.formatShort(d.createdAt)}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="diary-placeholder">
-            Chưa có nhật ký nào liên kết với công việc này.
-          </div>
-        )}
-      </div>
+      {/* Component quản lý nhật ký liên kết */}
+      <TaskDiaries task={task} />
 
       <div className="detail-note-section">
         <textarea
@@ -363,8 +267,6 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           rows={4}
         />
       </div>
-
-      <Lightbox isOpen={lightboxOpen} imageUrl={lightboxImg} onClose={() => setLightboxOpen(false)} />
 
       <style>{`
         .task-detail { padding-bottom: 20px; outline: none; }

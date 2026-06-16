@@ -90,6 +90,13 @@ export const IconBook: React.FC = () => (
   </svg>
 );
 
+export const IconAcademic: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.89 12.5L12 15.82l6.11-3.32L12 9.18 5.89 12.5zM12 18c-3.1 0-6.19-1.28-7.76-3.46l-1.63 1.09C4.85 18.72 8.36 20 12 20s7.15-1.28 9.39-4.37l-1.63-1.09C18.19 16.72 15.1 18 12 18z"/>
+  </svg>
+);
+
+
 export const IconNotebook: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
     <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
@@ -144,6 +151,8 @@ export const SMART_VIEWS: NavView[] = [
   { id: 'events',          label: 'Events',           icon: <IconStar /> },
   { id: 'completed',       label: 'Completed',        icon: <IconCheck /> },
   { id: 'knowledge',       label: 'Knowledge',        icon: <IconBook /> },
+  { id: 'learning',        label: 'Learning English', icon: <IconAcademic /> },
   { id: 'diary',           label: 'Nhật ký công việc', icon: <IconNotebook /> },
   { id: 'unassigned',      label: 'Chưa phân loại',   icon: <IconUnassigned /> },
+
 ];

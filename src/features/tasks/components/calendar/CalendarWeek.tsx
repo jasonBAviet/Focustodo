@@ -28,6 +28,18 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
   const getTasksForDate = (dateString: string) => {
     return tasks.filter((t) => {
       const rawDate = t[dateField];
+      if (dateField === 'dueDate') {
+        const startStr = t.startDate ? calendarUtils.toDateString(new Date(t.startDate)) : null;
+        const dueStr = rawDate ? calendarUtils.toDateString(new Date(rawDate)) : null;
+        if (startStr && dueStr) {
+          return dateString >= startStr && dateString <= dueStr;
+        } else if (dueStr) {
+          return dateString === dueStr;
+        } else if (startStr) {
+          return dateString === startStr;
+        }
+        return false;
+      }
       if (!rawDate) return false;
       const d = new Date(rawDate);
       const cellD = new Date(dateString);
@@ -35,8 +47,9 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
     });
   };
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = (e: React.DragEvent, taskId: string, type: 'start' | 'end' | 'all') => {
     e.dataTransfer.setData('text/plain', taskId);
+    e.dataTransfer.setData('drag-type', type);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -55,10 +68,48 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
     e.preventDefault();
     setDragOverDate(null);
     const taskId = e.dataTransfer.getData('text/plain');
+    const dragType = e.dataTransfer.getData('drag-type') || 'all';
+
     if (taskId) {
       const targetDate = new Date(dateString);
       targetDate.setHours(9, 0, 0, 0);
-      updateTask(taskId, { dueDate: targetDate.toISOString() });
+      const targetIso = targetDate.toISOString();
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      if (dragType === 'start') {
+        if (task.dueDate && targetIso > task.dueDate) {
+          updateTask(taskId, { startDate: targetIso, dueDate: targetIso });
+        } else {
+          updateTask(taskId, { startDate: targetIso });
+        }
+      } else if (dragType === 'end') {
+        if (task.startDate && targetIso < task.startDate) {
+          updateTask(taskId, { startDate: targetIso, dueDate: targetIso });
+        } else {
+          updateTask(taskId, { dueDate: targetIso });
+        }
+      } else {
+        if (task.startDate && task.dueDate) {
+          const startD = new Date(task.startDate!);
+          const dueD = new Date(task.dueDate!);
+          const diffDays = Math.round((dueD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
+          
+          const newStart = new Date(dateString);
+          newStart.setHours(9, 0, 0, 0);
+          
+          const newDue = new Date(newStart);
+          newDue.setDate(newStart.getDate() + diffDays);
+          
+          updateTask(taskId, {
+            startDate: newStart.toISOString(),
+            dueDate: newDue.toISOString()
+          });
+        } else {
+          updateTask(taskId, { dueDate: targetIso });
+        }
+      }
     }
   };
 
@@ -96,30 +147,60 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
               {dayTasks.length === 0 ? (
                 <div className="calendar-week-empty-text">Double click to create</div>
               ) : (
-                dayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`calendar-week-card priority-${task.priority} ${task.completed ? 'completed' : ''} ${task.id === selectedTaskId ? 'selected' : ''}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectTask(task.id);
-                    }}
-                  >
-                    <div className="cal-week-card-title">{task.title}</div>
-                    <div className="cal-week-card-meta">
-                      {task.projectId && (
-                        <span className="cal-week-proj-tag">
-                          {getProjectName(task.projectId)}
+                dayTasks.map((task) => {
+                  const isSpanning = !!(task.startDate && task.dueDate && 
+                    calendarUtils.toDateString(new Date(task.startDate)) !== calendarUtils.toDateString(new Date(task.dueDate)));
+                  
+                  return (
+                    <div
+                      key={task.id}
+                      className={`calendar-week-card priority-${task.priority} ${task.completed ? 'completed' : ''} ${task.id === selectedTaskId ? 'selected' : ''} ${isSpanning ? 'spanning' : ''}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task.id, 'all')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectTask(task.id);
+                      }}
+                      title={`${task.title}${task.startDate ? `\nStart: ${calendarUtils.toDateString(new Date(task.startDate))}` : ''}${task.dueDate ? `\nDue: ${calendarUtils.toDateString(new Date(task.dueDate))}` : ''}`}
+                    >
+                      <div className="cal-week-card-top">
+                        <span
+                          className="calendar-task-handle start-handle"
+                          draggable
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(e, task.id, 'start');
+                          }}
+                          title="Drag to change Start Date"
+                        >
+                          •
                         </span>
-                      )}
-                      {task.pomodoroEstimate > 0 && (
-                        <span>{task.pomodoroEstimate} 🍅</span>
-                      )}
+                        <div className="cal-week-card-title">{task.title}</div>
+                        <span
+                          className="calendar-task-handle end-handle"
+                          draggable
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            handleDragStart(e, task.id, 'end');
+                          }}
+                          title="Drag to change End Date"
+                        >
+                          •
+                        </span>
+                      </div>
+                      <div className="cal-week-card-meta">
+                        {task.projectId && (
+                          <span className="cal-week-proj-tag">
+                            {getProjectName(task.projectId)}
+                          </span>
+                        )}
+                        {task.pomodoroEstimate > 0 && (
+                          <span>{task.pomodoroEstimate} 🍅</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -206,12 +287,56 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
           opacity: 0.6;
         }
         .calendar-week-card {
-          padding: 8px;
+          padding: 6px 8px;
           border-radius: 8px;
           background: var(--bg-input, rgba(0,0,0,0.02));
           border: 1px solid var(--border);
           cursor: grab;
           transition: all var(--transition-fast);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          position: relative;
+          overflow: visible;
+        }
+        .calendar-week-card.spanning {
+          background: color-mix(in srgb, var(--accent) 5%, var(--bg-input, rgba(0,0,0,0.02)));
+          border-style: dashed;
+        }
+        .cal-week-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 2px;
+        }
+        .cal-week-card-title {
+          font-size: var(--text-xs);
+          font-weight: 600;
+          color: var(--text-primary);
+          line-height: 1.3;
+          margin-bottom: 2px;
+          word-break: break-word;
+          flex: 1;
+        }
+        .calendar-task-handle {
+          width: 8px;
+          height: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: col-resize;
+          font-size: 10px;
+          font-weight: bold;
+          color: var(--text-tertiary);
+          opacity: 0;
+          transition: opacity var(--transition-fast), color var(--transition-fast);
+        }
+        .calendar-week-card:hover .calendar-task-handle {
+          opacity: 0.7;
+        }
+        .calendar-task-handle:hover {
+          opacity: 1 !important;
+          color: var(--accent);
         }
         .calendar-week-card:hover {
           border-color: var(--border-strong);
@@ -225,14 +350,6 @@ const CalendarWeek: React.FC<CalendarWeekProps> = ({
         .calendar-week-card.completed {
           opacity: 0.55;
           text-decoration: line-through;
-        }
-        .cal-week-card-title {
-          font-size: var(--text-xs);
-          font-weight: 600;
-          color: var(--text-primary);
-          line-height: 1.3;
-          margin-bottom: 6px;
-          word-break: break-word;
         }
         .cal-week-card-meta {
           display: flex;

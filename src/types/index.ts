@@ -23,9 +23,40 @@ export type ViewType =
   | 'folder'
   | 'knowledge'
   | 'diary'
-  | 'unassigned';
+  | 'unassigned'
+  | 'learning';
+
+export interface VocabularyItem {
+  id: string;
+  word: string;
+  ipa: string;
+  type: string;
+  meaning: string;
+  context: string;
+  explanation: string;
+  videoId: string;
+  videoUrl: string;
+  topic: string;
+  domain: string;
+  createdAt: string;
+  status: 'learned' | 'unlearned';
+}
+
+export interface SentenceItem {
+  id: string;
+  en: string;
+  vi: string;
+  point: string;
+  videoId: string;
+  videoUrl: string;
+  topic: string;
+  domain: string;
+  createdAt: string;
+  status: 'learned' | 'unlearned';
+}
 
 export interface Attachment {
+
   id: string;
   taskId: string;
   fileName: string;
@@ -50,6 +81,7 @@ export interface Task {
   projectId: string | null;
   priority: Priority;
   dueDate: string | null;
+  startDate: string | null;
   reminder: string | null;
   repeat: RepeatType;
   repeatCustom: string | null;
@@ -74,6 +106,7 @@ export interface Knowledge {
   projectId: string | null;
   priority: Priority;
   dueDate: string | null;
+  startDate: string | null;
   reminder: string | null;
   repeat: RepeatType;
   repeatCustom: string | null;
@@ -98,6 +131,7 @@ export interface Diary {
   projectId: string | null;
   priority: Priority;
   dueDate: string | null;
+  startDate: string | null;
   reminder: string | null;
   repeat: RepeatType;
   repeatCustom: string | null;
@@ -284,7 +318,9 @@ export const DEFAULT_SETTINGS: Settings = {
     completed: true,
     knowledge: true,
     diary: true,
+    learning: true,
     all: false,
+
     someday: false,
     'high-priority': false,
     'medium-priority': false,

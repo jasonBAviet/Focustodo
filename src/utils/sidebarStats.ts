@@ -97,7 +97,10 @@ export const getViewStats = (
       return { count: knowledges.length, time: 0 };
     case 'diary':
       return { count: diaries.length, time: 0 };
+    case 'learning':
+      return { count: 0, time: 0 }; // Sẽ được tính trực tiếp từ hook ở Sidebar.tsx
     case 'unassigned':
+
       return getTasksStats(
         normalTasks.filter((t) => !t.completed && !t.projectId && (t.tags ?? []).length === 0),
         settings

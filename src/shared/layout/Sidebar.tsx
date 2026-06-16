@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import { useKnowledgeContext } from '@/features/knowledge/KnowledgeContext';
 import { useDiaryContext } from '@/features/diary/DiaryContext';
+import { useLearningContext } from '@/features/learning/LearningContext';
 import { useAppContext } from '@/core/contexts/AppContext';
+
 import type { ViewType, Project, Folder } from '@/types';
 import { getRootFolders, getChildFolders } from '@/utils/folderUtils';
 import { getContextTags } from '@/utils/tagScope';
@@ -52,6 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   } = useTaskContext();
   const { knowledges } = useKnowledgeContext();
   const { diaries } = useDiaryContext();
+  const { vocabularyList, sentencesList } = useLearningContext();
+
 
   const normalTasks = tasks;
   const { settings, setOpenModal } = useAppContext();
@@ -233,9 +237,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
       {/* Nav - Smart Views */}
       <nav className="sidebar-nav">
         {visibleViews.map((view) => {
+          let { count, time } = getViewStats(tasks, knowledges, diaries, normalTasks, view.id, settings);
+          if (view.id === 'learning') {
+            const unlearnedVocabs = vocabularyList.filter(v => v.status === 'unlearned').length;
+            const unlearnedSentences = sentencesList.filter(s => s.status === 'unlearned').length;
+            count = unlearnedVocabs + unlearnedSentences;
+          }
           const isActive =
             activeView === view.id && activeProjectId === null;
-          const { count, time } = getViewStats(tasks, knowledges, diaries, normalTasks, view.id, settings);
           return (
             <div
               key={view.id}

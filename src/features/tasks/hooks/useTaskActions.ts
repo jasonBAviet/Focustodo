@@ -32,7 +32,7 @@ export function useTaskActions({
   const addTask = useCallback((title: string, projectId: string | null = null, priority: Priority = 'none', pomodoroEstimate: number = 1): Task => {
     const now = dateUtils.now();
     const newTask: Task = {
-      id: uuid(), title, projectId, priority, dueDate: null, reminder: null, repeat: 'none', repeatCustom: null, note: '',
+      id: uuid(), title, projectId, priority, dueDate: null, startDate: null, reminder: null, repeat: 'none', repeatCustom: null, note: '',
       subtasks: [], pomodoroEstimate, pomodoroCompleted: 0, totalFocusTime: 0, completed: false, flagged: false,
       tags: [], createdAt: now, completedAt: null, updatedAt: now,
     };

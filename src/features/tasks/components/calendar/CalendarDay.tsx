@@ -23,6 +23,19 @@ const CalendarDay: React.FC<CalendarDayProps> = ({
 
   const dayTasks = tasks.filter((t) => {
     const rawDate = t[dateField];
+    if (dateField === 'dueDate') {
+      const startStr = t.startDate ? calendarUtils.toDateString(new Date(t.startDate)) : null;
+      const dueStr = rawDate ? calendarUtils.toDateString(new Date(rawDate)) : null;
+      const currentDateStr = calendarUtils.toDateString(currentDate);
+      if (startStr && dueStr) {
+        return currentDateStr >= startStr && currentDateStr <= dueStr;
+      } else if (dueStr) {
+        return currentDateStr === dueStr;
+      } else if (startStr) {
+        return currentDateStr === startStr;
+      }
+      return false;
+    }
     if (!rawDate) return false;
     const d = new Date(rawDate);
     return calendarUtils.isSameDay(d, currentDate);
