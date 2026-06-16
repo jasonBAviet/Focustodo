@@ -244,6 +244,7 @@ export interface Settings {
   dailyFocusGoalHours: number;
   // Visible views in sidebar
   visibleViews: Record<string, boolean>;
+  settingsVersion?: number;
   // Calendar preferences
   calendarScale: 'month' | 'week' | 'day';
   calendarDateField: 'dueDate' | 'createdAt';
@@ -309,6 +310,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyFocusGoalHours: 3,
   calendarScale: 'month',
   calendarDateField: 'dueDate',
+  settingsVersion: 2,
   visibleViews: {
     today: true,
     tomorrow: true,

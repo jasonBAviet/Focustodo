@@ -19,16 +19,20 @@ interface SmartViewItem {
 }
 
 const SMART_VIEWS: SmartViewItem[] = [
-  { key: 'today',           label: 'Today',           color: '#f25f5c', iconPath: 'M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 3v4l2 1.5' },
-  { key: 'tomorrow',        label: 'Tomorrow',        color: '#f4a261', iconPath: 'M3 8h10M9 4l4 4-4 4' },
-  { key: 'this-week',       label: 'This Week',       color: '#4361ee', iconPath: 'M2 5h12v8H2zM5 5V3M11 5V3' },
-  { key: 'planned',         label: 'Planned',         color: '#4cc9f0', iconPath: 'M2 4h12v10H2zM5 4V2M11 4V2M2 8h12' },
-  { key: 'high-priority',   label: 'High Priority',   color: '#f25f5c', iconPath: 'M8 2v8M5 5l3-3 3 3M4 14h8' },
-  { key: 'medium-priority', label: 'Medium Priority', color: '#f4a261', iconPath: 'M4 6h8M4 10h6M4 14h4' },
-  { key: 'low-priority',    label: 'Low Priority',    color: '#2ec4b6', iconPath: 'M4 6h4M4 10h6M4 14h8' },
-  { key: 'someday',         label: 'Someday',         color: '#888',    iconPath: 'M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 4v2l1 1' },
-  { key: 'events',          label: 'Events',          color: '#e040fb', iconPath: 'M2 5h12v9H2zM5 5V3M11 5V3M2 9h12' },
-  { key: 'completed',       label: 'Completed',       color: '#06d6a0', iconPath: 'M3 8l3.5 3.5L13 5' },
+  { key: 'today',           label: 'Today',                color: '#f25f5c', iconPath: 'M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 3v4l2 1.5' },
+  { key: 'tomorrow',        label: 'Tomorrow',             color: '#f4a261', iconPath: 'M3 8h10M9 4l4 4-4 4' },
+  { key: 'this-week',       label: 'This Week',            color: '#4361ee', iconPath: 'M2 5h12v8H2zM5 5V3M11 5V3' },
+  { key: 'planned',         label: 'Planned',              color: '#4cc9f0', iconPath: 'M2 4h12v10H2zM5 4V2M11 4V2M2 8h12' },
+  { key: 'high-priority',   label: 'High Priority',        color: '#f25f5c', iconPath: 'M8 2v8M5 5l3-3 3 3M4 14h8' },
+  { key: 'medium-priority', label: 'Medium Priority',      color: '#f4a261', iconPath: 'M4 6h8M4 10h6M4 14h4' },
+  { key: 'low-priority',    label: 'Low Priority',         color: '#2ec4b6', iconPath: 'M4 6h4M4 10h6M4 14h8' },
+  { key: 'someday',         label: 'Someday',              color: '#888',    iconPath: 'M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 4v2l1 1' },
+  { key: 'events',          label: 'Events',               color: '#e040fb', iconPath: 'M2 5h12v9H2zM5 5V3M11 5V3M2 9h12' },
+  { key: 'completed',       label: 'Completed',            color: '#06d6a0', iconPath: 'M3 8l3.5 3.5L13 5' },
+  { key: 'knowledge',       label: 'Knowledge',            color: '#7ec8e3', iconPath: 'M8 1v10M5 4l3-3 3 3M3 11h10v3H3z' },
+  { key: 'learning',        label: 'Learning English',     color: '#f4a261', iconPath: 'M1 8l7-6 7 6v7H9v-4H7v4H1zM8 5l4 3.5' },
+  { key: 'diary',           label: 'Nhật ký công việc',   color: '#a0c4ff', iconPath: 'M3 2h10v12H3zM5 2V1M11 2V1M5 6h6M5 9h4' },
+  { key: 'unassigned',      label: 'Chưa phân loại',      color: '#888',    iconPath: 'M8 4v4M8 12h.01M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0z' },
 ];
 
 const sectionTitleStyle: React.CSSProperties = { fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, marginTop: 20 };

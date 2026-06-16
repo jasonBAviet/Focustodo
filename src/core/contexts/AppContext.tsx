@@ -63,6 +63,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
   };
 
+  // One-time migration: force diary and learning visible for users with old stored settings
+  useEffect(() => {
+    if (!settings.settingsVersion || settings.settingsVersion < 2) {
+      setSettings((prev) => ({
+        ...prev,
+        settingsVersion: 2,
+        visibleViews: {
+          ...prev.visibleViews,
+          diary: true,
+          learning: true,
+        },
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // UI state - no need to save to localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
