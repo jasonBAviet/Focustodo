@@ -7,7 +7,7 @@ export class LearningRepository {
    */
   async getVocabularies() {
     const queryStr = `
-      SELECT v.id, v.video_id, v.word, v.ipa, v.type, v.meaning, v.context, v.explanation, v.created_at,
+      SELECT v.id, v.video_id, v.word, v.ipa, v.type, v.meaning, v.context, v.explanation, v.family_words, v.created_at,
              t.video_url, t.topic, t.domain
       FROM vocabularies v
       LEFT JOIN (

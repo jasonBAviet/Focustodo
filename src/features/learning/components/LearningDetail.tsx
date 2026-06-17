@@ -83,6 +83,16 @@ const LearningDetail: React.FC<LearningDetailProps> = ({ item, type, onClose }) 
                     <p>{vocab.explanation}</p>
                   </div>
                 )}
+                {isVocab && vocab.familyWords && vocab.familyWords.length > 0 && (
+                  <div className="ld-fc-family">
+                    <span className="ld-fc-family-title">Từ gia đình (Word Family)</span>
+                    <div className="ld-fc-family-list">
+                      {vocab.familyWords.map((w, idx) => (
+                        <span key={idx} className="ld-fc-family-chip">{w}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -120,6 +130,17 @@ const LearningDetail: React.FC<LearningDetailProps> = ({ item, type, onClose }) 
                   <div className="ld-card">
                     <h4 className="ld-section-title">Giải thích chi tiết</h4>
                     <p className="ld-section-value">{vocab.explanation}</p>
+                  </div>
+                )}
+
+                {vocab.familyWords && vocab.familyWords.length > 0 && (
+                  <div className="ld-card">
+                    <h4 className="ld-section-title">Từ gia đình (Word Family)</h4>
+                    <div className="ld-family-list">
+                      {vocab.familyWords.map((w, idx) => (
+                        <span key={idx} className="ld-family-chip">{w}</span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </>

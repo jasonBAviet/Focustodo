@@ -25,6 +25,62 @@ const youtubePool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
+async function bulkInsertVocabularies(client, items) {
+  if (items.length === 0) return;
+  const chunkSize = 200;
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    const valuePlaceholders = [];
+    const flatValues = [];
+    let paramIndex = 1;
+    for (const item of chunk) {
+      valuePlaceholders.push(`($${paramIndex}, $${paramIndex+1}, $${paramIndex+2}, $${paramIndex+3}, $${paramIndex+4}, $${paramIndex+5}, $${paramIndex+6}, $${paramIndex+7})`);
+      flatValues.push(
+        item.video_id,
+        item.word,
+        item.ipa,
+        item.type,
+        item.meaning,
+        item.context,
+        item.explanation,
+        item.family_words
+      );
+      paramIndex += 8;
+    }
+    const query = `
+      INSERT INTO vocabularies (video_id, word, ipa, type, meaning, context, explanation, family_words)
+      VALUES ${valuePlaceholders.join(', ')}
+    `;
+    await client.query(query, flatValues);
+  }
+}
+
+async function bulkInsertSentences(client, items) {
+  if (items.length === 0) return;
+  const chunkSize = 200;
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    const valuePlaceholders = [];
+    const flatValues = [];
+    let paramIndex = 1;
+    for (const item of chunk) {
+      valuePlaceholders.push(`($${paramIndex}, $${paramIndex+1}, $${paramIndex+2}, $${paramIndex+3})`);
+      flatValues.push(
+        item.video_id,
+        item.en,
+        item.vi,
+        item.point
+      );
+      paramIndex += 4;
+    }
+    const query = `
+      INSERT INTO sentences (video_id, en, vi, point)
+      VALUES ${valuePlaceholders.join(', ')}
+    `;
+    await client.query(query, flatValues);
+  }
+}
+
 async function migrate() {
   const client = await youtubePool.connect();
   try {
@@ -35,7 +91,6 @@ async function migrate() {
 
     // Tạo bảng vocabularies
     await client.query(`
-
       CREATE TABLE IF NOT EXISTS vocabularies (
         id SERIAL PRIMARY KEY,
         video_id VARCHAR(255),
@@ -45,6 +100,7 @@ async function migrate() {
         meaning TEXT,
         context TEXT,
         explanation TEXT,
+        family_words JSONB DEFAULT '[]'::jsonb,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       
@@ -67,7 +123,6 @@ async function migrate() {
       CREATE INDEX IF NOT EXISTS idx_sentences_video_id ON sentences(video_id);
     `);
 
-
     console.log('- Đã tạo bảng sentences.');
 
     console.log('2. Đọc dữ liệu dịch thuật hiện tại từ translation_history...');
@@ -86,8 +141,8 @@ async function migrate() {
     await client.query('TRUNCATE TABLE vocabularies RESTART IDENTITY CASCADE;');
     await client.query('TRUNCATE TABLE sentences RESTART IDENTITY CASCADE;');
 
-    let vocabCount = 0;
-    let sentenceCount = 0;
+    const vocabulariesToInsert = [];
+    const sentencesToInsert = [];
 
     for (const row of res.rows) {
       let data;
@@ -99,48 +154,48 @@ async function migrate() {
 
       const videoId = row.video_id;
 
-      // Di cư Từ vựng
+      // Gom Từ vựng
       if (Array.isArray(data.vocabulary)) {
         for (const item of data.vocabulary) {
           if (!item.word) continue;
-          await client.query(`
-            INSERT INTO vocabularies (video_id, word, ipa, type, meaning, context, explanation)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-          `, [
-            videoId, 
-            item.word.trim(), 
-            item.ipa || '', 
-            item.type || '', 
-            item.meaning || '', 
-            item.context || '', 
-            item.explanation || ''
-          ]);
-          vocabCount++;
+          const familyWords = Array.isArray(item.family_words) ? item.family_words : [];
+          vocabulariesToInsert.push({
+            video_id: videoId,
+            word: item.word.trim(),
+            ipa: item.ipa || '',
+            type: item.type || '',
+            meaning: item.meaning || '',
+            context: item.context || '',
+            explanation: item.explanation || '',
+            family_words: JSON.stringify(familyWords)
+          });
         }
       }
 
-      // Di cư Mẫu câu
+      // Gom Mẫu câu
       if (Array.isArray(data.sentences)) {
         for (const item of data.sentences) {
           if (!item.en) continue;
-          await client.query(`
-            INSERT INTO sentences (video_id, en, vi, point)
-            VALUES ($1, $2, $3, $4)
-          `, [
-            videoId, 
-            item.en.trim(), 
-            item.vi || '', 
-            item.point || ''
-          ]);
-          sentenceCount++;
+          sentencesToInsert.push({
+            video_id: videoId,
+            en: item.en.trim(),
+            vi: item.vi || '',
+            point: item.point || ''
+          });
         }
       }
     }
 
+    console.log(`- Gom thành công: ${vocabulariesToInsert.length} từ vựng và ${sentencesToInsert.length} mẫu câu.`);
+    console.log('4. Thực hiện chèn dữ liệu bulk...');
+    
+    await bulkInsertVocabularies(client, vocabulariesToInsert);
+    await bulkInsertSentences(client, sentencesToInsert);
+
     await client.query('COMMIT');
     console.log(`MIGRATION THÀNH CÔNG!`);
-    console.log(`- Tổng số từ vựng đã chuyển đổi: ${vocabCount}`);
-    console.log(`- Tổng số mẫu câu đã chuyển đổi: ${sentenceCount}`);
+    console.log(`- Tổng số từ vựng đã chuyển đổi: ${vocabulariesToInsert.length}`);
+    console.log(`- Tổng số mẫu câu đã chuyển đổi: ${sentencesToInsert.length}`);
 
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

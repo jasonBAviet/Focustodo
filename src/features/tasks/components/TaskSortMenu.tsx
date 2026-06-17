@@ -1,7 +1,7 @@
 import React from 'react';
 import ContextMenu from '@/shared/components/ContextMenu';
 
-type SortOption = 'project' | 'createdAt' | 'dueDate' | 'priority' | null;
+type SortOption = 'project' | 'createdAt' | 'startDate' | 'dueDate' | 'priority' | null;
 type SortDirection = 'asc' | 'desc';
 
 export const IconSort = ({ direction }: { direction?: SortDirection }) => (
@@ -67,6 +67,12 @@ export const TaskSortMenu: React.FC<TaskSortMenuProps> = ({
             Sort by creation date {sortBy === 'createdAt' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
           </span>
           {sortBy === 'createdAt' && <IconCheck />}
+        </div>
+        <div className="cm-item" onClick={() => handleSortClick('startDate')}>
+          <span className="cm-item-text">
+            Sort by start date {sortBy === 'startDate' && `(${sortDirection === 'asc' ? 'Asc' : 'Desc'})`}
+          </span>
+          {sortBy === 'startDate' && <IconCheck />}
         </div>
         <div className="cm-item" onClick={() => handleSortClick('dueDate')}>
           <span className="cm-item-text">

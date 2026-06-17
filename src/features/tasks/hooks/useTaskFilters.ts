@@ -143,6 +143,14 @@ export function useTaskFilters({
       const to = new Date(filters.createdTo).getTime() + 86400000;
       filtered = filtered.filter((t) => new Date(t.createdAt).getTime() <= to);
     }
+    if (filters.startFrom) {
+      const from = new Date(filters.startFrom).getTime();
+      filtered = filtered.filter((t) => t.startDate && new Date(t.startDate).getTime() >= from);
+    }
+    if (filters.startTo) {
+      const to = new Date(filters.startTo).getTime() + 86400000;
+      filtered = filtered.filter((t) => t.startDate && new Date(t.startDate).getTime() <= to);
+    }
     if (filters.dueFrom) {
       const from = new Date(filters.dueFrom).getTime();
       filtered = filtered.filter((t) => t.dueDate && new Date(t.dueDate).getTime() >= from);

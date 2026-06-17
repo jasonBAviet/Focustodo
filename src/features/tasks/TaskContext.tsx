@@ -24,12 +24,14 @@ export interface TaskFilters {
   projectIds: string[];
   createdFrom: string | null;
   createdTo: string | null;
+  startFrom: string | null;
+  startTo: string | null;
   dueFrom: string | null;
   dueTo: string | null;
 }
 
 export const EMPTY_FILTERS: TaskFilters = {
-  text: '', tagIds: [], projectIds: [], createdFrom: null, createdTo: null, dueFrom: null, dueTo: null,
+  text: '', tagIds: [], projectIds: [], createdFrom: null, createdTo: null, startFrom: null, startTo: null, dueFrom: null, dueTo: null,
 };
 
 export interface NewTaskDraft {

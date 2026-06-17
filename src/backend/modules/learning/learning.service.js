@@ -43,6 +43,7 @@ export class LearningService {
         meaning: item.meaning || '',
         context: item.context || '',
         explanation: item.explanation || '',
+        familyWords: item.family_words || [],
         videoId: item.video_id || '',
         videoUrl: item.video_url || '',
         topic: item.topic || '',

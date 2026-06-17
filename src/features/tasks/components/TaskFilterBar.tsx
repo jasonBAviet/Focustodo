@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTaskContext, EMPTY_FILTERS } from '@/features/tasks/TaskContext';
 import { toggleArrayItem } from '@/utils/arrayUtils';
 import { getContextTags } from '@/utils/tagScope';
+import './TaskFilterBar.css';
 
-type OpenMenu = 'tag' | 'project' | 'created' | 'due' | null;
+type OpenMenu = 'tag' | 'project' | 'created' | 'start' | 'due' | null;
 
 const IconChevron = () => (
   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -75,11 +76,13 @@ const TaskFilterBar: React.FC = () => {
     (filters.tagIds.length > 0 ? 1 : 0) +
     (showProjectFilter && filters.projectIds.length > 0 ? 1 : 0) +
     (filters.createdFrom || filters.createdTo ? 1 : 0) +
+    (filters.startFrom || filters.startTo ? 1 : 0) +
     (filters.dueFrom || filters.dueTo ? 1 : 0);
 
   const tagLabel = filters.tagIds.length > 0 ? `Tag (${filters.tagIds.length})` : 'Tag';
   const projectLabel = filters.projectIds.length > 0 ? `Project (${filters.projectIds.length})` : 'Project';
   const createdActive = !!(filters.createdFrom || filters.createdTo);
+  const startActive = !!(filters.startFrom || filters.startTo);
   const dueActive = !!(filters.dueFrom || filters.dueTo);
 
   return (
@@ -231,6 +234,44 @@ const TaskFilterBar: React.FC = () => {
         )}
       </div>
 
+      {/* Start date */}
+      <div className="tfb-item">
+        <button
+          className={`tfb-btn ${startActive ? 'active' : ''}`}
+          onClick={() => toggleMenu('start')}
+        >
+          Start Date <IconChevron />
+        </button>
+        {openMenu === 'start' && (
+          <div className="tfb-menu tfb-menu--date">
+            <label className="tfb-date-row">
+              <span>From</span>
+              <input
+                type="date"
+                value={filters.startFrom ?? ''}
+                onChange={(e) => setFilters((f) => ({ ...f, startFrom: e.target.value || null }))}
+              />
+            </label>
+            <label className="tfb-date-row">
+              <span>To</span>
+              <input
+                type="date"
+                value={filters.startTo ?? ''}
+                onChange={(e) => setFilters((f) => ({ ...f, startTo: e.target.value || null }))}
+              />
+            </label>
+            {startActive && (
+              <button
+                className="tfb-clear-range"
+                onClick={() => setFilters((f) => ({ ...f, startFrom: null, startTo: null }))}
+              >
+                Clear range
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Due date */}
       <div className="tfb-item">
         <button
@@ -277,109 +318,6 @@ const TaskFilterBar: React.FC = () => {
       )}
 
       </div>
-
-      <style>{`
-        .task-filter-bar {
-          display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
-          margin-bottom: 10px;
-        }
-        /* Desktop: Filter toggle hidden. Mobile override in index.css @media. */
-        .tfb-toggle {
-          display: none; align-items: center; gap: 6px;
-          background: var(--task-bg); border: 1px solid var(--border);
-          color: var(--text-secondary); font-size: var(--text-sm);
-          font-family: var(--font-main); cursor: pointer;
-          padding: 6px 10px; border-radius: var(--radius-md);
-          transition: all var(--transition-fast);
-        }
-        .tfb-toggle:hover { border-color: var(--border-strong); color: var(--text-primary); }
-        .tfb-toggle.active {
-          border-color: var(--accent); color: var(--accent);
-          background: color-mix(in srgb, var(--accent) 8%, transparent);
-        }
-        .tfb-toggle svg { transition: transform var(--transition-fast); }
-        .tfb-filters { display: contents; }
-        .task-filter-bar.filters-open .tfb-toggle svg { transform: rotate(180deg); }
-        .tfb-search {
-          display: flex; align-items: center; gap: 6px;
-          border: 1px solid var(--border); border-radius: var(--radius-md);
-          padding: 5px 10px; background: var(--task-bg);
-          color: var(--text-tertiary);
-          transition: border-color var(--transition-fast);
-        }
-        .tfb-search:focus-within { border-color: var(--accent); }
-        .tfb-search-input {
-          background: none; border: none; outline: none;
-          color: var(--text-primary); font-size: var(--text-sm);
-          font-family: var(--font-main); width: 150px;
-        }
-        .tfb-search-input::placeholder { color: var(--text-tertiary); }
-        .tfb-item { position: relative; }
-        .tfb-btn {
-          display: flex; align-items: center; gap: 6px;
-          background: var(--task-bg); border: 1px solid var(--border);
-          color: var(--text-secondary); font-size: var(--text-sm);
-          font-family: var(--font-main); cursor: pointer;
-          padding: 6px 10px; border-radius: var(--radius-md);
-          transition: all var(--transition-fast);
-        }
-        .tfb-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
-        .tfb-btn.active {
-          border-color: var(--accent); color: var(--accent);
-          background: color-mix(in srgb, var(--accent) 8%, transparent);
-        }
-        .tfb-menu {
-          position: absolute; left: 0; top: calc(100% + 4px);
-          background: var(--bg-dialog); border: 1px solid var(--border);
-          border-radius: var(--radius-md); padding: 4px;
-          min-width: 180px; max-height: 280px; overflow-y: auto;
-          z-index: 200; box-shadow: var(--shadow-lg);
-          animation: slide-in-down 150ms ease both;
-        }
-        .tfb-menu--date {
-          display: flex; flex-direction: column; gap: 8px; padding: 10px;
-          min-width: 200px;
-        }
-        .tfb-menu-item {
-          display: flex; align-items: center; gap: 8px;
-          width: 100%; padding: 7px 8px; border: none; background: none;
-          cursor: pointer; border-radius: 6px; font-size: var(--text-sm);
-          color: var(--text-secondary); text-align: left;
-          transition: background var(--transition-fast);
-        }
-        .tfb-menu-item:hover { background: var(--glass-bg-hover); color: var(--text-primary); }
-        .tfb-menu-item.checked { color: var(--text-primary); }
-        .tfb-menu-text { flex: 1; }
-        .tfb-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-        .tfb-check { color: var(--accent); font-size: 12px; }
-        .tfb-empty { font-size: var(--text-xs); color: var(--text-tertiary); padding: 10px; text-align: center; }
-        .tfb-date-row {
-          display: flex; align-items: center; justify-content: space-between; gap: 10px;
-          font-size: var(--text-sm); color: var(--text-secondary);
-        }
-        .tfb-date-row input {
-          background: var(--bg-input, var(--task-bg)); border: 1px solid var(--border);
-          border-radius: 6px; padding: 4px 8px; color: var(--text-primary);
-          font-family: var(--font-main); font-size: var(--text-sm);
-          color-scheme: dark;
-        }
-        .tfb-date-row input:focus { outline: none; border-color: var(--accent); }
-        .tfb-clear-range {
-          background: none; border: 1px solid var(--border); color: var(--text-tertiary);
-          border-radius: 6px; padding: 5px; font-size: var(--text-xs);
-          cursor: pointer; font-family: var(--font-main);
-          transition: all var(--transition-fast);
-        }
-        .tfb-clear-range:hover { border-color: var(--border-strong); color: var(--text-primary); }
-        .tfb-clear-all {
-          background: none; border: 1px solid var(--border);
-          color: var(--text-secondary); font-size: var(--text-xs);
-          font-family: var(--font-main); cursor: pointer;
-          padding: 6px 10px; border-radius: var(--radius-full);
-          transition: all var(--transition-fast);
-        }
-        .tfb-clear-all:hover { border-color: var(--priority-high); color: var(--priority-high); }
-      `}</style>
     </div>
   );
 };

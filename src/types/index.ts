@@ -34,6 +34,7 @@ export interface VocabularyItem {
   meaning: string;
   context: string;
   explanation: string;
+  familyWords: string[];
   videoId: string;
   videoUrl: string;
   topic: string;

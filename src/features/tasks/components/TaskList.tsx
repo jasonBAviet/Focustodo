@@ -12,6 +12,7 @@ import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import TaskContextMenu from '@/features/tasks/components/TaskContextMenu';
 import { TaskSortMenu, IconSort } from './TaskSortMenu';
 import { TaskStatsRow } from './TaskStats';
+import './TaskList.css';
 
 const IconList = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,7 +52,7 @@ const VIEW_LABELS: Record<string, string> = {
   project: '', tag: '', folder: '', unassigned: 'Uncategorized',
 };
 
-type SortOption = 'project' | 'createdAt' | 'dueDate' | 'priority' | null;
+type SortOption = 'project' | 'createdAt' | 'startDate' | 'dueDate' | 'priority' | null;
 type SortDirection = 'asc' | 'desc';
 
 
@@ -84,8 +85,6 @@ const TaskList: React.FC = () => {
   // Drag to reorder: only enabled in project view when manual sort is not applied.
   const [dragId, setDragId] = useState<string | null>(null);
 
-
-
   const tasks = useMemo(() => {
     let result = [...filteredTasks];
     if (sortBy === 'project') {
@@ -99,6 +98,15 @@ const TaskList: React.FC = () => {
       result.sort((a, b) => {
         const timeA = new Date(a.createdAt).getTime();
         const timeB = new Date(b.createdAt).getTime();
+        return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+      });
+    } else if (sortBy === 'startDate') {
+      result.sort((a, b) => {
+        if (!a.startDate && !b.startDate) return 0;
+        if (!a.startDate) return 1;
+        if (!b.startDate) return -1;
+        const timeA = new Date(a.startDate).getTime();
+        const timeB = new Date(b.startDate).getTime();
         return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
       });
     } else if (sortBy === 'dueDate') {
@@ -367,61 +375,6 @@ const TaskList: React.FC = () => {
         setSortBy={setSortBy}
         setSortDirection={setSortDirection}
       />
-
-      <style>{`
-        .task-list-container { display: flex; flex-direction: column; height: 100%; }
-        .main-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
-        .main-header-actions { display: flex; gap: var(--space-2); align-items: center; }
-        .task-list__title {
-          font-size: var(--text-2xl);
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .task-list__empty {
-          display: flex; flex-direction: column; align-items: center;
-          justify-content: center; gap: var(--space-3); padding: 60px 0;
-          color: var(--text-tertiary); font-size: var(--text-sm);
-        }
-        .clear-completed-btn {
-          padding: 4px 12px; border-radius: var(--radius-full);
-          border: 1px solid var(--border); background: transparent;
-          color: var(--text-secondary); font-size: var(--text-xs);
-          cursor: pointer; font-family: var(--font-main);
-          transition: all var(--transition-fast);
-          white-space: nowrap;
-        }
-        .clear-completed-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
-        .clear-completed-btn.danger { border-color: var(--priority-high); color: var(--priority-high); }
-        .clear-completed-btn.danger:hover { background: var(--priority-high); color: #fff; }
-        .clear-completed-confirm { font-size: var(--text-xs); color: var(--text-tertiary); display: flex; align-items: center; }
-        .sort-btn {
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--text-secondary);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--space-1-5);
-          border-radius: var(--radius-md);
-          transition: all var(--transition-fast);
-        }
-        .sort-btn:hover {
-          color: var(--text-primary);
-          background: var(--bg-card-hover);
-          border-color: var(--border-strong);
-        }
-        .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-        /* Drag-and-drop to reorder tasks in project view */
-        .task-drag-row { cursor: grab; flex-shrink: 0; }
-        .task-drag-row.dragging { opacity: 0.45; cursor: grabbing; }
-
-        /* Planned view: dùng gap lớn hơn một chút */
-        .planned-view {
-          gap: var(--space-2);
-        }
-      `}</style>
     </div>
   );
 };
