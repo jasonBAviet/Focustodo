@@ -368,6 +368,7 @@ body {
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
+  --pomo-z-index: 9999;
 }
 
 /* Add padding for top and bottom safe areas (iPhone notch, Android nav bar) */
@@ -399,6 +400,10 @@ body {
 
 
 @media (max-width: 768px) {
+  :root {
+    --pomo-z-index: 190;
+  }
+
   body, #root { height: 100dvh; }
 
   /* ---- Shell: collapse the 3-column grid to a single column ---- */
@@ -466,7 +471,7 @@ body {
   }
   .main-stats-row .stat-card__value { font-size: var(--text-lg); }
   .main-stats-row .stat-card__label { font-size: var(--text-2xs); line-height: 1.2; }
-  .main-task-area { padding: var(--space-1) var(--space-4) var(--space-4); }
+  .main-task-area { padding: var(--space-1) var(--space-4) calc(var(--space-4) + 80px); }
 
   /* Floating header buttons: 5 icon buttons on the right, email hidden on mobile */
   .app-layout .header-actions { top: 14px; right: 8px; gap: 2px; }

@@ -83,7 +83,7 @@ const PomodoroWidget: React.FC = () => {
           borderRadius: 999,
           padding: '8px 20px',
           cursor: 'pointer',
-          zIndex: 9999,
+          zIndex: 'var(--pomo-z-index, 9999)' as any,
           animation: isPulsing ? 'timer-pulse 1.8s infinite' : undefined,
           transition: 'box-shadow 0.3s',
           userSelect: 'none',

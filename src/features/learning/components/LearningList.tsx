@@ -7,8 +7,19 @@ interface LearningListProps {
 }
 
 const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => {
-  const { vocabularyList, sentencesList, loading } = useLearningContext();
+  const { vocabularyList, sentencesList, loading, markItemLearnedStatus } = useLearningContext();
   const [search, setSearch] = useState('');
+
+  const handleQuickStatusToggle = async (
+    e: React.MouseEvent,
+    itemId: string,
+    itemType: 'vocab' | 'sentence',
+    currentStatus: 'learned' | 'unlearned'
+  ) => {
+    e.stopPropagation();
+    const nextStatus = currentStatus === 'learned' ? 'unlearned' : 'learned';
+    await markItemLearnedStatus(itemId, itemType, nextStatus);
+  };
   
   // Tab lớn: 'study' (Chưa học) | 'test' (Đã học / Kiểm tra)
   const [mainTab, setMainTab] = useState<'study' | 'test'>('study');
@@ -178,22 +189,34 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
                 className={`ll-item ${selectedId === item.id ? 'selected' : ''}`}
                 onClick={() => onSelect(item.id, 'vocab')}
               >
-                <div className="ll-item-header">
-                  <span className="ll-item-word">{item.word}</span>
-                  <span className="ll-item-type">{item.type}</span>
+                <div className="ll-item-main-info">
+                  <div className="ll-item-header">
+                    <span className="ll-item-word">{item.word}</span>
+                    <span className="ll-item-type">{item.type}</span>
+                  </div>
+                  <div className="ll-item-ipa">{item.ipa}</div>
+                  <div className="ll-item-meaning truncate">
+                    {mainTab === 'test' ? (
+                      <span className="ll-item-hidden-hint">Đã thuộc - Nhấp để ôn tập</span>
+                    ) : (
+                      item.meaning
+                    )}
+                  </div>
+                  <div className="ll-item-footer">
+                    <span className="ll-item-tag">{item.topic}</span>
+                    {item.domain && <span className="ll-item-tag">{item.domain}</span>}
+                  </div>
                 </div>
-                <div className="ll-item-ipa">{item.ipa}</div>
-                <div className="ll-item-meaning truncate">
-                  {mainTab === 'test' ? (
-                    <span className="ll-item-hidden-hint">Đã thuộc - Nhấp để ôn tập</span>
-                  ) : (
-                    item.meaning
-                  )}
-                </div>
-                <div className="ll-item-footer">
-                  <span className="ll-item-tag">{item.topic}</span>
-                  {item.domain && <span className="ll-item-tag">{item.domain}</span>}
-                </div>
+
+                <button
+                  className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
+                  onClick={(e) => handleQuickStatusToggle(e, item.id, 'vocab', item.status)}
+                  title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
               </div>
             ))
           )
@@ -207,18 +230,30 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
                 className={`ll-item ${selectedId === item.id ? 'selected' : ''}`}
                 onClick={() => onSelect(item.id, 'sentence')}
               >
-                <div className="ll-item-en text-ellipsis">{item.en}</div>
-                <div className="ll-item-vi text-ellipsis">
-                  {mainTab === 'test' ? (
-                    <span className="ll-item-hidden-hint">Đã thuộc - Nhấp để ôn tập</span>
-                  ) : (
-                    item.vi
-                  )}
+                <div className="ll-item-main-info">
+                  <div className="ll-item-en text-ellipsis">{item.en}</div>
+                  <div className="ll-item-vi text-ellipsis">
+                    {mainTab === 'test' ? (
+                      <span className="ll-item-hidden-hint">Đã thuộc - Nhấp để ôn tập</span>
+                    ) : (
+                      item.vi
+                    )}
+                  </div>
+                  <div className="ll-item-footer" style={{ marginTop: '8px' }}>
+                    <span className="ll-item-tag">{item.topic}</span>
+                    {item.point && <span className="ll-item-point truncate">{item.point}</span>}
+                  </div>
                 </div>
-                <div className="ll-item-footer" style={{ marginTop: '8px' }}>
-                  <span className="ll-item-tag">{item.topic}</span>
-                  {item.point && <span className="ll-item-point truncate">{item.point}</span>}
-                </div>
+
+                <button
+                  className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
+                  onClick={(e) => handleQuickStatusToggle(e, item.id, 'sentence', item.status)}
+                  title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
               </div>
             ))
           )

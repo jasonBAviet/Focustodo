@@ -1,4 +1,5 @@
 import { learningService } from './learning.service.js';
+import { MarkItemDto } from './learning.dto.js';
 
 export class LearningController {
   /**
@@ -21,9 +22,10 @@ export class LearningController {
   async markItem(req, res) {
     try {
       const userId = req.user.id;
-      const { itemId, itemType, status } = req.body;
+      const dto = new MarkItemDto(req.body);
+      dto.validate();
 
-      const result = await learningService.markItem(userId, itemId, itemType, status);
+      const result = await learningService.markItem(userId, dto);
       res.json({
         message: 'Cập nhật trạng thái thành công.',
         data: result

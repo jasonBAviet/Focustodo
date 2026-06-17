@@ -7,15 +7,19 @@ export class LearningRepository {
    */
   async getVocabularies() {
     const queryStr = `
-      SELECT v.id, v.video_id, v.word, v.ipa, v.type, v.meaning, v.context, v.explanation, v.family_words, v.created_at,
-             t.video_url, t.topic, t.domain
-      FROM vocabularies v
-      LEFT JOIN (
-        SELECT DISTINCT ON (video_id) video_id, video_url, topic, domain 
-        FROM translation_history
-        WHERE video_id IS NOT NULL AND video_id != ''
-      ) t ON v.video_id = t.video_id
-      ORDER BY v.created_at DESC;
+      SELECT * FROM (
+        SELECT DISTINCT ON (lower(trim(v.word)))
+               v.id, v.video_id, v.word, v.ipa, v.type, v.meaning, v.context, v.explanation, v.family_words, v.created_at,
+               t.video_url, t.topic, t.domain
+        FROM vocabularies v
+        LEFT JOIN (
+          SELECT DISTINCT ON (video_id) video_id, video_url, topic, domain 
+          FROM translation_history
+          WHERE video_id IS NOT NULL AND video_id != ''
+        ) t ON v.video_id = t.video_id
+        ORDER BY lower(trim(v.word)), (CASE WHEN v.video_id IS NOT NULL AND v.video_id != '' THEN 0 ELSE 1 END), v.created_at DESC
+      ) sub
+      ORDER BY sub.created_at DESC;
     `;
     const result = await youtubePool.query(queryStr);
     return result.rows;
@@ -26,15 +30,19 @@ export class LearningRepository {
    */
   async getSentences() {
     const queryStr = `
-      SELECT s.id, s.video_id, s.en, s.vi, s.point, s.created_at,
-             t.video_url, t.topic, t.domain
-      FROM sentences s
-      LEFT JOIN (
-        SELECT DISTINCT ON (video_id) video_id, video_url, topic, domain 
-        FROM translation_history
-        WHERE video_id IS NOT NULL AND video_id != ''
-      ) t ON s.video_id = t.video_id
-      ORDER BY s.created_at DESC;
+      SELECT * FROM (
+        SELECT DISTINCT ON (lower(trim(s.en)))
+               s.id, s.video_id, s.en, s.vi, s.point, s.created_at,
+               t.video_url, t.topic, t.domain
+        FROM sentences s
+        LEFT JOIN (
+          SELECT DISTINCT ON (video_id) video_id, video_url, topic, domain 
+          FROM translation_history
+          WHERE video_id IS NOT NULL AND video_id != ''
+        ) t ON s.video_id = t.video_id
+        ORDER BY lower(trim(s.en)), (CASE WHEN s.video_id IS NOT NULL AND s.video_id != '' THEN 0 ELSE 1 END), s.created_at DESC
+      ) sub
+      ORDER BY sub.created_at DESC;
     `;
     const result = await youtubePool.query(queryStr);
     return result.rows;

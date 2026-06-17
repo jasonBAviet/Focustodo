@@ -259,6 +259,10 @@
   background: rgba(255, 255, 255, 0.015);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .ll-item:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -267,6 +271,42 @@
 .ll-item.selected {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   border-color: var(--accent);
+}
+.ll-item-main-info {
+  flex: 1;
+  min-width: 0;
+}
+.ll-quick-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  padding: 0;
+}
+.ll-quick-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+.ll-quick-action-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.ll-quick-action-btn.active:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: white;
+  transform: scale(1.05);
 }
 .ll-item-header {
   display: flex;
