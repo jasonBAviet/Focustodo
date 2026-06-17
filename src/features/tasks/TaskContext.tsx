@@ -120,6 +120,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [newTaskDraft, setNewTaskDraftState] = useState<NewTaskDraft>(() => ({
     ...DEFAULT_NEW_TASK_DRAFT,
     projectId: activeView === 'project' ? activeProjectId : null,
+    tags: (activeView === 'tag' && activeTagId) ? [activeTagId] : [],
   }));
   const updateNewTaskDraft = (fields: Partial<NewTaskDraft>) =>
     setNewTaskDraftState(prev => ({ ...prev, ...fields }));
@@ -127,14 +128,19 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setNewTaskDraftState({
       ...DEFAULT_NEW_TASK_DRAFT,
       projectId: activeView === 'project' ? activeProjectId : null,
+      tags: (activeView === 'tag' && activeTagId) ? [activeTagId] : [],
     });
 
-  // Khi user chuyển sang project view hoặc đổi project → cập nhật projectId trong draft
+  // Khi user chuyển sang project/tag view hoặc đổi project/tag → cập nhật draft tương ứng
   useEffect(() => {
     if (activeView === 'project') {
-      setNewTaskDraftState(prev => ({ ...prev, projectId: activeProjectId }));
+      setNewTaskDraftState(prev => ({ ...prev, projectId: activeProjectId, tags: [] }));
+    } else if (activeView === 'tag') {
+      setNewTaskDraftState(prev => ({ ...prev, projectId: null, tags: activeTagId ? [activeTagId] : [] }));
+    } else {
+      setNewTaskDraftState(prev => ({ ...prev, projectId: null, tags: [] }));
     }
-  }, [activeView, activeProjectId]);
+  }, [activeView, activeProjectId, activeTagId]);
 
   const { settings, updateSettings } = useAppContext();
   const { onTaskCreated, onTaskCompleted, onPomodoroCompleted } = useWebhookContext();
@@ -177,6 +183,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setNewTaskDraftState({
       ...DEFAULT_NEW_TASK_DRAFT,
       projectId: activeView === 'project' ? activeProjectId : null,
+      tags: (activeView === 'tag' && activeTagId) ? [activeTagId] : [],
     });
   };
 

@@ -7,7 +7,7 @@ interface TaskAddBarProps {
 
 const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
   const {
-    activeView, activeProjectId, projects,
+    activeView, activeProjectId, activeTagId, projects, tags,
     setNewTaskPanelOpen, newTaskDraft, updateNewTaskDraft, submitNewTask, resetNewTaskDraft,
   } = useTaskContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -17,6 +17,10 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
     if (activeView === 'project' && activeProjectId) {
       const p = projects.find((pr) => pr.id === activeProjectId);
       return `Add task to "${p?.name || 'Project'}", press [Enter] to save`;
+    }
+    if (activeView === 'tag' && activeTagId) {
+      const t = tags.find((tg) => tg.id === activeTagId);
+      return `Add task with tag "${t?.name || 'Tag'}", press [Enter] to save`;
     }
     return 'Add task, press [Enter] to save';
   };
