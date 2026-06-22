@@ -14,6 +14,7 @@ interface LearningContextType {
   setSelectedItemType: (type: 'vocab' | 'sentence') => void;
   fetchLearningData: () => Promise<void>;
   markItemLearnedStatus: (itemId: string, itemType: 'vocab' | 'sentence', status: 'learned' | 'unlearned') => Promise<void>;
+  toggleItemHardStatus: (itemId: string, itemType: 'vocab' | 'sentence', isHard: boolean) => Promise<void>;
 }
 
 const LearningContext = createContext<LearningContextType | null>(null);
@@ -101,6 +102,48 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [getHeaders]);
 
+  const toggleItemHardStatus = useCallback(async (
+    itemId: string,
+    itemType: 'vocab' | 'sentence',
+    isHard: boolean
+  ) => {
+    // Optimistic update
+    if (itemType === 'vocab') {
+      setVocabularyList((prev) =>
+        prev.map((item) => (item.id === itemId ? { ...item, isHard } : item))
+      );
+    } else {
+      setSentencesList((prev) =>
+        prev.map((item) => (item.id === itemId ? { ...item, isHard } : item))
+      );
+    }
+
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/api/learning/toggle-hard`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ itemId, itemType, isHard }),
+      });
+      if (!res.ok) {
+        throw new Error('Không thể cập nhật độ khó trên server.');
+      }
+    } catch (err) {
+      console.error(err);
+      // Rollback
+      const originalIsHard = !isHard;
+      if (itemType === 'vocab') {
+        setVocabularyList((prev) =>
+          prev.map((item) => (item.id === itemId ? { ...item, isHard: originalIsHard } : item))
+        );
+      } else {
+        setSentencesList((prev) =>
+          prev.map((item) => (item.id === itemId ? { ...item, isHard: originalIsHard } : item))
+        );
+      }
+    }
+  }, [getHeaders]);
+
   useEffect(() => {
     if (token) {
       fetchLearningData();
@@ -117,7 +160,8 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setSelectedItemId,
     setSelectedItemType,
     fetchLearningData,
-    markItemLearnedStatus
+    markItemLearnedStatus,
+    toggleItemHardStatus
   }), [
     vocabularyList,
     sentencesList,
@@ -126,7 +170,8 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     selectedItemId,
     selectedItemType,
     fetchLearningData,
-    markItemLearnedStatus
+    markItemLearnedStatus,
+    toggleItemHardStatus
   ]);
 
   return (

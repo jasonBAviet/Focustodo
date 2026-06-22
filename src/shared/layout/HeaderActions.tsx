@@ -70,16 +70,19 @@ const HeaderActions: React.FC<HeaderActionsProps> = ({ onShowReport }) => {
           z-index: 100;
         }
         .user-email-display {
+          display: inline-block;
+          min-width: 0;
+          max-width: 140px;
           font-size: var(--text-sm);
           color: var(--text-tertiary);
           margin-right: var(--space-2);
           background: var(--glass-bg);
           padding: var(--space-1) var(--space-2-5);
           border-radius: var(--radius-full);
-          max-width: 150px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          vertical-align: middle;
         }
         @media (max-width: 768px) {
           .user-email-display { display: none; }

@@ -39,6 +39,7 @@ export class UserLearningStateModel {
     this.userId = data.user_id || null;
     this.itemType = data.item_type || ''; // 'vocab' | 'sentence'
     this.status = data.status || 'unlearned'; // 'learned' | 'unlearned'
+    this.isHard = data.is_hard || false;
     this.createdAt = data.created_at || null;
     this.updatedAt = data.updated_at || null;
   }

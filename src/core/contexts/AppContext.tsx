@@ -25,8 +25,8 @@ interface AppContextType {
   setOpenModal: (name: string | null) => void;
   isReportOpen: boolean;
   setIsReportOpen: (v: boolean) => void;
-  viewMode: 'list' | 'calendar' | 'kg';
-  setViewMode: (v: 'list' | 'calendar' | 'kg') => void;
+  viewMode: 'list' | 'calendar' | 'kg' | 'gantt';
+  setViewMode: (v: 'list' | 'calendar' | 'kg' | 'gantt') => void;
 }
 
 // ----------------------------------------------------------
@@ -82,7 +82,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // UI state - no need to save to localStorage
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar' | 'kg'>('focus-view-mode', 'list');
+  const [viewMode, setViewMode] = useLocalStorage<'list' | 'calendar' | 'kg' | 'gantt'>('focus-view-mode', 'list');
 
   // Determine isDark from current settings
   const [isDark, setIsDark] = useState<boolean>(() =>
@@ -121,6 +121,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isDark ? 'dark' : 'light',
     );
   }, [isDark]);
+
+  // --------------------------------------------------------
+  // Apply wallpaper to DOM when settings.themeWallpaper changes
+  // --------------------------------------------------------
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      'data-wallpaper',
+      settings.themeWallpaper || 'dark-forest',
+    );
+  }, [settings.themeWallpaper]);
 
   // --------------------------------------------------------
   // Update partial settings

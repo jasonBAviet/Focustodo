@@ -35,6 +35,22 @@ export const dateUtils = {
     }
   },
 
+  formatFullDateTime(dateStr: string | null): string {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes} ${day}-${month}-${year}`;
+    } catch {
+      return '';
+    }
+  },
+
   isToday(dateStr: string | null): boolean {
     if (!dateStr) return false;
     const d = new Date(dateStr);
@@ -125,5 +141,43 @@ export const dateUtils = {
 
   fromDateInput(value: string): string {
     return new Date(value).toISOString();
+  },
+
+  calculateTaskStatus(
+    completed: boolean,
+    startDate: string | null,
+    dueDate: string | null,
+    completedAt: string | null
+  ): 'not-started' | 'in-progress' | 'overdue' | 'completed-early-or-on-time' | 'completed-late' {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const todayTime = new Date(todayStr).getTime();
+
+    const getDayTime = (dateStr: string | null): number | null => {
+      if (!dateStr) return null;
+      const parts = dateStr.split('T')[0];
+      return new Date(parts).getTime();
+    };
+
+    const startVal = getDayTime(startDate);
+    const dueVal = getDayTime(dueDate);
+
+    if (completed) {
+      if (dueVal) {
+        const completedVal = getDayTime(completedAt);
+        if (completedVal) {
+          return completedVal > dueVal ? 'completed-late' : 'completed-early-or-on-time';
+        }
+      }
+      return 'completed-early-or-on-time';
+    } else {
+      if (dueVal && dueVal < todayTime) {
+        return 'overdue';
+      }
+      if (!startVal || startVal > todayTime) {
+        return 'not-started';
+      }
+      return 'in-progress';
+    }
   },
 };

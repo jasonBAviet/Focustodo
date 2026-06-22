@@ -7,8 +7,9 @@ interface LearningListProps {
 }
 
 const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => {
-  const { vocabularyList, sentencesList, loading, markItemLearnedStatus } = useLearningContext();
+  const { vocabularyList, sentencesList, loading, markItemLearnedStatus, toggleItemHardStatus } = useLearningContext();
   const [search, setSearch] = useState('');
+  const [filterHard, setFilterHard] = useState(false);
 
   const handleQuickStatusToggle = async (
     e: React.MouseEvent,
@@ -19,6 +20,16 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
     e.stopPropagation();
     const nextStatus = currentStatus === 'learned' ? 'unlearned' : 'learned';
     await markItemLearnedStatus(itemId, itemType, nextStatus);
+  };
+
+  const handleToggleHard = async (
+    e: React.MouseEvent,
+    itemId: string,
+    itemType: 'vocab' | 'sentence',
+    currentIsHard: boolean
+  ) => {
+    e.stopPropagation();
+    await toggleItemHardStatus(itemId, itemType, !currentIsHard);
   };
   
   // Tab lớn: 'study' (Chưa học) | 'test' (Đã học / Kiểm tra)
@@ -45,12 +56,13 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
     const targetStatus = mainTab === 'study' ? 'unlearned' : 'learned';
     const filtered = vocabularyList.filter((item) => {
       const matchStatus = item.status === targetStatus;
+      const matchHard = !filterHard || item.isHard;
       const matchSearch =
         item.word.toLowerCase().includes(search.toLowerCase()) ||
         item.meaning.toLowerCase().includes(search.toLowerCase()) ||
         item.topic.toLowerCase().includes(search.toLowerCase()) ||
         (item.domain && item.domain.toLowerCase().includes(search.toLowerCase()));
-      return matchStatus && matchSearch;
+      return matchStatus && matchHard && matchSearch;
     });
 
     return [...filtered].sort((a, b) => {
@@ -64,19 +76,20 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [vocabularyList, mainTab, search, sortBy, sortOrder]);
+  }, [vocabularyList, mainTab, search, sortBy, sortOrder, filterHard]);
 
   // Lọc và sắp xếp mẫu câu
   const filteredSentences = useMemo(() => {
     const targetStatus = mainTab === 'study' ? 'unlearned' : 'learned';
     const filtered = sentencesList.filter((item) => {
       const matchStatus = item.status === targetStatus;
+      const matchHard = !filterHard || item.isHard;
       const matchSearch =
         item.en.toLowerCase().includes(search.toLowerCase()) ||
         item.vi.toLowerCase().includes(search.toLowerCase()) ||
         item.topic.toLowerCase().includes(search.toLowerCase()) ||
         (item.domain && item.domain.toLowerCase().includes(search.toLowerCase()));
-      return matchStatus && matchSearch;
+      return matchStatus && matchHard && matchSearch;
     });
 
     return [...filtered].sort((a, b) => {
@@ -90,7 +103,7 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [sentencesList, mainTab, search, sortBy, sortOrder]);
+  }, [sentencesList, mainTab, search, sortBy, sortOrder, filterHard]);
 
   if (loading && vocabularyList.length === 0 && sentencesList.length === 0) {
     return (
@@ -160,6 +173,20 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
 
       {/* Thanh sắp xếp */}
       <div className="ll-sort-bar">
+        <span className="ll-sort-label">Bộ lọc:</span>
+        <button
+          className={`ll-filter-hard-btn ${filterHard ? 'active' : ''}`}
+          onClick={() => setFilterHard(!filterHard)}
+          title="Chỉ hiển thị các từ khó cần ôn lại"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill={filterHard ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          Cần ôn lại
+        </button>
+
+        <div style={{ width: '1px', height: '16px', background: 'var(--border)', margin: '0 4px' }} />
+
         <span className="ll-sort-label">Sắp xếp:</span>
         <div className="ll-sort-options">
           <button
@@ -208,15 +235,27 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
                   </div>
                 </div>
 
-                <button
-                  className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
-                  onClick={(e) => handleQuickStatusToggle(e, item.id, 'vocab', item.status)}
-                  title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <div className="ll-item-actions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className={`ll-difficulty-btn ${item.isHard ? 'active' : ''}`}
+                    onClick={(e) => handleToggleHard(e, item.id, 'vocab', !!item.isHard)}
+                    title={item.isHard ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó cần ôn lại'}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={item.isHard ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+
+                  <button
+                    className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
+                    onClick={(e) => handleQuickStatusToggle(e, item.id, 'vocab', item.status)}
+                    title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))
           )
@@ -245,15 +284,27 @@ const LearningList: React.FC<LearningListProps> = ({ selectedId, onSelect }) => 
                   </div>
                 </div>
 
-                <button
-                  className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
-                  onClick={(e) => handleQuickStatusToggle(e, item.id, 'sentence', item.status)}
-                  title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                <div className="ll-item-actions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className={`ll-difficulty-btn ${item.isHard ? 'active' : ''}`}
+                    onClick={(e) => handleToggleHard(e, item.id, 'sentence', !!item.isHard)}
+                    title={item.isHard ? 'Bỏ đánh dấu câu khó' : 'Đánh dấu câu khó cần ôn lại'}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={item.isHard ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+
+                  <button
+                    className={`ll-quick-action-btn ${item.status === 'learned' ? 'active' : ''}`}
+                    onClick={(e) => handleQuickStatusToggle(e, item.id, 'sentence', item.status)}
+                    title={item.status === 'learned' ? 'Đánh dấu chưa thuộc' : 'Đánh dấu đã thuộc'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             ))
           )

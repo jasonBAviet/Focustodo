@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import type { Task, RepeatType, Priority } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
@@ -23,11 +23,47 @@ interface TaskDetailProps {
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const { updateTask, projects } = useTaskContext();
-  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'due' | null>(null);
+  const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'due' | 'completed' | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
   const [note, setNote] = useState(task.note);
+
+  const startDateContainerRef = useRef<HTMLDivElement>(null);
+  const dueDateContainerRef = useRef<HTMLDivElement>(null);
+  const completedDateContainerRef = useRef<HTMLDivElement>(null);
+  const reminderContainerRef = useRef<HTMLDivElement>(null);
+  const repeatContainerRef = useRef<HTMLDivElement>(null);
+  const priorityContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (activeDatePicker === 'start' && startDateContainerRef.current && !startDateContainerRef.current.contains(target)) {
+        setActiveDatePicker(null);
+      }
+      if (activeDatePicker === 'due' && dueDateContainerRef.current && !dueDateContainerRef.current.contains(target)) {
+        setActiveDatePicker(null);
+      }
+      if (activeDatePicker === 'completed' && completedDateContainerRef.current && !completedDateContainerRef.current.contains(target)) {
+        setActiveDatePicker(null);
+      }
+      if (showReminderPicker && reminderContainerRef.current && !reminderContainerRef.current.contains(target)) {
+        setShowReminderPicker(false);
+      }
+      if (showRepeatPicker && repeatContainerRef.current && !repeatContainerRef.current.contains(target)) {
+        setShowRepeatPicker(false);
+      }
+      if (showPriorityPicker && priorityContainerRef.current && !priorityContainerRef.current.contains(target)) {
+        setShowPriorityPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDatePicker, showReminderPicker, showRepeatPicker, showPriorityPicker]);
 
   useEffect(() => { setNote(task.note); }, [task.id]);
 
@@ -39,29 +75,21 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
     }
   };
 
-  const startDateText = task.startDate
-    ? dateUtils.isToday(task.startDate)
-      ? 'Today'
-      : dateUtils.isTomorrow(task.startDate)
-        ? 'Tomorrow'
-        : dateUtils.formatShort(task.startDate)
-    : 'None';
+  const startDateText = task.startDate ? dateUtils.formatFullDateTime(task.startDate) : 'None';
 
   const startDateColor = task.startDate ? 'var(--text-primary)' : 'var(--text-tertiary)';
 
-  const dueDateText = task.dueDate
-    ? dateUtils.isToday(task.dueDate)
-      ? 'Today'
-      : dateUtils.isTomorrow(task.dueDate)
-        ? 'Tomorrow'
-        : dateUtils.formatShort(task.dueDate)
-    : 'None';
+  const dueDateText = task.dueDate ? dateUtils.formatFullDateTime(task.dueDate) : 'None';
 
   const dueDateColor = task.dueDate && dateUtils.isOverdue(task.dueDate)
     ? 'var(--priority-high)'
     : task.dueDate
       ? 'var(--text-primary)'
       : 'var(--text-tertiary)';
+
+  const completedDateText = task.completedAt ? dateUtils.formatFullDateTime(task.completedAt) : 'None';
+
+  const completedDateColor = task.completedAt ? 'var(--text-primary)' : 'var(--text-tertiary)';
 
   return (
     <div className="task-detail">
@@ -74,7 +102,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Priority"
       >
-        <div style={{ position: 'relative' }}>
+        <div ref={priorityContainerRef} style={{ position: 'relative' }}>
           <button
             className="detail-inline-btn"
             style={{ color: PRIORITY_OPTIONS.find((p) => p.value === task.priority)?.color || '#888' }}
@@ -107,26 +135,28 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Start Date"
       >
-        <button
-          className="detail-inline-btn"
-          style={{ color: startDateColor }}
-          onClick={() => { setActiveDatePicker(activeDatePicker === 'start' ? null : 'start'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
-        >
-          {startDateText}
-        </button>
-        {activeDatePicker === 'start' && (
-          <div className="detail-date-popover">
-            <DatePicker
-              isRange
-              startDateValue={task.startDate}
-              endDateValue={task.dueDate}
-              onRangeChange={(start, end) => {
-                updateTask(task.id, { startDate: start, dueDate: end });
-              }}
-              onClose={() => setActiveDatePicker(null)}
-            />
-          </div>
-        )}
+        <div ref={startDateContainerRef} style={{ position: 'relative' }}>
+          <button
+            className="detail-inline-btn"
+            style={{ color: startDateColor }}
+            onClick={() => { setActiveDatePicker(activeDatePicker === 'start' ? null : 'start'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
+          >
+            {startDateText}
+          </button>
+          {activeDatePicker === 'start' && (
+            <div className="detail-date-popover">
+              <DatePicker
+                isRange
+                startDateValue={task.startDate}
+                endDateValue={task.dueDate}
+                onRangeChange={(start, end) => {
+                  updateTask(task.id, { startDate: start, dueDate: end });
+                }}
+                onClose={() => setActiveDatePicker(null)}
+              />
+            </div>
+          )}
+        </div>
       </DetailRow>
 
       {/* Due Date Row */}
@@ -137,27 +167,67 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Due Date"
       >
-        <button
-          className="detail-inline-btn"
-          style={{ color: dueDateColor }}
-          onClick={() => { setActiveDatePicker(activeDatePicker === 'due' ? null : 'due'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
-        >
-          {dueDateText}
-        </button>
-        {activeDatePicker === 'due' && (
-          <div className="detail-date-popover">
-            <DatePicker
-              isRange
-              startDateValue={task.startDate}
-              endDateValue={task.dueDate}
-              onRangeChange={(start, end) => {
-                updateTask(task.id, { startDate: start, dueDate: end });
-              }}
-              onClose={() => setActiveDatePicker(null)}
-            />
-          </div>
-        )}
+        <div ref={dueDateContainerRef} style={{ position: 'relative' }}>
+          <button
+            className="detail-inline-btn"
+            style={{ color: dueDateColor }}
+            onClick={() => { setActiveDatePicker(activeDatePicker === 'due' ? null : 'due'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
+          >
+            {dueDateText}
+          </button>
+          {activeDatePicker === 'due' && (
+            <div className="detail-date-popover">
+              <DatePicker
+                isRange
+                startDateValue={task.startDate}
+                endDateValue={task.dueDate}
+                onRangeChange={(start, end) => {
+                  updateTask(task.id, { startDate: start, dueDate: end });
+                }}
+                onClose={() => setActiveDatePicker(null)}
+              />
+            </div>
+          )}
+        </div>
       </DetailRow>
+
+      {/* Completed Date Row */}
+      {task.completed && (
+        <DetailRow
+          icon={<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="2" y="2" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M4 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>}
+          label="Completed Date"
+        >
+          <div ref={completedDateContainerRef} style={{ position: 'relative' }}>
+            <button
+              className="detail-inline-btn"
+              style={{ color: completedDateColor }}
+              onClick={() => { setActiveDatePicker(activeDatePicker === 'completed' ? null : 'completed'); setShowReminderPicker(false); setShowRepeatPicker(false); setShowPriorityPicker(false); }}
+            >
+              {completedDateText}
+            </button>
+            {activeDatePicker === 'completed' && (
+              <div className="detail-date-popover">
+                <DatePicker
+                  value={task.completedAt}
+                  onChange={(d) => {
+                    updateTask(task.id, { completedAt: d });
+                    setActiveDatePicker(null);
+                  }}
+                  onRemove={() => {
+                    updateTask(task.id, { completedAt: null });
+                    setActiveDatePicker(null);
+                  }}
+                  onClose={() => setActiveDatePicker(null)}
+                />
+              </div>
+            )}
+          </div>
+        </DetailRow>
+      )}
 
       {/* Project Row */}
       <DetailRow
@@ -190,35 +260,32 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Reminder"
       >
-        <button
-          className="detail-inline-btn"
-          onClick={() => { setShowReminderPicker(!showReminderPicker); setActiveDatePicker(null); }}
-          style={{ color: task.reminder ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-        >
-          {task.reminder
-            ? (() => {
-              const [datePart, timePart] = task.reminder.split('T');
-              return `${dateUtils.formatShort(datePart)}${timePart ? ` · ${timePart.slice(0, 5)}` : ''}`;
-            })()
-            : 'None'}
-        </button>
-        {showReminderPicker && (
-          <div className="detail-date-popover">
-            <DatePicker
-              value={task.reminder}
-              showTime
-              onChange={(d) => {
-                updateTask(task.id, { reminder: d });
-                setShowReminderPicker(false);
-              }}
-              onRemove={() => {
-                updateTask(task.id, { reminder: null });
-                setShowReminderPicker(false);
-              }}
-              onClose={() => setShowReminderPicker(false)}
-            />
-          </div>
-        )}
+        <div ref={reminderContainerRef} style={{ position: 'relative' }}>
+          <button
+            className="detail-inline-btn"
+            onClick={() => { setShowReminderPicker(!showReminderPicker); setActiveDatePicker(null); }}
+            style={{ color: task.reminder ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+          >
+            {task.reminder ? dateUtils.formatFullDateTime(task.reminder) : 'None'}
+          </button>
+          {showReminderPicker && (
+            <div className="detail-date-popover">
+              <DatePicker
+                value={task.reminder}
+                showTime
+                onChange={(d) => {
+                  updateTask(task.id, { reminder: d });
+                  setShowReminderPicker(false);
+                }}
+                onRemove={() => {
+                  updateTask(task.id, { reminder: null });
+                  setShowReminderPicker(false);
+                }}
+                onClose={() => setShowReminderPicker(false)}
+              />
+            </div>
+          )}
+        </div>
       </DetailRow>
 
       {/* Repeat Row */}
@@ -229,24 +296,26 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         </svg>}
         label="Repeat"
       >
-        <button
-          className="detail-inline-btn"
-          onClick={() => { setShowRepeatPicker(!showRepeatPicker); setActiveDatePicker(null); setShowReminderPicker(false); }}
-          style={{ color: task.repeat && task.repeat !== 'none' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
-        >
-          {describeRecurrence(task.repeat, task.repeatCustom)}
-        </button>
-        {showRepeatPicker && (
-          <div className="detail-date-popover">
-            <RepeatEditor
-              value={toRecurrence(task.repeat, task.repeatCustom)}
-              onChange={(repeat, repeatCustom) =>
-                updateTask(task.id, { repeat: repeat as RepeatType, repeatCustom })
-              }
-              onClose={() => setShowRepeatPicker(false)}
-            />
-          </div>
-        )}
+        <div ref={repeatContainerRef} style={{ position: 'relative' }}>
+          <button
+            className="detail-inline-btn"
+            onClick={() => { setShowRepeatPicker(!showRepeatPicker); setActiveDatePicker(null); setShowReminderPicker(false); }}
+            style={{ color: task.repeat && task.repeat !== 'none' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+          >
+            {describeRecurrence(task.repeat, task.repeatCustom)}
+          </button>
+          {showRepeatPicker && (
+            <div className="detail-date-popover">
+              <RepeatEditor
+                value={toRecurrence(task.repeat, task.repeatCustom)}
+                onChange={(repeat, repeatCustom) =>
+                  updateTask(task.id, { repeat: repeat as RepeatType, repeatCustom })
+                }
+                onClose={() => setShowRepeatPicker(false)}
+              />
+            </div>
+          )}
+        </div>
       </DetailRow>
 
       <SubtaskList task={task} />

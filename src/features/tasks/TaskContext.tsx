@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { Task, Knowledge, Diary, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord } from '@/types';
+import type { Task, Knowledge, Diary, Project, Folder, Tag, ViewType, Priority, PomodoroSession, Attachment, PomodoroRecord, TaskStatusType } from '@/types';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import type { DeletedIds } from '@/utils/remoteState';
 import { useAppContext } from '@/core/contexts/AppContext';
@@ -22,6 +22,7 @@ export interface TaskFilters {
   text: string;
   tagIds: string[];
   projectIds: string[];
+  statuses: TaskStatusType[];
   createdFrom: string | null;
   createdTo: string | null;
   startFrom: string | null;
@@ -31,7 +32,7 @@ export interface TaskFilters {
 }
 
 export const EMPTY_FILTERS: TaskFilters = {
-  text: '', tagIds: [], projectIds: [], createdFrom: null, createdTo: null, startFrom: null, startTo: null, dueFrom: null, dueTo: null,
+  text: '', tagIds: [], projectIds: [], statuses: [], createdFrom: null, createdTo: null, startFrom: null, startTo: null, dueFrom: null, dueTo: null,
 };
 
 export interface NewTaskDraft {

@@ -5,11 +5,11 @@ interface UseAppRouterProps {
   activeView: ViewType;
   activeProjectId: string | null;
   showReport: boolean;
-  viewMode: 'list' | 'calendar' | 'kg';
+  viewMode: 'list' | 'calendar' | 'kg' | 'gantt';
   setActiveView: (view: ViewType) => void;
   setActiveProjectId: (id: string | null) => void;
   setShowReport: (v: boolean) => void;
-  setViewMode: (mode: 'list' | 'calendar' | 'kg') => void;
+  setViewMode: (mode: 'list' | 'calendar' | 'kg' | 'gantt') => void;
 }
 
 export function useAppRouter({
@@ -43,13 +43,16 @@ export function useAppRouter({
       setters.setShowReport(false);
 
       // Determine viewMode from suffix
-      let mode: 'list' | 'calendar' | 'kg' = 'list';
+      let mode: 'list' | 'calendar' | 'kg' | 'gantt' = 'list';
       if (path.endsWith('/calendar')) {
         mode = 'calendar';
         path = path.slice(0, -9); // remove '/calendar'
       } else if (path.endsWith('/kg')) {
         mode = 'kg';
         path = path.slice(0, -3); // remove '/kg'
+      } else if (path.endsWith('/gantt')) {
+        mode = 'gantt';
+        path = path.slice(0, -6); // remove '/gantt'
       }
       setters.setViewMode(mode);
 
@@ -93,6 +96,8 @@ export function useAppRouter({
       targetPath += '/calendar';
     } else if (viewMode === 'kg') {
       targetPath += '/kg';
+    } else if (viewMode === 'gantt') {
+      targetPath += '/gantt';
     }
 
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';

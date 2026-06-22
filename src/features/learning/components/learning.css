@@ -308,6 +308,71 @@
   color: white;
   transform: scale(1.05);
 }
+
+.ll-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ll-difficulty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  padding: 0;
+}
+.ll-difficulty-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #f4a261;
+  color: #f4a261;
+  transform: scale(1.05);
+}
+.ll-difficulty-btn.active {
+  background: color-mix(in srgb, #f4a261 15%, transparent);
+  border-color: #f4a261;
+  color: #f4a261;
+}
+.ll-difficulty-btn.active:hover {
+  background: color-mix(in srgb, #f4a261 25%, transparent);
+  transform: scale(1.05);
+}
+
+.ll-filter-hard-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.ll-filter-hard-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #f4a261;
+  color: #f4a261;
+}
+.ll-filter-hard-btn.active {
+  background: color-mix(in srgb, #f4a261 15%, transparent);
+  border-color: #f4a261;
+  color: #f4a261;
+  font-weight: 600;
+}
+
 .ll-item-header {
   display: flex;
   justify-content: space-between;
@@ -414,6 +479,11 @@
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+@media (min-width: 769px) {
+  .ld-header {
+    padding-right: 320px !important;
+  }
 }
 .ld-close-btn {
   background: none;

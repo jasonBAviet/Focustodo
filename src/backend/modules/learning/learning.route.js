@@ -8,6 +8,7 @@ export function createLearningRouter() {
   // Yêu cầu xác thực người dùng cho tất cả các endpoint học tập
   router.get('/', authenticateUser, learningController.getLearningData);
   router.post('/mark', authenticateUser, learningController.markItem);
+  router.post('/toggle-hard', authenticateUser, learningController.toggleHard);
 
   return router;
 }

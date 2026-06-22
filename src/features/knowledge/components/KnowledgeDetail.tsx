@@ -308,6 +308,9 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
       <style>{`
         .knowledge-detail-container { display: flex; flex-direction: column; height: 100%; background: var(--bg-card); border-left: 1px solid var(--border); overflow: hidden; }
         .kd-header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); flex-shrink: 0; }
+        @media (min-width: 769px) {
+          .kd-header { padding-right: 320px !important; }
+        }
         .kd-header-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
         .kd-close-btn { background: none; border: none; color: var(--text-tertiary); font-size: 16px; cursor: pointer; padding: 4px; }
         .kd-close-btn:hover { color: var(--text-primary); }

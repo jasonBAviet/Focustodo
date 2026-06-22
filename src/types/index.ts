@@ -3,6 +3,7 @@
 // ============================================================
 
 export type Priority = 'high' | 'medium' | 'low' | 'none';
+export type TaskStatusType = 'not-started' | 'in-progress' | 'overdue' | 'completed-early-or-on-time' | 'completed-late';
 export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'custom';
 export type PomodoroPhase = 'idle' | 'focus' | 'short-break' | 'long-break';
 export type ThemeMode = 'light' | 'dark' | 'auto';
@@ -41,6 +42,7 @@ export interface VocabularyItem {
   domain: string;
   createdAt: string;
   status: 'learned' | 'unlearned';
+  isHard?: boolean;
 }
 
 export interface SentenceItem {
@@ -54,6 +56,7 @@ export interface SentenceItem {
   domain: string;
   createdAt: string;
   status: 'learned' | 'unlearned';
+  isHard?: boolean;
 }
 
 export interface Attachment {

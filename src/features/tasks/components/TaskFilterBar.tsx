@@ -2,9 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTaskContext, EMPTY_FILTERS } from '@/features/tasks/TaskContext';
 import { toggleArrayItem } from '@/utils/arrayUtils';
 import { getContextTags } from '@/utils/tagScope';
+import DatePicker from '@/shared/components/DatePicker';
+import type { TaskStatusType } from '@/types';
 import './TaskFilterBar.css';
 
-type OpenMenu = 'tag' | 'project' | 'created' | 'start' | 'due' | null;
+type OpenMenu = 'tag' | 'project' | 'status' | 'created' | 'start' | 'due' | null;
+
+const STATUS_OPTIONS: { id: TaskStatusType; name: string }[] = [
+  { id: 'not-started', name: 'Not Started' },
+  { id: 'in-progress', name: 'In Progress' },
+  { id: 'completed-early-or-on-time', name: 'Completed Early / On Time' },
+  { id: 'completed-late', name: 'Completed Late' },
+  { id: 'overdue', name: 'Overdue' },
+];
 
 const IconChevron = () => (
   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -22,7 +32,12 @@ const IconSearch = () => (
 const NO_PROJECT_ID = '__no_project__';
 const NO_TAG_ID = '__no_tag__';
 
-const TaskFilterBar: React.FC = () => {
+interface TaskFilterBarProps {
+  hideStatus?: boolean;
+  isSidebar?: boolean;
+}
+
+const TaskFilterBar: React.FC<TaskFilterBarProps> = ({ hideStatus = false, isSidebar = false }) => {
   const { filters, setFilters, tags, projects, folders, tasks, activeView, activeProjectId, activeFolderId } = useTaskContext();
   // Filter labels context by current project/folder view.
   const visibleTags = getContextTags(tags, folders, projects, activeView, activeProjectId, activeFolderId);
@@ -49,6 +64,8 @@ const TaskFilterBar: React.FC = () => {
     setFilters((f) => ({ ...f, tagIds: toggleArrayItem(f.tagIds, id) }));
   const toggleProject = (id: string) =>
     setFilters((f) => ({ ...f, projectIds: toggleArrayItem(f.projectIds, id) }));
+  const toggleStatus = (id: TaskStatusType) =>
+    setFilters((f) => ({ ...f, statuses: toggleArrayItem(f.statuses || [], id) }));
 
   // When in project/folder/tag view, the 'Project' filter is not applicable
   const showProjectFilter = activeView !== 'project' && activeView !== 'folder' && activeView !== 'tag';
@@ -75,18 +92,20 @@ const TaskFilterBar: React.FC = () => {
     (filters.text.trim() ? 1 : 0) +
     (filters.tagIds.length > 0 ? 1 : 0) +
     (showProjectFilter && filters.projectIds.length > 0 ? 1 : 0) +
+    ((!hideStatus && filters.statuses && filters.statuses.length > 0) ? 1 : 0) +
     (filters.createdFrom || filters.createdTo ? 1 : 0) +
     (filters.startFrom || filters.startTo ? 1 : 0) +
     (filters.dueFrom || filters.dueTo ? 1 : 0);
 
   const tagLabel = filters.tagIds.length > 0 ? `Tag (${filters.tagIds.length})` : 'Tag';
   const projectLabel = filters.projectIds.length > 0 ? `Project (${filters.projectIds.length})` : 'Project';
+  const statusLabel = filters.statuses && filters.statuses.length > 0 ? `Status (${filters.statuses.length})` : 'Status';
   const createdActive = !!(filters.createdFrom || filters.createdTo);
   const startActive = !!(filters.startFrom || filters.startTo);
   const dueActive = !!(filters.dueFrom || filters.dueTo);
 
   return (
-    <div className={`task-filter-bar ${mobileFiltersOpen ? 'filters-open' : ''}`} ref={wrapRef}>
+    <div className={`task-filter-bar ${isSidebar ? 'tfb-sidebar' : ''} ${mobileFiltersOpen ? 'filters-open' : ''}`} ref={wrapRef}>
       {/* Text */}
       <div className="tfb-search">
         <IconSearch />
@@ -196,6 +215,35 @@ const TaskFilterBar: React.FC = () => {
         )}
       </div>
 
+      {/* Status */}
+      {!hideStatus && (
+        <div className="tfb-item">
+          <button
+            className={`tfb-btn ${(filters.statuses && filters.statuses.length > 0) ? 'active' : ''}`}
+            onClick={() => toggleMenu('status')}
+          >
+            {statusLabel} <IconChevron />
+          </button>
+          {openMenu === 'status' && (
+            <div className="tfb-menu">
+              {STATUS_OPTIONS.map((opt) => {
+                const checked = filters.statuses?.includes(opt.id);
+                return (
+                  <button
+                    key={opt.id}
+                    className={`tfb-menu-item ${checked ? 'checked' : ''}`}
+                    onClick={() => toggleStatus(opt.id)}
+                  >
+                    <span className="tfb-menu-text">{opt.name}</span>
+                    {checked && <span className="tfb-check">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Created date */}
       <div className="tfb-item">
         <button
@@ -206,30 +254,19 @@ const TaskFilterBar: React.FC = () => {
         </button>
         {openMenu === 'created' && (
           <div className="tfb-menu tfb-menu--date">
-            <label className="tfb-date-row">
-              <span>From</span>
-              <input
-                type="date"
-                value={filters.createdFrom ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, createdFrom: e.target.value || null }))}
-              />
-            </label>
-            <label className="tfb-date-row">
-              <span>To</span>
-              <input
-                type="date"
-                value={filters.createdTo ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, createdTo: e.target.value || null }))}
-              />
-            </label>
-            {createdActive && (
-              <button
-                className="tfb-clear-range"
-                onClick={() => setFilters((f) => ({ ...f, createdFrom: null, createdTo: null }))}
-              >
-                Clear range
-              </button>
-            )}
+            <DatePicker
+              isRange
+              startDateValue={filters.createdFrom}
+              endDateValue={filters.createdTo}
+              onRangeChange={(start, end) =>
+                setFilters((f) => ({
+                  ...f,
+                  createdFrom: start ? start.split('T')[0] : null,
+                  createdTo: end ? end.split('T')[0] : null,
+                }))
+              }
+              onClose={() => setOpenMenu(null)}
+            />
           </div>
         )}
       </div>
@@ -244,30 +281,19 @@ const TaskFilterBar: React.FC = () => {
         </button>
         {openMenu === 'start' && (
           <div className="tfb-menu tfb-menu--date">
-            <label className="tfb-date-row">
-              <span>From</span>
-              <input
-                type="date"
-                value={filters.startFrom ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, startFrom: e.target.value || null }))}
-              />
-            </label>
-            <label className="tfb-date-row">
-              <span>To</span>
-              <input
-                type="date"
-                value={filters.startTo ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, startTo: e.target.value || null }))}
-              />
-            </label>
-            {startActive && (
-              <button
-                className="tfb-clear-range"
-                onClick={() => setFilters((f) => ({ ...f, startFrom: null, startTo: null }))}
-              >
-                Clear range
-              </button>
-            )}
+            <DatePicker
+              isRange
+              startDateValue={filters.startFrom}
+              endDateValue={filters.startTo}
+              onRangeChange={(start, end) =>
+                setFilters((f) => ({
+                  ...f,
+                  startFrom: start ? start.split('T')[0] : null,
+                  startTo: end ? end.split('T')[0] : null,
+                }))
+              }
+              onClose={() => setOpenMenu(null)}
+            />
           </div>
         )}
       </div>
@@ -282,30 +308,19 @@ const TaskFilterBar: React.FC = () => {
         </button>
         {openMenu === 'due' && (
           <div className="tfb-menu tfb-menu--date">
-            <label className="tfb-date-row">
-              <span>From</span>
-              <input
-                type="date"
-                value={filters.dueFrom ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, dueFrom: e.target.value || null }))}
-              />
-            </label>
-            <label className="tfb-date-row">
-              <span>To</span>
-              <input
-                type="date"
-                value={filters.dueTo ?? ''}
-                onChange={(e) => setFilters((f) => ({ ...f, dueTo: e.target.value || null }))}
-              />
-            </label>
-            {dueActive && (
-              <button
-                className="tfb-clear-range"
-                onClick={() => setFilters((f) => ({ ...f, dueFrom: null, dueTo: null }))}
-              >
-                Clear range
-              </button>
-            )}
+            <DatePicker
+              isRange
+              startDateValue={filters.dueFrom}
+              endDateValue={filters.dueTo}
+              onRangeChange={(start, end) =>
+                setFilters((f) => ({
+                  ...f,
+                  dueFrom: start ? start.split('T')[0] : null,
+                  dueTo: end ? end.split('T')[0] : null,
+                }))
+              }
+              onClose={() => setOpenMenu(null)}
+            />
           </div>
         )}
       </div>

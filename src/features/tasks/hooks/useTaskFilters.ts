@@ -1,8 +1,12 @@
 import { useCallback } from 'react';
-import type { Task } from '@/types';
+import type { Task, TaskStatusType } from '@/types';
 import { dateUtils } from '@/utils/dateUtils';
 import { getDescendantFolderIds } from '@/utils/folderUtils';
 import type { TaskFilters } from '@/features/tasks/TaskContext';
+
+export const getTaskStatus = (task: Task): TaskStatusType => {
+  return dateUtils.calculateTaskStatus(task.completed, task.startDate, task.dueDate, task.completedAt);
+};
 
 export interface UseTaskFiltersParams {
   tasks: Task[];
@@ -32,18 +36,23 @@ export function useTaskFilters({
     let filtered: Task[] = [];
     const normalTasks = tasks;
 
+    const hasCompletedFilter = filters.statuses && filters.statuses.some(
+      (s) => s === 'completed-early-or-on-time' || s === 'completed-late'
+    );
+    const showCompleted = activeView === 'completed' || !!hasCompletedFilter;
+
     switch (activeView) {
       case 'today':
-        filtered = normalTasks.filter((t) => !t.completed && dateUtils.isToday(t.dueDate));
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && dateUtils.isToday(t.dueDate));
         break;
       case 'tomorrow':
-        filtered = normalTasks.filter((t) => !t.completed && dateUtils.isTomorrow(t.dueDate));
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && dateUtils.isTomorrow(t.dueDate));
         break;
       case 'this-week':
-        filtered = normalTasks.filter((t) => !t.completed && dateUtils.isThisWeek(t.dueDate));
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && dateUtils.isThisWeek(t.dueDate));
         break;
       case 'planned':
-        filtered = normalTasks.filter((t) => !t.completed && hasValidDueDate(t));
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && hasValidDueDate(t));
         break;
       case 'completed':
         filtered = normalTasks
@@ -56,32 +65,32 @@ export function useTaskFilters({
           .slice(0, 100);
         break;
       case 'high-priority':
-        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'high');
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && t.priority === 'high');
         break;
       case 'medium-priority':
-        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'medium');
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && t.priority === 'medium');
         break;
       case 'low-priority':
-        filtered = normalTasks.filter((t) => !t.completed && t.priority === 'low');
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && t.priority === 'low');
         break;
       case 'someday':
-        filtered = normalTasks.filter((t) => !t.completed && !hasValidDueDate(t));
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && !hasValidDueDate(t));
         break;
       case 'project':
         if (activeProjectId) {
-          filtered = normalTasks.filter((t) => !t.completed && t.projectId === activeProjectId);
+          filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && t.projectId === activeProjectId);
         } else {
-          filtered = normalTasks.filter((t) => !t.completed);
+          filtered = normalTasks.filter((t) => !t.completed || showCompleted);
         }
         break;
       case 'unassigned':
-        filtered = normalTasks.filter((t) => !t.completed && !t.projectId);
+        filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && !t.projectId);
         break;
       case 'tag':
         if (activeTagId) {
-          filtered = normalTasks.filter((t) => !t.completed && t.tags.includes(activeTagId));
+          filtered = normalTasks.filter((t) => (!t.completed || showCompleted) && t.tags.includes(activeTagId));
         } else {
-          filtered = normalTasks.filter((t) => !t.completed);
+          filtered = normalTasks.filter((t) => !t.completed || showCompleted);
         }
         break;
       case 'folder':
@@ -92,10 +101,10 @@ export function useTaskFilters({
             .filter((f) => validFolderIds.includes(f.id))
             .flatMap((f) => f.projectIds || []);
           filtered = normalTasks.filter(
-            (t) => !t.completed && t.projectId && projectIdsInFolder.includes(t.projectId)
+            (t) => (!t.completed || showCompleted) && t.projectId && projectIdsInFolder.includes(t.projectId)
           );
         } else {
-          filtered = normalTasks.filter((t) => !t.completed);
+          filtered = normalTasks.filter((t) => !t.completed || showCompleted);
         }
         break;
       case 'knowledge':
@@ -106,7 +115,7 @@ export function useTaskFilters({
         break;
       case 'all':
       default:
-        filtered = normalTasks.filter((t) => !t.completed);
+        filtered = normalTasks.filter((t) => !t.completed || showCompleted);
         break;
     }
 
@@ -158,6 +167,10 @@ export function useTaskFilters({
     if (filters.dueTo) {
       const to = new Date(filters.dueTo).getTime() + 86400000;
       filtered = filtered.filter((t) => t.dueDate && new Date(t.dueDate).getTime() <= to);
+    }
+
+    if (filters.statuses && filters.statuses.length > 0) {
+      filtered = filtered.filter((t) => filters.statuses.includes(getTaskStatus(t)));
     }
 
     return filtered;

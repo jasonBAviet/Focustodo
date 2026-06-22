@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import { useAppContext } from '@/core/contexts/AppContext';
 import TaskDetail from '@/features/tasks/components/TaskDetail';
 import TagPicker from '@/features/tasks/components/TagPicker';
 import NewTaskPanel from '@/features/tasks/components/NewTaskPanel';
@@ -13,6 +14,8 @@ const TaskPanel: React.FC = () => {
     newTaskPanelOpen, setNewTaskPanelOpen,
     resetNewTaskDraft,
   } = useTaskContext();
+
+  const { setOpenModal } = useAppContext();
 
   const [panelWidth, setPanelWidth] = useState(280);
   const [hasResized, setHasResized] = useState(false);
@@ -186,10 +189,38 @@ const TaskPanel: React.FC = () => {
           </div>
 
           <div className="task-panel-footer">
+            <button
+              className="icon-btn"
+              title="Collapse panel"
+              onClick={handleClose}
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M8 6l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
             <span className="panel-created-at">
-              Created {new Date(selectedTask.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+              {(() => {
+                const d = new Date(selectedTask.createdAt);
+                const day = d.getDate();
+                const month = d.toLocaleDateString('en', { month: 'short' });
+                return `Created on ${day} ${month}`;
+              })()}
             </span>
             <div className="panel-footer-actions">
+              <button
+                className="icon-btn"
+                title="Add Pomodoro record"
+                onClick={() => setOpenModal('add-pomodoro-record')}
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 5v3.5l2.5 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M13 13h4M15 11v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
               <button
                 className="icon-btn"
                 title="Delete task"
@@ -247,7 +278,7 @@ const TaskPanel: React.FC = () => {
         }
         .task-panel-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .panel-created-at { font-size: var(--text-xs); color: var(--text-tertiary); }
-        .panel-footer-actions { display: flex; gap: 4px; }
+        .panel-footer-actions { display: flex; gap: 12px; align-items: center; }
         .panel-add-btn {
           font-size: var(--text-xs); font-weight: 600; color: var(--accent);
           background: none; border: 1px solid var(--accent); border-radius: var(--radius-xs);

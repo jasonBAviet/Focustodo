@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/core/contexts/AppContext';
 import { useTaskContext } from '@/features/tasks/TaskContext';
+import DatePicker from '@/shared/components/DatePicker';
 import StatCards from '@/features/reports/components/StatCards';
 import FocusTimeChart from '@/features/reports/components/FocusTimeChart';
 import TaskCompletionChart from '@/features/reports/components/TaskCompletionChart';
@@ -34,6 +35,8 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
 
   // Dữ liệu hoạt động task dùng chung cho biểu đồ và bảng chi tiết
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Tính startDate, endDate
   const { start: startDate, end: endDate } = useMemo(() => {
@@ -120,19 +123,29 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           </select>
         </div>
 
-        <div>
+        <div style={{ position: 'relative' }}>
           <label style={labelStyle}>Date picker</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}>
-            <input
-              type="date"
-              value={toDateString(currentDate)}
-              onChange={(e) => setCurrentDate(parseDateString(e.target.value))}
+            <button
+              type="button"
               style={datePickerStyle}
-            />
+              onClick={() => setShowDatePicker((v) => !v)}
+            >
+              {toDateString(currentDate)}
+            </button>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
               ({getPeriodLabel(period, currentDate)})
             </span>
           </div>
+          {showDatePicker && (
+            <div className="rp-date-popover">
+              <DatePicker
+                value={toDateString(currentDate)}
+                onChange={(d) => { setCurrentDate(parseDateString(d)); setShowDatePicker(false); }}
+                onClose={() => setShowDatePicker(false)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -192,7 +205,7 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
         </div>
 
         {/* Row 4: Phân bổ & Chi tiết */}
-        <div className="report-grid" style={{ alignItems: 'start' }}>
+        <div className="report-grid">
           <div className="report-card">
             <h3 className="report-card-title">Distribution by Project</h3>
             <ProjectTimeDistribution
@@ -227,7 +240,6 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           </div>
 
           <div className="report-card">
-            <h3 className="report-card-title">Focus Goal</h3>
             <GoalCalendar focusGoalHours={settings.dailyFocusGoalHours} />
           </div>
 
@@ -306,6 +318,11 @@ const ReportPage: React.FC<ReportPageProps> = ({ onClose }) => {
           display: flex; transition: all var(--transition-fast);
         }
         .icon-btn:hover { color: var(--text-primary); background: var(--glass-bg-hover); }
+        .rp-date-popover {
+          position: absolute; left: 0; top: 100%; z-index: 200;
+          animation: rp-slide-in 150ms ease both;
+        }
+        @keyframes rp-slide-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );
@@ -344,6 +361,7 @@ const datePickerStyle: React.CSSProperties = {
   outline: 'none',
   cursor: 'pointer',
   fontFamily: 'inherit',
+  textAlign: 'left',
 };
 
 export default ReportPage;

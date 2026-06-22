@@ -9,7 +9,7 @@ interface LearningDetailProps {
 }
 
 const LearningDetail: React.FC<LearningDetailProps> = ({ item, type, onClose }) => {
-  const { markItemLearnedStatus } = useLearningContext();
+  const { markItemLearnedStatus, toggleItemHardStatus } = useLearningContext();
   const [showFlipped, setShowFlipped] = useState(false);
 
   // Tự động ẩn đáp án khi đổi từ/câu mới
@@ -20,6 +20,10 @@ const LearningDetail: React.FC<LearningDetailProps> = ({ item, type, onClose }) 
   const handleToggleLearned = async () => {
     const nextStatus = item.status === 'learned' ? 'unlearned' : 'learned';
     await markItemLearnedStatus(item.id, type, nextStatus);
+  };
+
+  const handleToggleHard = async () => {
+    await toggleItemHardStatus(item.id, type, !item.isHard);
   };
 
   const isVocab = type === 'vocab';
@@ -196,7 +200,22 @@ const LearningDetail: React.FC<LearningDetailProps> = ({ item, type, onClose }) 
       </div>
 
       {/* Footer chứa nút chuyển trạng thái học tập */}
-      <div className="ld-footer">
+      <div className="ld-footer" style={{ gap: '12px' }}>
+        <button 
+          className={`ld-action-btn ${item.isHard ? 'unmark-hard' : 'mark-hard'}`}
+          onClick={handleToggleHard}
+          style={{
+            background: item.isHard ? 'color-mix(in srgb, #f4a261 15%, transparent)' : 'none',
+            border: '1px solid ' + (item.isHard ? '#f4a261' : 'var(--border)'),
+            color: item.isHard ? '#f4a261' : 'var(--text-secondary)',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={item.isHard ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          {item.isHard ? 'Độ khó cao (Cần ôn lại)' : 'Đánh dấu độ khó cao'}
+        </button>
+
         <button 
           className={`ld-action-btn ${item.status === 'learned' ? 'unmark' : 'mark'}`}
           onClick={handleToggleLearned}

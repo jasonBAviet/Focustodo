@@ -154,7 +154,7 @@ const PeakHoursHeatmap: React.FC<PeakHoursHeatmapProps> = ({
           </div>
         ))}
       </div>
-      <div ref={containerRef} style={{ width: '100%', height: 180 }} />
+      <div ref={containerRef} style={{ width: '100%', height: 240 }} />
     </div>
   );
 };

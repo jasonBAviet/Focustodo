@@ -1,0 +1,122 @@
+/* ============================================================
+   TaskSortMenu.css
+   Style for Task Sort Popover Menu (Premium glassmorphic look)
+   ============================================================ */
+
+.tsm-menu {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-dialog);
+  color: var(--text-primary);
+  width: 240px;
+}
+
+.tsm-header {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.tsm-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2-5) var(--space-4);
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-family: var(--font-main);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.tsm-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.tsm-item.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 500;
+}
+
+.tsm-item.active:hover {
+  background: rgba(242, 95, 92, 0.22);
+}
+
+.tsm-icon-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  width: 16px;
+  height: 16px;
+  transition: color var(--transition-fast);
+}
+
+.tsm-item:hover .tsm-icon-left {
+  color: var(--text-primary);
+}
+
+.tsm-item.active .tsm-icon-left {
+  color: var(--accent);
+}
+
+.tsm-text {
+  flex: 1;
+}
+
+.tsm-arrow-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-xs);
+  transition: background var(--transition-fast);
+}
+
+.tsm-arrow-right:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .tsm-arrow-right:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tsm-divider {
+  height: 1px;
+  background: var(--divider);
+  margin: var(--space-1) 0;
+}
+
+.tsm-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.tsm-clear-btn:hover {
+  color: var(--accent);
+  background: var(--bg-card-hover);
+}

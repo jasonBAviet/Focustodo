@@ -40,11 +40,17 @@
   background: var(--bg-card-hover);
   border-color: var(--border-strong);
 }
+.sort-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.sort-btn.active:hover {
+  background: rgba(242, 95, 92, 0.25);
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
+}
 .cm-divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-/* Drag-and-drop to reorder tasks in project view */
-.task-drag-row { cursor: grab; flex-shrink: 0; }
-.task-drag-row.dragging { opacity: 0.45; cursor: grabbing; }
 
 /* Planned view: dùng gap lớn hơn một chút */
 .planned-view {

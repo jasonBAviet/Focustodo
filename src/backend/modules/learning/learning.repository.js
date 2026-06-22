@@ -53,7 +53,7 @@ export class LearningRepository {
    */
   async getUserLearningStates(userId) {
     const queryStr = `
-      SELECT id, item_type, status 
+      SELECT id, item_type, status, is_hard 
       FROM user_learning_states 
       WHERE user_id = $1;
     `;
@@ -74,6 +74,22 @@ export class LearningRepository {
       RETURNING *;
     `;
     const result = await pool.query(queryStr, [itemId, userId, itemType, status, now]);
+    return result.rows[0];
+  }
+
+  /**
+   * Đánh dấu độ khó cao cho một từ vựng hoặc mẫu câu.
+   */
+  async toggleHardState(userId, itemId, itemType, isHard) {
+    const now = new Date().toISOString();
+    const queryStr = `
+      INSERT INTO user_learning_states (id, user_id, item_type, is_hard, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, 'unlearned', $5, $5)
+      ON CONFLICT (id) 
+      DO UPDATE SET is_hard = EXCLUDED.is_hard, updated_at = EXCLUDED.updated_at
+      RETURNING *;
+    `;
+    const result = await pool.query(queryStr, [itemId, userId, itemType, isHard, now]);
     return result.rows[0];
   }
 }

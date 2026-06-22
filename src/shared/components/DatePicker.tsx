@@ -84,6 +84,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const initDate = getInitialViewDate();
   const initTime = value && value.includes('T') ? value.split('T')[1].slice(0, 5) : '09:00';
 
+  const getInitialTime = (valStr: string | null | undefined, defaultTime = '23:59') => {
+    if (valStr && valStr.includes('T')) {
+      const parts = valStr.split('T');
+      if (parts[1]) {
+        return parts[1].slice(0, 5); // HH:MM
+      }
+    }
+    return defaultTime;
+  };
+
   const [viewYear, setViewYear] = useState(initDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
 
@@ -94,12 +104,16 @@ const DatePicker: React.FC<DatePickerProps> = ({
   // Range mode state
   const [tempStart, setTempStart] = useState<string | null>(null);
   const [tempEnd, setTempEnd] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState(() => getInitialTime(startDateValue, '00:00'));
+  const [endTime, setEndTime] = useState(() => getInitialTime(endDateValue, '23:59'));
 
   // Synchronize range state when props change or popover opens
   useEffect(() => {
     if (isRange) {
       setTempStart(startDateValue ? startDateValue.split('T')[0] : null);
       setTempEnd(endDateValue ? endDateValue.split('T')[0] : null);
+      setStartTime(getInitialTime(startDateValue, '00:00'));
+      setEndTime(getInitialTime(endDateValue, '23:59'));
     }
   }, [isRange, startDateValue, endDateValue]);
 
@@ -159,9 +173,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const handleOk = () => {
     if (isRange) {
       if (onRangeChange) {
-        // Convert to ISO 9:00 AM (default)
-        const startIso = tempStart ? new Date(`${tempStart}T09:00:00`).toISOString() : null;
-        const endIso = tempEnd ? new Date(`${tempEnd}T09:00:00`).toISOString() : null;
+        // Giữ nguyên ngày/giờ theo local time đã chọn, không quy đổi qua UTC
+        // (new Date(...).toISOString() có thể lệch sang ngày kế cận tùy timezone
+        // của trình duyệt, trong khi các nơi gọi onRangeChange chỉ cần phần ngày).
+        const startIso = tempStart ? `${tempStart}T${startTime}:00` : null;
+        const endIso = tempEnd ? `${tempEnd}T${endTime}:00` : null;
         onRangeChange(startIso, endIso);
       }
       onClose?.();
@@ -313,6 +329,56 @@ const DatePicker: React.FC<DatePickerProps> = ({
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {isRange && (
+        <div className="datepicker-range-time-row">
+          <div className="datepicker-time-col">
+            <label>Bắt đầu:</label>
+            <div className="time-select-group">
+              <select
+                value={startTime.split(':')[0]}
+                onChange={(e) => setStartTime(`${e.target.value}:${startTime.split(':')[1]}`)}
+              >
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <span>:</span>
+              <select
+                value={startTime.split(':')[1]}
+                onChange={(e) => setStartTime(`${startTime.split(':')[0]}:${e.target.value}`)}
+              >
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="datepicker-time-col">
+            <label>Hạn chót:</label>
+            <div className="time-select-group">
+              <select
+                value={endTime.split(':')[0]}
+                onChange={(e) => setEndTime(`${e.target.value}:${endTime.split(':')[1]}`)}
+              >
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <span>:</span>
+              <select
+                value={endTime.split(':')[1]}
+                onChange={(e) => setEndTime(`${endTime.split(':')[0]}:${e.target.value}`)}
+              >
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       )}
 

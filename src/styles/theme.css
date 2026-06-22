@@ -184,3 +184,48 @@
   --task-bg-selected: rgba(242, 95, 92, 0.05);
   --task-border-bottom: rgba(0, 0, 0, 0.05);
 }
+
+/* ============================================================
+   WALLPAPER GRADIENTS & GLASSMORPHISM OVERRIDES
+   ============================================================ */
+:root[data-wallpaper="dark-forest"] {
+  --wallpaper-gradient: linear-gradient(135deg, #0d1f0f 0%, #1a3a1e 40%, #0a1a0c 100%);
+}
+:root[data-wallpaper="ocean"] {
+  --wallpaper-gradient: linear-gradient(135deg, #003049 0%, #0077b6 50%, #001219 100%);
+}
+:root[data-wallpaper="forest"] {
+  --wallpaper-gradient: linear-gradient(135deg, #1b4332 0%, #40916c 50%, #081c15 100%);
+}
+:root[data-wallpaper="mountain"] {
+  --wallpaper-gradient: linear-gradient(135deg, #2d1b69 0%, #11998e 50%, #1a0a2e 100%);
+}
+
+/* Glassmorphism theme color overrides when data-wallpaper attribute is present */
+:root[data-wallpaper] {
+  --bg-app: transparent;
+}
+
+[data-theme="dark"][data-wallpaper] {
+  --bg-sidebar: rgba(26, 26, 31, 0.65);
+  --bg-main: rgba(30, 30, 36, 0.45);
+  --bg-panel: rgba(26, 26, 31, 0.65);
+  --bg-card: rgba(37, 37, 48, 0.55);
+  --bg-card-hover: rgba(45, 45, 58, 0.65);
+  --bg-input: rgba(42, 42, 53, 0.45);
+  --bg-dialog: rgba(30, 30, 42, 0.85);
+  --border: rgba(255, 255, 255, 0.08);
+  --divider: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"][data-wallpaper] {
+  --bg-sidebar: rgba(255, 255, 255, 0.75);
+  --bg-main: rgba(245, 245, 247, 0.55);
+  --bg-panel: rgba(255, 255, 255, 0.75);
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(249, 249, 251, 0.8);
+  --bg-input: rgba(242, 242, 245, 0.65);
+  --bg-dialog: rgba(255, 255, 255, 0.9);
+  --border: rgba(0, 0, 0, 0.06);
+  --divider: rgba(0, 0, 0, 0.04);
+}

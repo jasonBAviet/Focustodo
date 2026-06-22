@@ -9,6 +9,7 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
   const {
     activeView, activeProjectId, activeTagId, projects, tags,
     setNewTaskPanelOpen, newTaskDraft, updateNewTaskDraft, submitNewTask, resetNewTaskDraft,
+    setSelectedTaskId,
   } = useTaskContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +30,11 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
     submitNewTask();
   };
 
+  const handleFocus = () => {
+    setSelectedTaskId(null);
+    setNewTaskPanelOpen(true);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit();
     if (e.key === 'Escape') {
@@ -39,7 +45,11 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
   };
 
   return (
-    <div className="task-add-bar">
+    <div
+      className="task-add-bar"
+      onClick={() => inputRef.current?.focus()}
+      style={{ cursor: 'text' }}
+    >
       <div className="task-add-bar__icon">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -52,7 +62,7 @@ const TaskAddBar: React.FC<TaskAddBarProps> = ({ placeholder }) => {
         value={newTaskDraft.title}
         onChange={(e) => updateNewTaskDraft({ title: e.target.value })}
         onKeyDown={handleKeyDown}
-        onFocus={() => setNewTaskPanelOpen(true)}
+        onFocus={handleFocus}
         placeholder={getPlaceholder()}
       />
       <style>{`

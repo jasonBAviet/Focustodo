@@ -20,7 +20,10 @@ body {
   font-family: var(--font-main);
   font-size: var(--text-base);
   color: var(--text-primary);
-  background: var(--bg-app);
+  background: var(--wallpaper-gradient, var(--bg-app));
+  background-attachment: fixed;
+  background-size: cover;
+  background-repeat: no-repeat;
   line-height: 1.5;
   overflow: hidden;
   height: 100vh;
@@ -69,8 +72,12 @@ body {
    the absolutely-positioned HeaderActions icons. Reserve enough right space.
    Only needed on desktop (mobile hides the email and has its own header layout). */
 @media (min-width: 769px) {
+  .main-header {
+    padding-right: max(var(--space-6), calc(340px - var(--panel-width, 280px)));
+    transition: padding-right var(--transition-slow);
+  }
   .app-layout.panel-hidden .main-header {
-    padding-right: 260px;
+    padding-right: 340px;
   }
 }
 
@@ -80,10 +87,13 @@ body {
 .sidebar {
   background: var(--bg-sidebar);
   border-right: var(--glass-border-width) solid var(--border);
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100vh;
+  transition: background var(--transition-slow), border-color var(--transition-slow);
 }
 
 .sidebar-header {
@@ -117,10 +127,13 @@ body {
    ============================================================ */
 .main-content {
   background: var(--bg-main);
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100vh;
+  transition: background var(--transition-slow);
 }
 
 .main-header {
@@ -151,12 +164,15 @@ body {
 .task-panel {
   background: var(--bg-panel);
   border-left: var(--glass-border-width) solid var(--border);
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100vh;
   padding-top: var(--header-offset);
   animation: slide-in-right var(--transition-slow) both;
+  transition: background var(--transition-slow), border-color var(--transition-slow);
 }
 
 .task-panel-header {

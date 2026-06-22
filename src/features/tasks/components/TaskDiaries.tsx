@@ -17,7 +17,7 @@ const TaskDiaries: React.FC<TaskDiariesProps> = ({ task }) => {
   const handleCreateDiaryForTask = () => {
     const today = new Date();
     const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-    const newDiary = addDiary(`Nhật ký: ${task.title} (${dateStr})`, task.projectId, task.priority, task.id);
+    const newDiary = addDiary(`Diary: ${task.title} (${dateStr})`, task.projectId, task.priority, task.id);
     if (newDiary) {
       setSelectedDiaryId(newDiary.id);
       setActiveView('diary');
@@ -32,13 +32,13 @@ const TaskDiaries: React.FC<TaskDiariesProps> = ({ task }) => {
   return (
     <div className="detail-diary-section">
       <div className="diary-header">
-        <span className="diary-section-title">Nhật ký liên kết</span>
+        <span className="diary-section-title">Linked Diaries</span>
         <button 
           type="button" 
           className="diary-add-btn"
           onClick={handleCreateDiaryForTask}
         >
-          + Viết nhật ký
+          + Write Diary
         </button>
       </div>
       {linkedDiaries.length > 0 ? (
@@ -56,7 +56,7 @@ const TaskDiaries: React.FC<TaskDiariesProps> = ({ task }) => {
         </div>
       ) : (
         <div className="diary-placeholder">
-          Chưa có nhật ký nào liên kết với công việc này.
+          No diaries linked to this task.
         </div>
       )}
     </div>

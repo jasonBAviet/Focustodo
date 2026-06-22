@@ -14,9 +14,11 @@ import KnowledgeHub from '@/features/knowledge/components/KnowledgeHub';
 import DiaryHub from '@/features/diary/components/DiaryHub';
 import LearningHub from '@/features/learning/components/LearningHub';
 import { LearningProvider } from '@/features/learning/LearningContext';
+import EventsHub from '@/features/events/components/EventsHub';
 import AddProjectDialog from '@/shared/components/AddProjectDialog';
 import AddFolderDialog from '@/shared/components/AddFolderDialog';
 import AddTagDialog from '@/shared/components/AddTagDialog';
+import AddPomodoroRecordDialog from '@/features/pomodoro/components/AddPomodoroRecordDialog';
 import ReportPage from '@/features/reports/components/ReportPage';
 import PomodoroWidget from '@/features/pomodoro/components/PomodoroWidget';
 import PomodoroModal from '@/features/pomodoro/components/PomodoroModal';
@@ -69,7 +71,7 @@ const AppInner: React.FC = () => {
 
   const handleShowReport = () => setShowReport((v) => !v);
 
-  const panelVisible = !showReport && activeView !== 'knowledge' && activeView !== 'learning' && viewMode !== 'kg' && (!!selectedTaskId || newTaskPanelOpen);
+  const panelVisible = !showReport && activeView !== 'knowledge' && activeView !== 'learning' && activeView !== 'events' && viewMode !== 'kg' && (!!selectedTaskId || newTaskPanelOpen);
 
   return (
     <div className={`app-layout ${!panelVisible ? 'panel-hidden' : ''} ${mobileNavOpen ? 'sidebar-open' : ''}`}>
@@ -98,18 +100,21 @@ const AppInner: React.FC = () => {
           <LearningHub />
         ) : activeView === 'diary' ? (
           <DiaryHub />
+        ) : activeView === 'events' ? (
+          <EventsHub />
         ) : (
           <TaskList />
         )}
       </main>
 
-      {activeView !== 'knowledge' && activeView !== 'learning' && viewMode !== 'kg' && !showReport && <TaskPanel />}
+      {activeView !== 'knowledge' && activeView !== 'learning' && activeView !== 'events' && viewMode !== 'kg' && !showReport && <TaskPanel />}
 
       <CommandPalette onToggleReport={handleShowReport} />
 
       <AddProjectDialog />
       <AddFolderDialog />
       <AddTagDialog />
+      <AddPomodoroRecordDialog />
 
       <PomodoroWidget />
       <PomodoroModal />

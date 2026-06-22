@@ -23,7 +23,10 @@ export class LearningService {
     // Tạo Map tra cứu nhanh trạng thái học tập cục bộ của user
     const stateMap = new Map();
     for (const state of userStates) {
-      stateMap.set(state.id, state.status);
+      stateMap.set(state.id, {
+        status: state.status,
+        isHard: state.is_hard || false
+      });
     }
 
     const vocabularyList = [];
@@ -34,11 +37,12 @@ export class LearningService {
       const videoId = item.video_id || 'null';
       const cleanWord = item.word.trim();
       const itemId = `${videoId}:v_${cleanWord.toLowerCase()}`;
-      const status = stateMap.get(itemId) || 'unlearned';
+      const stateObj = stateMap.get(itemId) || { status: 'unlearned', isHard: false };
 
       const model = new VocabularyModel(item);
       model.id = itemId;
-      model.status = status;
+      model.status = stateObj.status;
+      model.isHard = stateObj.isHard;
       model.videoUrl = item.video_url || '';
       model.topic = item.topic || '';
       model.domain = item.domain || '';
@@ -52,11 +56,12 @@ export class LearningService {
       const cleanEn = item.en.trim();
       const sentenceHash = getShortHash(cleanEn);
       const itemId = `${videoId}:s_${sentenceHash}`;
-      const status = stateMap.get(itemId) || 'unlearned';
+      const stateObj = stateMap.get(itemId) || { status: 'unlearned', isHard: false };
 
       const model = new SentenceModel(item);
       model.id = itemId;
-      model.status = status;
+      model.status = stateObj.status;
+      model.isHard = stateObj.isHard;
       model.videoUrl = item.video_url || '';
       model.topic = item.topic || '';
       model.domain = item.domain || '';
@@ -76,6 +81,14 @@ export class LearningService {
   async markItem(userId, dto) {
     dto.validate();
     return await learningRepository.markLearningState(userId, dto.itemId, dto.itemType, dto.status);
+  }
+
+  /**
+   * Đánh dấu độ khó cao cho một từ vựng hoặc mẫu câu.
+   */
+  async toggleHard(userId, dto) {
+    dto.validate();
+    return await learningRepository.toggleHardState(userId, dto.itemId, dto.itemType, dto.isHard);
   }
 }
 

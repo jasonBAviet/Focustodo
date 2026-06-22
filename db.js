@@ -318,6 +318,13 @@ export async function ensureSchema() {
     );
   `);
 
+  // Migration: them cot is_hard vao bang user_learning_states
+  try {
+    await pool.query(`ALTER TABLE user_learning_states ADD COLUMN IF NOT EXISTS is_hard BOOLEAN DEFAULT false;`);
+  } catch (err) {
+    console.warn('[schema] Khong the them is_hard vao bang user_learning_states:', err.message);
+  }
+
   // 3. Them cot user_id vao cac bang neu chua co
   const tables = [
     'tasks', 'knowleadge', 'diary', 'projects', 'folders', 'tags', 'settings',

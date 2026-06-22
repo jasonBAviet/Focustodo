@@ -6,6 +6,7 @@ import TaskAddBar from '@/features/tasks/components/TaskAddBar';
 import TaskFilterBar from '@/features/tasks/components/TaskFilterBar';
 import CalendarView from '@/features/tasks/components/calendar/CalendarView';
 import { TaskKnowledgeGraph } from './knowledge-graph';
+import GanttView from '@/features/tasks/components/gantt/GanttView';
 import { dateUtils } from '@/utils/dateUtils';
 import { useContextMenu } from '@/shared/hooks/useContextMenu';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
@@ -44,6 +45,13 @@ const IconGraph = () => (
   </svg>
 );
 
+const IconGantt = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 6h12M12 12h8M6 18h14" />
+    <path d="M4 4v16" />
+  </svg>
+);
+
 const VIEW_LABELS: Record<string, string> = {
   today: 'Today', tomorrow: 'Tomorrow', 'this-week': 'This Week',
   planned: 'Planned', events: 'Events', completed: 'Completed',
@@ -71,7 +79,6 @@ const TaskList: React.FC = () => {
     tags,
     tasks: allTasks,
     deleteTask,
-    reorderTasks,
   } = useTaskContext();
 
   const filteredTasks = useMemo(() => getFilteredTasks(), [getFilteredTasks]);
@@ -82,8 +89,6 @@ const TaskList: React.FC = () => {
   const sortMenu = useContextMenu<null>();
   const [sortBy, setSortBy] = useState<SortOption>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  // Drag to reorder: only enabled in project view when manual sort is not applied.
-  const [dragId, setDragId] = useState<string | null>(null);
 
   const tasks = useMemo(() => {
     let result = [...filteredTasks];
@@ -125,33 +130,13 @@ const TaskList: React.FC = () => {
         const weightB = priorityWeight[b.priority];
         return sortDirection === 'asc' ? weightA - weightB : weightB - weightA;
       });
-    } else if (activeView === 'project') {
-      // Default in project view: by position (drag & drop order).
-      result.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     } else {
       // Default: newest first so a newly created task appears at the top.
       result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     return result;
-  }, [filteredTasks, sortBy, sortDirection, activeView, projects]);
-
-  // Drag & drop: only in project view and when manual sort is not applied.
-  const canReorder = activeView === 'project' && sortBy === null;
-
-  const handleDrop = (overId: string) => {
-    if (!dragId || dragId === overId) {
-      setDragId(null);
-      return;
-    }
-    const ids = tasks.map((t) => t.id);
-    const from = ids.indexOf(dragId);
-    const to = ids.indexOf(overId);
-    setDragId(null);
-    if (from === -1 || to === -1) return;
-    ids.splice(to, 0, ids.splice(from, 1)[0]);
-    reorderTasks(ids);
-  };
+  }, [filteredTasks, sortBy, sortDirection, projects]);
 
   const viewLabel = useMemo(() => {
     if (activeView === 'project' && activeProjectId) {
@@ -201,6 +186,26 @@ const TaskList: React.FC = () => {
         <div className="main-header-actions">
           {/* View mode selector */}
           <div className="view-mode-selector" style={{ display: 'flex', gap: 4, marginRight: 8, background: 'var(--bg-input, rgba(0,0,0,0.05))', borderRadius: 'var(--radius-md)', padding: 2, border: '1px solid var(--border)' }}>
+            <button
+              className={`view-mode-toggle-btn ${viewMode === 'gantt' ? 'active' : ''}`}
+              onClick={() => setViewMode('gantt')}
+              title="Gantt view"
+              style={{
+                background: viewMode === 'gantt' ? 'var(--bg-card)' : 'transparent',
+                border: 'none',
+                color: viewMode === 'gantt' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: viewMode === 'gantt' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all var(--transition-fast)'
+              }}
+            >
+              <IconGantt />
+            </button>
             <button
               className={`view-mode-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
               onClick={() => setViewMode('list')}
@@ -264,7 +269,7 @@ const TaskList: React.FC = () => {
           </div>
 
           {!isCompletedView && viewMode === 'list' && (
-            <button className="sort-btn" onClick={(e) => sortMenu.open(e, null)} title={sortBy ? `Sort: ${sortDirection === 'asc' ? 'Ascending' : 'Descending'}` : "Sort"}>
+            <button className={`sort-btn ${sortBy ? 'active' : ''}`} onClick={(e) => sortMenu.open(e, null)} title={sortBy ? `Sort: ${sortDirection === 'asc' ? 'Ascending' : 'Descending'}` : "Sort"}>
               <IconSort direction={sortBy ? sortDirection : undefined} />
             </button>
           )}
@@ -293,6 +298,8 @@ const TaskList: React.FC = () => {
         <CalendarView />
       ) : viewMode === 'kg' ? (
         <TaskKnowledgeGraph />
+      ) : viewMode === 'gantt' ? (
+        <GanttView />
       ) : (
         <>
           <TaskStatsRow
@@ -329,32 +336,14 @@ const TaskList: React.FC = () => {
                 <p>No tasks</p>
               </div>
             ) : (
-              tasks.map((task) =>
-                canReorder ? (
-                  <div
-                    key={task.id}
-                    className={`task-drag-row${dragId === task.id ? ' dragging' : ''}`}
-                    draggable
-                    onDragStart={() => setDragId(task.id)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => { e.preventDefault(); handleDrop(task.id); }}
-                    onDragEnd={() => setDragId(null)}
-                  >
-                    <TaskItem
-                      task={task}
-                      isSelected={task.id === selectedTaskId}
-                      onContextMenu={(e) => contextMenu.open(e, task.id)}
-                    />
-                  </div>
-                ) : (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    isSelected={task.id === selectedTaskId}
-                    onContextMenu={(e) => contextMenu.open(e, task.id)}
-                  />
-                ),
-              )
+              tasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  isSelected={task.id === selectedTaskId}
+                  onContextMenu={(e) => contextMenu.open(e, task.id)}
+                />
+              ))
             )}
           </div>
         </>

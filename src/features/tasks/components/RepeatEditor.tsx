@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Freq, Recurrence } from '@/utils/recurrence';
 import { buildRRule, WEEKDAY_CODES, WEEKDAY_LABELS } from '@/utils/recurrence';
+import DatePicker from '@/shared/components/DatePicker';
 
 interface RepeatEditorProps {
   value: Recurrence | null;
@@ -20,6 +21,7 @@ const RepeatEditor: React.FC<RepeatEditorProps> = ({ value, onChange, onClose })
   const [rec, setRec] = useState<Recurrence>(
     value ?? { freq: 'WEEKLY', interval: 1, byday: [], until: null },
   );
+  const [showUntilPicker, setShowUntilPicker] = useState(false);
 
   const apply = (next: Recurrence) => {
     setRec(next);
@@ -74,16 +76,24 @@ const RepeatEditor: React.FC<RepeatEditorProps> = ({ value, onChange, onClose })
         </div>
       )}
 
-      <div className="re-row">
+      <div className="re-row" style={{ position: 'relative' }}>
         <span className="re-label">Until</span>
-        <input
+        <button
+          type="button"
           className="re-date"
-          type="date"
-          value={rec.until ?? ''}
-          onChange={(e) => apply({ ...rec, until: e.target.value || null })}
-        />
-        {rec.until && (
-          <button className="re-clear-until" onClick={() => apply({ ...rec, until: null })}>×</button>
+          onClick={() => setShowUntilPicker((v) => !v)}
+        >
+          {rec.until || 'No end date'}
+        </button>
+        {showUntilPicker && (
+          <div className="re-until-popover">
+            <DatePicker
+              value={rec.until}
+              onChange={(d) => { apply({ ...rec, until: d }); setShowUntilPicker(false); }}
+              onRemove={() => { apply({ ...rec, until: null }); setShowUntilPicker(false); }}
+              onClose={() => setShowUntilPicker(false)}
+            />
+          </div>
         )}
       </div>
 
@@ -125,8 +135,13 @@ const RepeatEditor: React.FC<RepeatEditorProps> = ({ value, onChange, onClose })
           padding: 4px 8px; border-radius: var(--radius-md);
           border: 1px solid var(--border); background: var(--bg-input);
           color: var(--text-primary); font-family: var(--font-main); outline: none;
+          cursor: pointer;
         }
-        .re-clear-until { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 16px; }
+        .re-until-popover {
+          position: absolute; left: 0; top: calc(100% + 6px); z-index: 200;
+          animation: re-slide-in 150ms ease both;
+        }
+        @keyframes re-slide-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
         .re-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
         .re-btn {
           padding: 5px 12px; border-radius: var(--radius-md);
