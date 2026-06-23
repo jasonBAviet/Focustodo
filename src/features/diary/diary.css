@@ -37,7 +37,7 @@
   gap: 16px;
   padding: 30px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
 }
@@ -118,7 +118,7 @@
 .kl-filters-pane {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--bg-subtle);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -179,7 +179,7 @@
   padding: 14px 16px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--bg-subtle);
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
@@ -290,7 +290,7 @@
   gap: 12px;
   padding: 8px 16px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   flex-shrink: 0;
 }
 .kd-header-title {
@@ -338,7 +338,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--bg-subtle);
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -444,7 +444,7 @@
   transform: translateY(-1px);
 }
 .kd-save-btn.saved {
-  background: #2ec4b6;
+  background: var(--color-success);
 }
 .kd-save-btn.saving {
   opacity: 0.7;

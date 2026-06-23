@@ -34,6 +34,11 @@ const EventsSidebar: React.FC<EventsSidebarProps> = ({
     return projects.find((p) => p.id === projectId)?.name || '';
   };
 
+  const getProjectColor = (projectId: string | null) => {
+    if (!projectId) return null;
+    return projects.find((p) => p.id === projectId)?.color || null;
+  };
+
   // Xử lý sự kiện kéo giãn chiều rộng sidebar
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -175,6 +180,7 @@ const EventsSidebar: React.FC<EventsSidebarProps> = ({
         ) : (
           sidebarTasks.map((task) => {
             const projName = getProjectName(task.projectId);
+            const projColor = getProjectColor(task.projectId);
             return (
               <div
                 key={task.id}
@@ -186,7 +192,15 @@ const EventsSidebar: React.FC<EventsSidebarProps> = ({
                   <span className="events-sidebar-item-title">{task.title}</span>
                 </div>
                 <div className="events-sidebar-item-meta">
-                  {projName && <span className="events-sidebar-item-proj">{projName}</span>}
+                  {projName && (
+                    <span
+                      className="events-sidebar-item-proj"
+                      style={projColor ? { color: projColor } : undefined}
+                    >
+                      {projColor && <span className="events-sidebar-item-proj-dot" style={{ backgroundColor: projColor }} />}
+                      {projName}
+                    </span>
+                  )}
                   <span className="events-sidebar-item-priority">{PRIORITY_LABELS[task.priority]} priority</span>
                 </div>
               </div>

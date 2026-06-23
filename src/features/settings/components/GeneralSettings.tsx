@@ -118,7 +118,7 @@ const GeneralSettings: React.FC = () => {
           margin-bottom: 10px;
         }
         .settings-card {
-          background: rgba(255, 255, 255, 0.02);
+          background: var(--bg-subtle);
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
           padding: 16px;

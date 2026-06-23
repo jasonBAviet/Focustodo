@@ -54,13 +54,13 @@
   top: 0;
   bottom: 0;
   width: 8px;
-  background: #f59e0b;
+  background: var(--color-warning);
   border-top-right-radius: 2px;
   border-bottom-right-radius: 2px;
 }
 
 .gantt-legend-box--overdue {
-  border-color: #ef4444;
+  border-color: var(--color-danger);
 }
 
 .gantt-legend-box--overdue::after {
@@ -70,7 +70,7 @@
   top: 0;
   bottom: 0;
   width: 8px;
-  background: #ef4444;
+  background: var(--color-danger);
   border-top-right-radius: 2px;
   border-bottom-right-radius: 2px;
 }
@@ -82,7 +82,7 @@
   top: -2px;
   bottom: -2px;
   width: 2px;
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .gantt-viewport {
@@ -345,9 +345,9 @@
   top: -3px;
   bottom: -3px;
   width: 3px;
-  background: #ef4444;
+  background: var(--color-danger);
   z-index: 4;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.85);
+  box-shadow: 0 0 6px var(--color-danger-glow);
   border-radius: 1.5px;
   pointer-events: none;
 }
@@ -367,7 +367,7 @@
 .gantt-segment-delay {
   bottom: auto;
   height: 3px;
-  background: #f59e0b;
+  background: var(--color-warning);
   top: 50%;
   transform: translateY(-50%);
   border-radius: 1.5px;
@@ -381,7 +381,7 @@
   transform: translateY(-50%);
   width: 2px;
   height: 10px;
-  background: #f59e0b;
+  background: var(--color-warning);
   border-radius: 1px;
 }
 
@@ -389,7 +389,7 @@
 .gantt-segment-overdue {
   bottom: auto;
   height: 3px;
-  background: #ef4444;
+  background: var(--color-danger);
   top: 50%;
   transform: translateY(-50%);
   border-radius: 1.5px;
@@ -403,7 +403,7 @@
   transform: translateY(-50%);
   width: 2px;
   height: 10px;
-  background: #ef4444;
+  background: var(--color-danger);
   border-radius: 1px;
 }
 
@@ -413,7 +413,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #059669;
+  background: var(--color-success-dark);
   z-index: 3;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
@@ -423,7 +423,7 @@
   position: absolute;
   top: -12px;
   left: -6px;
-  background: #10b981;
+  background: var(--color-success);
   color: white;
   border-radius: 50%;
   width: 14px;

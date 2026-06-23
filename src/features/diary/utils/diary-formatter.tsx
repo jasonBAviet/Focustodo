@@ -36,7 +36,7 @@ const TaskBadge: React.FC<TaskBadgeProps> = ({ taskId, defaultLabel }) => {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '4px',
-        background: 'rgba(255, 255, 255, 0.02)',
+        background: 'var(--bg-subtle)',
         border: `1px solid ${getPriorityColor()}`,
         padding: '2px 8px',
         borderRadius: '12px',

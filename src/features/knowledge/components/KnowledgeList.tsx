@@ -231,7 +231,7 @@ const KnowledgeList: React.FC<KnowledgeListProps> = ({
         .kl-filters-pane {
           padding: 16px 20px;
           border-bottom: 1px solid var(--border);
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--bg-subtle);
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -292,7 +292,7 @@ const KnowledgeList: React.FC<KnowledgeListProps> = ({
           padding: 14px 16px;
           border-radius: 10px;
           border: 1px solid var(--border);
-          background: rgba(255, 255, 255, 0.01);
+          background: var(--bg-subtle);
           cursor: pointer;
           transition: all var(--transition-fast);
           display: flex;

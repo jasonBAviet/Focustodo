@@ -150,7 +150,11 @@ export const dateUtils = {
     completedAt: string | null
   ): 'not-started' | 'in-progress' | 'overdue' | 'completed-early-or-on-time' | 'completed-late' {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    // Dùng ngày theo local time (không qua toISOString) để khớp với cách
+    // startDate/dueDate được lưu (chuỗi local, không có 'Z'). Nếu không,
+    // todayStr sẽ lệch sang ngày trước đó vào đầu ngày ở các timezone UTC+,
+    // khiến task quá hạn bị nhận sai thành "chưa bắt đầu"/"đang thực hiện".
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const todayTime = new Date(todayStr).getTime();
 
     const getDayTime = (dateStr: string | null): number | null => {

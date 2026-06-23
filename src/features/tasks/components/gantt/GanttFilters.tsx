@@ -211,13 +211,27 @@ const GanttFilters: React.FC<GanttFiltersProps> = ({
           </span>
         </div>
         {showDatePicker && (
-          <div className="gantt-date-popover">
-            <DatePicker
-              value={toDateString(currentDate)}
-              onChange={(d) => { onDateChange(parseDateString(d)); setShowDatePicker(false); }}
-              onClose={() => setShowDatePicker(false)}
+          <>
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 199,
+                background: 'transparent',
+              }}
+              onClick={() => setShowDatePicker(false)}
             />
-          </div>
+            <div className="gantt-date-popover">
+              <DatePicker
+                value={toDateString(currentDate)}
+                onChange={(d) => { onDateChange(parseDateString(d)); setShowDatePicker(false); }}
+                onClose={() => setShowDatePicker(false)}
+              />
+            </div>
+          </>
         )}
       </div>
 

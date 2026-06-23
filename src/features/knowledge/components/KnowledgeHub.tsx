@@ -124,7 +124,7 @@ Dẫn chứng:
           gap: 16px;
           padding: 30px;
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.015);
+          background: var(--bg-subtle);
           border: 1px solid var(--border);
           box-shadow: var(--shadow-md);
         }

@@ -37,7 +37,7 @@
   gap: 16px;
   padding: 30px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
 }
@@ -160,20 +160,20 @@
   color: var(--accent);
 }
 .ll-main-tabs .count-test {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sidebar-item-hover);
   color: var(--text-secondary);
 }
 .ll-sub-tabs {
   display: flex;
   padding: 8px 16px;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--bg-subtle);
   border-bottom: 1px solid var(--border);
 }
 .ll-sub-tabs .sub-tab-btn {
   flex: 1;
   padding: 6px 4px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-secondary);
@@ -195,7 +195,7 @@
   gap: 8px;
   border-bottom: 1px solid var(--border);
   align-items: center;
-  background: rgba(255, 255, 255, 0.005);
+  background: var(--bg-subtle);
 }
 .ll-sort-label {
   font-size: 11px;
@@ -215,7 +215,7 @@
   justify-content: center;
   gap: 4px;
   padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-secondary);
@@ -225,7 +225,7 @@
   transition: all var(--transition-fast);
 }
 .ll-sort-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sidebar-item-hover);
   border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
 }
 .ll-sort-btn.active {
@@ -256,7 +256,7 @@
   padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--bg-subtle);
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
@@ -265,7 +265,7 @@
   gap: 12px;
 }
 .ll-item:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-subtle);
   border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
 }
 .ll-item.selected {
@@ -280,7 +280,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   display: flex;
@@ -292,7 +292,7 @@
   padding: 0;
 }
 .ll-quick-action-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-hover);
   border-color: var(--text-secondary);
   color: var(--text-primary);
   transform: scale(1.05);
@@ -320,7 +320,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg);
   border: 1px solid var(--border);
   color: var(--text-tertiary);
   display: flex;
@@ -332,7 +332,7 @@
   padding: 0;
 }
 .ll-difficulty-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-hover);
   border-color: #f4a261;
   color: #f4a261;
   transform: scale(1.05);
@@ -351,7 +351,7 @@
   display: inline-flex;
   align-items: center;
   padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-secondary);
@@ -362,7 +362,7 @@
   white-space: nowrap;
 }
 .ll-filter-hard-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sidebar-item-hover);
   border-color: #f4a261;
   color: #f4a261;
 }
@@ -387,7 +387,7 @@
 .ll-item-type {
   font-size: 10px;
   color: var(--text-tertiary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sidebar-item-hover);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -498,7 +498,7 @@
   transition: background var(--transition-fast);
 }
 .ld-close-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sidebar-item-hover);
 }
 .ld-header-title {
   font-weight: 600;
@@ -516,7 +516,7 @@
 .ld-card {
   padding: 20px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -589,8 +589,8 @@
   color: var(--text-secondary);
 }
 .ld-source-card {
-  border-color: rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.005);
+  border-color: var(--sidebar-item-hover);
+  background: var(--bg-subtle);
 }
 .ld-video-info {
   display: flex;
@@ -649,7 +649,7 @@
   color: white;
 }
 .ld-action-btn.unmark {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-border);
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
@@ -671,7 +671,7 @@
 .ld-fc-main-card {
   padding: 24px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.015) 0%, rgba(255, 255, 255, 0.005) 100%);
+  background: linear-gradient(135deg, var(--bg-subtle) 0%, var(--bg-subtle) 100%);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: var(--shadow-md);
   min-height: 200px;
@@ -690,7 +690,7 @@
 .ld-fc-context {
   margin-top: 14px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-subtle);
   border-radius: 8px;
   font-size: var(--text-xs);
   color: var(--text-secondary);
@@ -726,7 +726,7 @@
 .divider-line {
   width: 60px;
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg-hover);
   margin: 8px 0;
 }
 .ld-fc-meaning-title {
@@ -747,7 +747,7 @@
   width: 100%;
   font-size: var(--text-xs);
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--bg-subtle);
   padding: 10px 14px;
   border-radius: 8px;
   line-height: 1.5;
@@ -764,7 +764,7 @@
   width: 100%;
   padding: 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--glass-bg);
   border: 1px solid var(--border);
   color: var(--text-primary);
   font-weight: 600;
@@ -773,7 +773,7 @@
   transition: all var(--transition-fast);
 }
 .ld-flip-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass-border-hover);
   border-color: var(--accent);
 }
 .ld-flip-btn.flipped {
@@ -805,7 +805,7 @@
 .ld-family-chip {
   font-size: 13px;
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
   padding: 6px 12px;
   border-radius: 8px;
@@ -847,8 +847,8 @@
 .ld-fc-family-chip {
   font-size: 12px;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-subtle);
+  border: 1px solid var(--glass-border);
   padding: 4px 10px;
   border-radius: 6px;
   transition: all var(--transition-fast);

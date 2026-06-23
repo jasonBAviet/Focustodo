@@ -291,9 +291,11 @@ export function getGanttBarPosition(
   const actualWidth = due && end.getTime() > due.getTime() ? getPct(due) : getPct(end);
   const dueDateLeft = due ? getPct(due) : null;
 
-  const hasConnector = false;
-  const connectorLeft = 0;
-  const connectorWidth = 0;
+  // Đường chỉ dẫn nét đứt nối từ điểm hoàn thành thực tế đến hạn chót,
+  // chỉ hiển thị khi hoàn thành sớm (end trước due).
+  const hasConnector = due !== null && end.getTime() < due.getTime();
+  const connectorLeft = hasConnector ? getPct(end) : 0;
+  const connectorWidth = hasConnector && due ? (getPct(due) - getPct(end)) : 0;
 
   const isLate = due !== null && end.getTime() > due.getTime();
   const lateLeft = isLate && due ? getPct(due) : 0;

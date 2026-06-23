@@ -22,7 +22,7 @@ interface TaskDetailProps {
 }
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
-  const { updateTask, projects } = useTaskContext();
+  const { updateTask, restoreTask, projects } = useTaskContext();
   const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'due' | 'completed' | null>(null);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
@@ -218,7 +218,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
                     setActiveDatePicker(null);
                   }}
                   onRemove={() => {
-                    updateTask(task.id, { completedAt: null });
+                    // Xóa ngày hoàn thành đồng nghĩa với việc task không còn
+                    // ở trạng thái completed nữa (completed=true, completedAt=null
+                    // là trạng thái không hợp lệ, calculateTaskStatus sẽ hiểu sai).
+                    // Dùng restoreTask để đồng bộ với mọi nơi khác "bỏ hoàn thành" task.
+                    restoreTask(task.id);
                     setActiveDatePicker(null);
                   }}
                   onClose={() => setActiveDatePicker(null)}
@@ -361,7 +365,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         .attachment-delete { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
         .attachment-card:hover .attachment-delete { opacity: 1; }
         .attachment-delete:hover { background: var(--priority-high); }
-        .attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
+        .attachments-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: var(--bg-subtle); text-align: center; }
         .priority-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: none; background: none; cursor: pointer; border-radius: var(--radius-xs); font-size: var(--text-sm); color: var(--text-secondary); font-family: var(--font-main); transition: background var(--transition-fast); }
         .priority-option:hover, .priority-option.active { background: var(--glass-bg-hover); color: var(--text-primary); }
         .detail-diary-section { padding: 12px 0; border-bottom: 1px solid var(--divider); }
@@ -374,7 +378,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
         .diary-item-link:hover { border-color: var(--accent); background: var(--bg-card-hover); }
         .diary-item-title { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .diary-item-date { font-size: var(--text-xs); color: var(--text-tertiary); flex-shrink: 0; }
-        .diary-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: rgba(255, 255, 255, 0.015); text-align: center; }
+        .diary-placeholder { display: flex; align-items: center; justify-content: center; padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-tertiary); font-size: var(--text-xs); background: var(--bg-subtle); text-align: center; }
       `}</style>
     </div>
   );

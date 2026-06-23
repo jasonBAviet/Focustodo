@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTaskContext } from '@/features/tasks/TaskContext';
 import GanttFilters from './GanttFilters';
 import GanttChartContainer from './GanttChartContainer';
@@ -30,7 +30,7 @@ const GanttView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
 
   // Tự động điều chỉnh viewRange khi thay đổi period
-  const handlePeriodChange = (newPeriod: GanttPeriod) => {
+  const handlePeriodChange = useCallback((newPeriod: GanttPeriod) => {
     setPeriod(newPeriod);
     if (newPeriod === 'daily') {
       setViewRange(14);
@@ -41,7 +41,7 @@ const GanttView: React.FC = () => {
     } else if (newPeriod === 'yearly') {
       setViewRange(2);
     }
-  };
+  }, []);
 
   // State bộ lọc phân loại
   const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
@@ -81,7 +81,7 @@ const GanttView: React.FC = () => {
   }, [columns, period]);
 
   // Xử lý thay đổi bộ lọc phân loại
-  const handleFolderChange = (folderId: string) => {
+  const handleFolderChange = useCallback((folderId: string) => {
     setSelectedFolderId(folderId);
     setSelectedProjectId('all');
     setSelectedTagId('all');
@@ -92,9 +92,9 @@ const GanttView: React.FC = () => {
       setActiveView('folder');
       setActiveFolderId(folderId);
     }
-  };
+  }, [setActiveView, setActiveFolderId]);
 
-  const handleProjectChange = (projectId: string) => {
+  const handleProjectChange = useCallback((projectId: string) => {
     setSelectedProjectId(projectId);
     setSelectedTagId('all');
     setSelectedFolderId('all');
@@ -105,9 +105,9 @@ const GanttView: React.FC = () => {
       setActiveView('project');
       setActiveProjectId(projectId);
     }
-  };
+  }, [setActiveView, setActiveProjectId]);
 
-  const handleTagChange = (tagId: string) => {
+  const handleTagChange = useCallback((tagId: string) => {
     setSelectedTagId(tagId);
     setSelectedProjectId('all');
     setSelectedFolderId('all');
@@ -118,10 +118,13 @@ const GanttView: React.FC = () => {
       setActiveView('tag');
       setActiveTagId(tagId);
     }
-  };
+  }, [setActiveView, setActiveTagId]);
 
   // Lọc danh sách các Task hiển thị trên Gantt
   const filteredTasks = useMemo(() => {
+    const rangeStartMs = rangeStart.getTime();
+    const rangeEndMs = rangeEnd.getTime();
+
     return allTasks.filter((task) => {
       // 1. Lọc theo thư mục (Folder)
       if (selectedFolderId !== 'all') {
@@ -147,17 +150,13 @@ const GanttView: React.FC = () => {
 
       // 4. Lọc theo thời gian: task phải có giao dịch thời gian với Gantt Grid
       const taskStartStr = task.startDate || task.dueDate || task.createdAt;
+      if (!taskStartStr) return false;
       const taskEndStr = task.dueDate || task.startDate || task.createdAt;
 
-      if (!taskStartStr) return false;
+      const taskStartMs = new Date(taskStartStr).setHours(0, 0, 0, 0);
+      const taskEndMs = new Date(taskEndStr).setHours(23, 59, 59, 999);
 
-      const taskStart = new Date(taskStartStr);
-      taskStart.setHours(0, 0, 0, 0);
-
-      const taskEnd = new Date(taskEndStr);
-      taskEnd.setHours(23, 59, 59, 999);
-
-      return taskStart.getTime() <= rangeEnd.getTime() && taskEnd.getTime() >= rangeStart.getTime();
+      return taskStartMs <= rangeEndMs && taskEndMs >= rangeStartMs;
     });
   }, [allTasks, projects, selectedFolderId, selectedProjectId, selectedTagId, selectedStatus, rangeStart, rangeEnd]);
 

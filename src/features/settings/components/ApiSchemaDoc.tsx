@@ -35,7 +35,7 @@ const codeBlockStyle: React.CSSProperties = {
   overflowX: 'auto',
   margin: '8px 0',
   position: 'relative',
-  border: '1px solid rgba(255, 255, 255, 0.05)',
+  border: '1px solid var(--glass-border)',
 };
 
 const copyBtnStyle: React.CSSProperties = {

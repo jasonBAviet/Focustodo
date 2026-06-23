@@ -220,7 +220,7 @@ const AddPomodoroRecordDialog: React.FC = () => {
 
       <style>{`
         .pomo-record-dialog {
-          background: #1a1b23;
+          background: var(--bg-dialog);
           border: 1px solid var(--border);
           border-radius: 16px;
           padding: 24px;
@@ -390,13 +390,13 @@ const AddPomodoroRecordDialog: React.FC = () => {
           background: var(--glass-bg-hover);
         }
         .pomo-btn--ok {
-          background: #ff5a5f;
-          color: white;
-          border-color: #ff5a5f;
+          background: var(--accent);
+          color: var(--text-on-accent);
+          border-color: var(--accent);
         }
         .pomo-btn--ok:hover {
-          background: #ff787c;
-          border-color: #ff787c;
+          background: var(--accent-hover);
+          border-color: var(--accent-hover);
         }
       `}</style>
     </div>

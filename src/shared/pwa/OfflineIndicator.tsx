@@ -113,19 +113,19 @@ export default function OfflineIndicator() {
           letter-spacing: -0.01em;
         }
         .offline-indicator.offline {
-          background: rgba(242, 95, 92, 0.15);
-          border-color: rgba(242, 95, 92, 0.4);
-          color: #f25f5c;
+          background: var(--color-danger-soft);
+          border-color: rgba(239, 68, 68, 0.4);
+          color: var(--color-danger);
         }
         .offline-indicator.online.syncing {
-          background: rgba(76, 201, 240, 0.15);
+          background: var(--color-info-soft);
           border-color: rgba(76, 201, 240, 0.4);
-          color: #4cc9f0;
+          color: var(--color-info);
         }
         .offline-indicator.online:not(.syncing) {
-          background: rgba(46, 196, 182, 0.15);
-          border-color: rgba(46, 196, 182, 0.4);
-          color: #2ec4b6;
+          background: var(--color-success-soft);
+          border-color: rgba(16, 185, 129, 0.4);
+          color: var(--color-success);
         }
         .offline-indicator__icon {
           display: flex;

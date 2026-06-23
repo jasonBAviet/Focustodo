@@ -307,7 +307,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
 
       <style>{`
         .knowledge-detail-container { display: flex; flex-direction: column; height: 100%; background: var(--bg-card); border-left: 1px solid var(--border); overflow: hidden; }
-        .kd-header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); flex-shrink: 0; }
+        .kd-header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--bg-subtle); flex-shrink: 0; }
         @media (min-width: 769px) {
           .kd-header { padding-right: 320px !important; }
         }
@@ -317,7 +317,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
         .kd-content-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
         .kd-title-input { width: 100%; background: none; border: none; border-bottom: 1.5px solid transparent; color: var(--text-primary); font-size: 20px; font-weight: 600; outline: none; padding-bottom: 4px; transition: border-color var(--transition-fast); flex-shrink: 0; }
         .kd-title-input:focus { border-color: var(--accent); }
-        .kd-metadata-grid { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.015); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
+        .kd-metadata-grid { display: flex; align-items: center; gap: 10px; background: var(--bg-subtle); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; }
         .kd-meta-item { display: flex; align-items: center; gap: 6px; }
         .kd-meta-item.col-span-2 { flex: 1; min-width: 200px; }
         .kd-meta-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); white-space: nowrap; flex-shrink: 0; }
@@ -332,7 +332,7 @@ const KnowledgeDetail: React.FC<KnowledgeDetailProps> = ({ knowledge, onClose })
         .kd-shortcut-hint { font-size: 11px; color: var(--text-tertiary); }
         .kd-save-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: var(--text-sm); font-weight: 500; cursor: pointer; transition: all var(--transition-fast); min-width: 120px; }
         .kd-save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        .kd-save-btn.saved { background: #2ec4b6; }
+        .kd-save-btn.saved { background: var(--color-success); }
         .kd-save-btn.saving { opacity: 0.7; }
         .kd-attachments-section { padding: 6px 0; border-top: 1px solid var(--border); flex-shrink: 0; }
         .kd-attachments-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }

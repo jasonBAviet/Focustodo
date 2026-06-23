@@ -14,7 +14,7 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 
 const EventsHub: React.FC = () => {
-  const { tasks, updateTask, projects, addTask, deleteTask } = useTaskContext();
+  const { tasks, updateTask, addTask, deleteTask } = useTaskContext();
   const { activateTask } = usePomodoroContext();
 
   const contextMenu = useContextMenu<string>();
@@ -234,12 +234,10 @@ const EventsHub: React.FC = () => {
                     onDrop={(e) => handleDrop(e, hour)}
                   >
                     {scheduledTasks.map((task) => {
-                      const projectColor = projects.find((p) => p.id === task.projectId)?.color || 'var(--accent, #f25f5c)';
                       return (
                         <div
                           key={task.id}
                           className={`events-task-card priority-${task.priority}`}
-                          style={{ borderLeft: `4px solid ${projectColor}` }}
                           draggable
                           onDragStart={(e) => handleDragStart(e, task.id)}
                           onContextMenu={(e) => contextMenu.open(e, task.id)}
@@ -268,12 +266,10 @@ const EventsHub: React.FC = () => {
                   {/* Cột Completed */}
                   <div className="events-hour-column completed-col">
                     {completedTasks.map((task) => {
-                      const projectColor = projects.find((p) => p.id === task.projectId)?.color || '#a0aec0';
                       return (
                         <div
                           key={task.id}
                           className="events-task-card completed"
-                          style={{ borderLeft: `4px solid ${projectColor}` }}
                           onContextMenu={(e) => contextMenu.open(e, task.id)}
                         >
                           <div className="events-task-card-content">
